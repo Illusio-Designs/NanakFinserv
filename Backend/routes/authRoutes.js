@@ -10,10 +10,12 @@ router.post('/send-otp', async (req, res) => {
 
   try {
     // Send OTP using Firebase Authentication
-    const verificationResult = await admin.auth().sendPhoneVerificationCode(phoneNumber);
+    const verificationResult = await admin.auth().createUser({
+      phoneNumber: phoneNumber,
+    });
 
     // Handle successful sending of OTP
-    res.status(200).json({ success: true, verificationId: verificationResult.verificationId });
+    res.status(200).json({ success: true, verificationId: verificationResult.uid });
   } catch (error) {
     // Handle error
     res.status(500).json({ success: false, error: error.message });
@@ -26,10 +28,10 @@ router.post('/verify-otp', async (req, res) => {
 
   try {
     // Verify OTP using Firebase Authentication
-    const userCredential = await admin.auth().checkVerificationCode(verificationId, code);
+    const userCredential = await admin.auth().verifyIdToken(code);
 
     // Handle successful verification
-    res.status(200).json({ success: true, user: userCredential.user });
+    res.status(200).json({ success: true, user: userCredential });
   } catch (error) {
     // Handle error
     res.status(500).json({ success: false, error: error.message });

@@ -16,7 +16,7 @@ app.use(express.json());
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ message: 'API is running' });
+  res.status(200).json({ message: 'API is running123' });
 });
 
 // Routes
