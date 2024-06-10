@@ -93,11 +93,6 @@ const Footer = () => {
           <span>Copyright © 2024, All Right Reserved Nanak Finserv</span>
         </div>
       </div>
-      {/* <div id="back-to-top" className="back-to-top">
-        <button className="btn btn-dark" title="Back to Top" style={{ display: 'block' }}>
-          <i className="fa fa-angle-up"></i>
-        </button>
-      </div> */}
     </footer>
   );
 };

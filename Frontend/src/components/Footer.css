@@ -7,6 +7,10 @@
   z-index: 2;
 }
 
+.container {
+  display: flex;
+}
+
 .dk-footer .contact-us {
   margin-top: 0;
   margin-bottom: 30px;
@@ -44,7 +48,7 @@
   padding: 40px;
   z-index: 2;
   border-radius: 0% 0% 10% 10%;
-  margin-left: 50px;
+  margin-left: 13%;
 }
 
 .dk-footer-box-info .footer-social-link h3 {
