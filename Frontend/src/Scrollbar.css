@@ -1,0 +1,20 @@
+/* Scrollbar.css */
+
+/* WebKit-based browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 12px; /* Width of the scrollbar */
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--gunmetal);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--font-color); /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Border radius of the thumb */
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--midnight-green-2); /* Color of the thumb on hover */
+  }
+  

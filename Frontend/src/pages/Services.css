@@ -1,0 +1,64 @@
+@import '../styles/Colors.css';
+
+
+.banner {
+    text-align: center;
+    margin-top: 50px;
+    background: var(--background-color);
+}
+
+.ser-1,
+.ser-2,
+.ser-3,
+.ser-4 {
+    display: flex;
+}
+
+.ser-1-1,
+.ser-1-2,
+.ser-2-1,
+.ser-2-2,
+.ser-3-1,
+.ser-3-2,
+.ser-4-1,
+.ser-4-2 {
+    width: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.ser-1-1,
+.ser-2-1,
+.ser-3-1,
+.ser-4-1 h1 {
+    font-size: 2em;
+    font-weight: bold;
+    font-family: var(--font-family); 
+}
+
+.ser-1-1,
+.ser-2-1,
+.ser-3-1,
+.ser-4-1 p {
+    font-size: 18px;
+    line-height: 1.5;
+    font-family: var(--font-family);
+    color: var(--font-color);
+}
+
+.ser-1-2 img {
+    height: 300px;
+    width: auto;
+}
+.ser-2-2 img {
+    height: 300px;
+    width: auto;
+}
+.ser-3-2 img {
+    height: 300px;
+    width: auto;
+}
+.ser-4-2 img {
+    height: 300px;
+    width: auto;
+}

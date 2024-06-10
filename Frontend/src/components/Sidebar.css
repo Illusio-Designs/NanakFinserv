@@ -1,0 +1,108 @@
+.sidebar {
+  height: 97%; 
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background: var(--background-color);
+  overflow-x: hidden;
+  transition: 0.5s;
+  margin: 10px;
+  border-radius: 10px;
+  padding: 40px 20px 20px 20px;
+  width: 20%;
+}
+
+.sidebar a {
+  text-decoration: none;
+  display: block;
+  transition: 0.3s;;
+}
+
+#main {
+  transition: margin-left 0.5s;
+  padding: 20px;
+}
+
+@media screen and (max-height: 450px) {
+  .sidebar {
+    padding-top: 15px;
+  }
+  .sidebar a {
+    font-size: 18px;
+  }
+}
+
+/* Existing styles */
+.logo-details {
+  display: flex;
+}
+
+.logo-details img {
+  height: 50px;
+  width: 50px;
+  margin-top: 10px;
+  margin-left: 10px;
+}
+
+.logo-details h1 {
+  margin-top: 30px;
+  margin-left: 10px;
+}
+
+.sidelist {
+  padding: 20px;
+}
+
+.btn{
+  text-decoration: none;
+  padding: 10px 20px;
+  background-color: var(--font-color);
+  color: var(--background-color);
+  border-radius: 10px;
+  text-align: left;
+  display: block;
+  align-items: center;
+  font-size: 1.25em;
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: auto;
+  font-family: var(--font-family);
+  margin: 10px;
+  justify-content: center;
+}
+
+/* Hover styles for buttons */
+.btn:hover {
+  background-color: var(--btn-hover-color);
+  color: var(--background-color);
+}
+
+.head {
+  display: inline-flex;
+}
+.head img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin-top: 10px;
+  margin-right: 10px;
+  height: 50px;
+  width: 50px;
+  margin-left: 10px;
+}
+.head h1 {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-top: 20px;
+  margin-right: 25px;
+}
+
+.side-menu {
+  margin-top: 40px;
+}
+
+.dropdown-content {
+  margin-left: 20px;
+}

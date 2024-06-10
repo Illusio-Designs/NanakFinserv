@@ -1,0 +1,60 @@
+.consumer {
+    width: 77%;
+    margin-left: 22%;
+    background-color: white;
+    height: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+  }
+  
+  .title-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .title-btn h1 {
+    margin-top: 18px;
+  }
+  
+  .title-btn button {
+    margin-left: auto;
+    text-decoration: none;
+    padding: 10px 20px;
+    background-color: var(--font-color);
+    color: #056a67;
+    border-radius: 10px;
+    text-align: center;
+    display: inline-block;
+    align-items: center;
+    font-size: 1.25em;
+    font-weight: 600;
+    white-space: nowrap;
+    font-family: var(--font-family);
+  }
+  
+  .title-btn button:hover {
+    background-color: #056a67;
+    color: var(--font-color);
+  }
+  
+  .consumer-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 35px;
+  }
+  
+  .consumer-table th, .consumer-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+  }
+  
+  .consumer-table th {
+    background-color: #f4f4f4;
+  }
+  
+  .consumer-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  

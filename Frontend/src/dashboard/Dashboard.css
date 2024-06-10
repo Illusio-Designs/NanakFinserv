@@ -1,0 +1,15 @@
+@import '../styles/Colors.css';
+
+.dashboard-main {
+    background-color: var(--font-color);
+}
+
+.dashboard {
+    width: 77%;
+    margin-left: 22%;
+    background-color: var(--background-color);
+    height: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+}

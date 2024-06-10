@@ -1,0 +1,86 @@
+@import '../styles/Colors.css';
+
+.login-container {
+  justify-content: center;
+  height: auto;
+  background-color: var(--font-color);
+  padding: 0 1rem;
+  border-radius: 10px;
+  margin-top: 50px;
+  width: 400px;
+}
+
+.login-container h2 {
+  margin-top: 20px;
+}
+
+.login-row {
+  display: flex;
+  width: 100%;
+  background: var(--background-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.login-col {
+  width: 50%;
+}
+
+h2 {
+  margin-bottom: 1.5rem;
+  color: var(--background-color);
+}
+
+.input-group {
+  margin-bottom: 1rem;
+}
+
+.input-group label {
+  display: block;
+  font-weight: bold;
+  color: var(--background-color);
+  margin-bottom: 0.5rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid var(--background-color);
+    margin: 15px;
+    background: var(--background-color);
+    color: var(--font-color);
+}
+
+.otp-section {
+  margin-top: 1rem;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: space-between;
+}
+
+.otp-input {
+  width: 2rem;
+  padding: 0.5rem;
+  font-size: 1.5rem;
+  text-align: center;
+  border: 1px solid var(--font-color);
+  border-radius: 0.25rem;
+}
+
+/* .verified-message {
+  margin-top: 1rem;
+  color: green;
+  font-weight: bold;
+} */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--background-color);
+  height: 81vh;
+}
