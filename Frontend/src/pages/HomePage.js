@@ -6,7 +6,6 @@ import Slider from "../components/Slider.js";
 import FAQ from "../components/faq.js";
 import Popup from "../components/popup.js";
 import "./HomePage.css";
-import img1 from "./Images/healthcare.png";
 
 const HomePage = () => {
   const [items, setItems] = useState([]);
