@@ -1,8 +1,8 @@
 // src/pages/Login.js
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth, signInWithPhoneNumber, RecaptchaVerifier } from '../firebase'; // Corrected path
 import './Login.css';
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from '../firebase';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -12,40 +12,42 @@ const Login = () => {
   const [otp, setOtp] = useState(Array.from({ length: 6 }).map(() => ''));
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
-  const [verificationId, setVerificationId] = useState(null);
 
-  const handleSendOtp = () => {
-    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+  useEffect(() => {
+    window.recaptchaVerifier = new RecaptchaVerifier('send-otp-button', {
       'size': 'invisible',
       'callback': (response) => {
-        console.log('reCAPTCHA solved');
+        handleSendOtp();
       }
     }, auth);
+  }, []);
 
-    signInWithPhoneNumber(auth, `+1${mobileNumber}`, window.recaptchaVerifier)
+  const handleSendOtp = () => {
+    const phoneNumber = `+91${mobileNumber}`;
+    const appVerifier = window.recaptchaVerifier;
+
+    signInWithPhoneNumber(auth, phoneNumber, appVerifier)
       .then((confirmationResult) => {
-        setVerificationId(confirmationResult.verificationId);
+        window.confirmationResult = confirmationResult;
         setOtpSent(true);
         if (firstOtpInputRef.current[0] && firstOtpInputRef.current[0].current) {
           firstOtpInputRef.current[0].current.focus();
         }
       }).catch((error) => {
-        console.error('Error during signInWithPhoneNumber:', error);
+        console.error("Error sending OTP:", error);
       });
   };
 
   const handleVerifyOtp = () => {
     const code = otp.join('');
-    const credential = auth.PhoneAuthProvider.credential(verificationId, code);
-
-    auth.signInWithCredential(credential)
-      .then((result) => {
-        console.log('User signed in successfully:', result.user);
-        setOtpVerified(true);
-        navigate('/dashboard');
-      }).catch((error) => {
-        console.error('Error during signInWithCredential:', error);
-      });
+    window.confirmationResult.confirm(code).then((result) => {
+      const user = result.user;
+      console.log("OTP verified! User:", user);
+      setOtpVerified(true);
+      navigate('/dashboard');
+    }).catch((error) => {
+      console.error("Error verifying OTP:", error);
+    });
   };
 
   const handleOtpChange = (index, value) => {
@@ -72,10 +74,10 @@ const Login = () => {
             disabled={otpSent}
           />
         </div>
-        <div id="recaptcha-container"></div>
         {!otpSent && (
           <button
             className="btn"
+            id="send-otp-button"
             onClick={handleSendOtp}
             disabled={!mobileNumber || mobileNumber.length !== 10}
           >
