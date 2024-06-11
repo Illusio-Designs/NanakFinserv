@@ -42,19 +42,22 @@ const Contact = () => {
         <div className='contact'>
             <div className="banner">
                 <h1>Contact Us</h1>
-                <div className="action-btn-banner">
+                {/* <div className="action-btn-banner">
                     <a href="/Contact" className="text-decoration-none">Home &gt;&gt; Contact</a>
-                </div>
+                </div> */}
             </div>
             <div className="contact-info-section">
                 <div className="box-contact">
-                    <ContactInfoBox imageSrc="/Assets/banner.jpg" title="Location" info="121 King Street, Melbourne Victoria 3000 Australia" />
+                    <h3>Location</h3>
+                    <p>121 King Street, Melbourne Victoria 3000 Australia</p>
                 </div>
                 <div className="box-contact">
-                    <ContactInfoBox imageSrc="/Assets/banner.jpg" title="Phone" info="(+61 3 8376 6284), (+800 2345 6789)" />
+                    <h3>Phone</h3>
+                    <p>(+61 3 8376 6284), (+800 2345 6789)</p>
                 </div >
                 <div className="box-contact">
-                    <ContactInfoBox imageSrc="/Assets/banner.jpg" title="Email" info="info@fiercevpn.com, fiercevpn@gmail.com" />
+                    <h3>Email</h3>
+                    <p>info@fiercevpn.com, fiercevpn@gmail.com</p>
                 </div>
                 
             </div>

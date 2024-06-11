@@ -1,7 +1,7 @@
 @import '../styles/Colors.css';
 
 .contact {
-  background: #030B22ff;
+  background: var(--background-color);
 }
 
 .banner {
@@ -12,7 +12,7 @@
 .banner h1 {
     font-size: 36px;
     font-weight: bold;
-    color: var(--font-color); /* Use color variables from Colors.css */
+    color: var(--font-color);
 }
 
 .action-btn-banner {
@@ -35,20 +35,24 @@
     max-width: 100px;
 }
 
-.contact-us-box-p {
-    font-size: 16px;
-    color: var(--font-color); /* Use color variables from Colors.css */
+.box-contact h3 {
+  text-align-last: center;
+  color: var(--background-color);
+}
+
+.box-contact p {
+  text-align-last: center;
+  color: var(--background-color);
 }
 
 .box-contact {
     width: 33%;
     height: auto;
-    padding: 10px;
-    background-color: #056a67;
+    padding: 3%;
+    background-color: var(--font-color);
     border-radius: 10px;
     margin: 20px;
     justify-content: center;
-
 }
 
 .contact-info-section {
@@ -57,8 +61,8 @@
     align-items: center;
     position: relative;
     width: 100%;
-
 }
+
 .cta-container{
     display: inline-flex;
     width: 100%;
@@ -80,13 +84,6 @@
     position: relative;
     margin-left: 0px;
 }
-
-body {
-    font-family: var(--font-family);
-    font-size: var(--font-size-base);
-    line-height: 1.6;
-    background-color: var(--gunmetal-2);
-  }
   
   .contact-form-section {
     display: flex;
@@ -98,16 +95,16 @@ body {
   .contact-form {
     max-width: 400px;
     width: 100%;
-    background-color: #066A68; /* Updated background color */
+    background-color: var(--font-color); /* Updated background color */
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
   }
   
   .contact-form h3 {
     font-size: var(--font-size-h3);
     font-weight: bold;
-    color: var(--font-color);
+    color: var(--background-color);
     margin-bottom: 20px;
   }
   
@@ -127,8 +124,8 @@ body {
   
   .contact-form button {
     width: 100%;
-    background-color: var(--font-color);
-    color: #056a67;
+    background-color: var(--background-color);
+    color: var(--font-color);
     border: none;
     padding: 12px;
     border-radius: 5px;
@@ -138,8 +135,8 @@ body {
   }
   
   .contact-form button:hover {
-    background-color: #030B22ff;
-    color: var(--font-color);
+    background-color: var(--btn-hover-color);
+    color: var(--background-color);
   }
   
   .contact-form input[type="text"]::placeholder,

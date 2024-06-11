@@ -39,8 +39,9 @@ const Services = () => {
   };
 
     return  (
-      <div className='banner'>
-                <h1>Services Page</h1>
+      <div className='services'>
+        <div className='serv'>
+                <h1 className='head'>Services Page</h1>
                 <div className='ser-1'>
                     <div className='ser-1-1'>
                         <h1>Why life insurance is necessary ?</h1>
@@ -82,6 +83,7 @@ const Services = () => {
                         {faqs.map((faq, index) => (
                         <FAQ faq={faq} index={index} key={index} toggleFAQ={toggleFAQ} />
                          ))}
+                </div>
                 </div>
                 <Footer />
             </div>

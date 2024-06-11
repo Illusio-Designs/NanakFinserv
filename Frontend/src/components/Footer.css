@@ -63,6 +63,55 @@
   font-weight: 500;
 }
 
+.footer-2 {
+  color: var(--background-color);
+  margin-left: 45%;
+}
+
+.footer-2 h1 {
+  color: var(--background-color);
+}
+
+.footer-2 a {
+  text-decoration: none;
+  color: var(--background-color);
+  transition: all 0.3s;
+}
+
+.footer-3 {
+  margin-left: 10%;
+}
+
+.footer-3 h1 {
+  color: var(--background-color);
+}
+
+.footer-3 p {
+  color: var(--background-color);
+}
+
+.dk-footer-form input[type=email] {
+  padding: 14px 28px;
+  border-radius: 50px;
+  background: var(--background-color);
+  border: 1px solid var(--background-color);
+}
+
+.dk-footer-form button[type=submit] {
+  position: absolute;
+  left: 80%;
+  padding: 1% 1.2%;
+  border: none;
+  border-top-right-radius: 50%;
+  border-bottom-right-radius: 50%;
+  background: var(--btn-hover-color);
+  color: var(--background-color);
+}
+
+.form-control {
+  margin-bottom: 20px;
+}
+
 .col-md-6 {
   display: flex;
   justify-content: left;

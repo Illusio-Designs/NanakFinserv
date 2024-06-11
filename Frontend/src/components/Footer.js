@@ -22,8 +22,25 @@ const Footer = () => {
           </ul>
         </div>
         <div className='footer-2'>
+          <h1>Useful Links</h1><br />
+          <a href='#'>Blog</a><br />
+          <a href='#'>Contact</a><br />
+          <a href='#'>Contact</a><br />
+          <a href='#'>Home</a><br />
+          <a href='#'>About</a><br />
+          <a href='#'>Terms & Conditions</a><br />
         </div>
         <div className='footer-3'>
+          <h1>Subscribe us</h1><br />
+          <p>Which bears and sustains us, as <br /> it floats around us in an eternity of bliss.</p><br />
+          <form action="#">
+              <div className="col dk-footer-form">
+                <input type="email" className="form-control" placeholder="Email Address" />
+                <button type="submit">
+                  <i className="fa fa-send"></i>
+                </button>
+              </div>
+          </form>
         </div>
       </div>
       <div className="col-md-6">
