@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const userRoutes = require('./routes/userRoutes');
+const userRoutes = require('./routes/userRoutes'); // Correct path
 const sequelize = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
 
@@ -15,11 +15,11 @@ app.use(express.json()); // Ensure JSON parsing middleware is in place
 
 // Health check route
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ message: 'API is running123' });
+  res.status(200).json({ message: 'API is running' });
 });
 
 // Routes
-app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes); // Correct path for users
 app.use('/api/auth', authRoutes);
 
 // Error handling for invalid JSON payloads
