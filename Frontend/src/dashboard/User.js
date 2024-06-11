@@ -140,6 +140,7 @@ const User = () => {
                 <tr>
                   <th>Serial</th>
                   {Object.keys(filteredData[0]).map((key) => (
+                    key !== 'id' && // Exclude 'id' column from table header
                     <th key={key} onClick={() => handleSort(key)}>
                       {key} {sortColumn === key && (
                         sortDirection === 'asc' ? '▲' : '▼'
@@ -153,7 +154,8 @@ const User = () => {
                 {currentData.map((item, index) => (
                   <tr key={indexOfFirstItem + index}>
                     <td>{indexOfFirstItem + index + 1}</td>
-                    {Object.values(item).map((value, i) => (
+                    {Object.entries(item).map(([key, value], i) => (
+                      key !== 'id' && // Exclude 'id' column data from table rows
                       <td key={i}>{value}</td>
                     ))}
                     <td>
