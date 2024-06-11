@@ -1,8 +1,16 @@
 // backend/routes/authRoutes.js
+const { Router } = require('express');
 const express = require('express');
 const admin = require('../firebase');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const app = express();
 
-const router = express.Router();
+// Middleware
+app.use(cors());
+app.use(express.json()); // Ensure JSON parsing middleware is in place
+
+const router = Router();
 
 // Route for generating and sending OTP
 router.post('/send-otp', async (req, res) => {
