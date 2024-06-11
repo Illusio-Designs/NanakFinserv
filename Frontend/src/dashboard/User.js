@@ -31,15 +31,21 @@ const User = () => {
     setIsPopupOpen(!isPopupOpen);
   };
 
-  const addEntry = (entry) => {
+  const addEntry = async (entry) => {
     if (editIndex !== null) {
-      const newData = [...data];
-      newData[editIndex] = entry;
-      setData(newData);
-      setEditIndex(null);
+      try {
+        const response = await axios.put(`http://localhost:3001/api/users/${data[editIndex].id}`, entry);
+        const updatedData = [...data];
+        updatedData[editIndex] = response.data;
+        setData(updatedData);
+        setEditIndex(null);
+      } catch (error) {
+        console.error('Error updating user:', error);
+      }
     } else {
       setData([...data, entry]);
     }
+    setIsPopupOpen(false); // Close the popup after saving
   };
 
   const handleSearch = (e) => {
@@ -140,6 +146,7 @@ const User = () => {
                 <tr>
                   <th>Serial</th>
                   {Object.keys(filteredData[0]).map((key) => (
+                    key !== 'id' && // Exclude 'id' column from table header
                     <th key={key} onClick={() => handleSort(key)}>
                       {key} {sortColumn === key && (
                         sortDirection === 'asc' ? '▲' : '▼'
@@ -153,7 +160,8 @@ const User = () => {
                 {currentData.map((item, index) => (
                   <tr key={indexOfFirstItem + index}>
                     <td>{indexOfFirstItem + index + 1}</td>
-                    {Object.values(item).map((value, i) => (
+                    {Object.entries(item).map(([key, value], i) => (
+                      key !== 'id' && // Exclude 'id' column data from table rows
                       <td key={i}>{value}</td>
                     ))}
                     <td>

@@ -1,40 +1,49 @@
-// frontend/src/components/Popup.js
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Builder-popup.css';
 
 const Popup = ({ isOpen, onClose, addEntry, initialData }) => {
-  const [name, setName] = useState(initialData ? initialData.name : '');
-  const [mobile, setMobile] = useState(initialData ? initialData.mobile : '');
-  const [email, setEmail] = useState(initialData ? initialData.email : '');
-  const [userType, setUserType] = useState(initialData ? initialData.userType : '1');
+  const [name, setName] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
+  const [userType, setUserType] = useState('1');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (initialData) {
       setName(initialData.name);
-      setMobile(initialData.mobile);
+      setMobile(initialData.phone_number); // Updated key to match backend
       setEmail(initialData.email);
-      setUserType(initialData.userType);
+      setUserType(initialData.role); // Updated key to match backend
     }
   }, [initialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    try {
-      const response = await axios.post('http://localhost:3001/api/users/register', {
-        name,
-        phone_number: mobile,
-        email,
-        role: userType
-      });
+    const userData = {
+      name,
+      phone_number: mobile,
+      email,
+      role: userType
+    };
 
-      setMessage('User registered successfully!');
+    try {
+      let response;
+      if (initialData) {
+        // Editing an existing user
+        response = await axios.put(`http://localhost:3001/api/users/${initialData.id}`, userData);
+        setMessage('User updated successfully!');
+      } else {
+        // Adding a new user
+        response = await axios.post('http://localhost:3001/api/users/register', userData);
+        setMessage('User registered successfully!');
+      }
+
       addEntry(response.data); // Assuming your addEntry function updates the UI
+      onClose(); // Close the popup after saving
     } catch (error) {
-      setMessage('Error registering user: ' + error.response.data.message);
+      setMessage('Error: ' + error.response?.data?.message || error.message);
     }
   };
 
