@@ -18,6 +18,10 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ message: 'API is running' });
 });
 
+// app.get('/api/users', (req, res) => {
+//   res.status(200).json({ message: 'API is running' });
+// });
+
 // Routes
 app.use('/api/users', userRoutes); // Correct path for users
 app.use('/api/auth', authRoutes);
