@@ -31,15 +31,21 @@ const User = () => {
     setIsPopupOpen(!isPopupOpen);
   };
 
-  const addEntry = (entry) => {
+  const addEntry = async (entry) => {
     if (editIndex !== null) {
-      const newData = [...data];
-      newData[editIndex] = entry;
-      setData(newData);
-      setEditIndex(null);
+      try {
+        const response = await axios.put(`http://localhost:3001/api/users/${data[editIndex].id}`, entry);
+        const updatedData = [...data];
+        updatedData[editIndex] = response.data;
+        setData(updatedData);
+        setEditIndex(null);
+      } catch (error) {
+        console.error('Error updating user:', error);
+      }
     } else {
       setData([...data, entry]);
     }
+    setIsPopupOpen(false); // Close the popup after saving
   };
 
   const handleSearch = (e) => {

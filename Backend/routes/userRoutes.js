@@ -1,4 +1,3 @@
-// backend/routes/userRoutes.js
 const { Router } = require('express');
 const User = require('../models/User');
 const express = require('express');
@@ -25,12 +24,33 @@ router.post('/register', async (req, res) => {
 
 // Route to get all users
 router.get('/', async (req, res) => {
-  console.log('GET /api/users hit');  // Add this line
+  console.log('GET /api/users hit');
   try {
     const users = await User.findAll();
     res.status(200).json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Route to update a user
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, phone_number, email, role } = req.body;
+  try {
+    const [updated] = await User.update(
+      { name, phone_number, email, role },
+      { where: { id } }
+    );
+
+    if (updated) {
+      const updatedUser = await User.findOne({ where: { id } });
+      res.status(200).json(updatedUser);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
