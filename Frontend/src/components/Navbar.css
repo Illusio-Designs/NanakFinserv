@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 100vw;
 }
 
 .logo {
@@ -62,6 +62,8 @@
 
 .navbar-nav {
   display: flex;
+  margin-left: 32%;
+  margin-right: 32%;
 }
 
 .navbar-nav ul {
@@ -78,8 +80,9 @@
 .nav-link {
   text-decoration: none;
   color: var(--btn-color);
-  font-size: var(--font-size-h5);
-  font-weight: 600; /* Use font-weight directly */
+  font-size: 23px;
+  font-weight: 600;
+  align-items: center;
 }
 
 .nav-link:hover,
@@ -90,8 +93,9 @@
 }
 
 .nav-link:hover {
-  color: var(--btn-hover-color); /* Change hover color for better contrast */
+  color: var(--btn-hover-color);
 }
+
 
 
 @media (max-width: 768px) {

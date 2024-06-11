@@ -1,7 +1,8 @@
 // src/pages/Login.js
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, signInWithPhoneNumber, RecaptchaVerifier } from '../firebase'; // Corrected path
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../firebase';
 import './Login.css';
 
 const Login = () => {

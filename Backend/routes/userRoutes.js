@@ -1,6 +1,14 @@
 // backend/routes/userRoutes.js
 const { Router } = require('express');
 const User = require('../models/User');
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json()); // Ensure JSON parsing middleware is in place
 
 const router = Router();
 
@@ -16,7 +24,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Route to get all users
-router.get('/users', async (req, res) => {
+app.get('/users', async (req, res) => {
   console.log('GET /api/users hit');  // Add this line
   try {
     const users = await User.findAll();

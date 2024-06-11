@@ -29,7 +29,7 @@ const Navbar = () => {
           </ul>
         </div>
         <div>
-          <Link className="btn" to="/login">Login</Link>
+          <Link className="btn login-btn" to="/login">Login</Link>
         </div>
       </div>
     </nav>
