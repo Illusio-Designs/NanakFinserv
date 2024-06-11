@@ -6,8 +6,8 @@
     "server": "cd backend && npm start",
     "client": "cd frontend && npm start",
     "build": "npm run build:frontend && npm run build:backend",
-    "build:frontend": "react-scripts build",
-    "build:backend": "tsc"
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:backend": "cd backend && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
