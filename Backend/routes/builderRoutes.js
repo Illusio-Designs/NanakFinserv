@@ -5,7 +5,7 @@ const Builder = require('../models/Builder');
 const router = Router();
 
 // Create a new builder
-router.post('/', async (req, res) => {
+router.post('/register', async (req, res) => {
   const { person_name, builder_name, number, email } = req.body;
   try {
     const newBuilder = await Builder.create({ person_name, builder_name, number, email });
