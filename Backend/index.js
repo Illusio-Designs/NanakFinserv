@@ -1,4 +1,3 @@
-// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -12,7 +11,7 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Ensure JSON parsing middleware is in place
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -23,9 +22,18 @@ app.get('/api/health', (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
+// Error handling for invalid JSON payloads
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('Invalid JSON payload:', err);
+    return res.status(400).json({ message: 'Invalid JSON payload' });
+  }
+  next(err);
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Stack trace:', err.stack);
   res.status(500).json({ message: 'Internal Server Error' });
 });
 
