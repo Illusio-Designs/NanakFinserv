@@ -24,7 +24,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Route to get all users
-app.get('/users', async (req, res) => {
+router.get('/', async (req, res) => {
   console.log('GET /api/users hit');  // Add this line
   try {
     const users = await User.findAll();
