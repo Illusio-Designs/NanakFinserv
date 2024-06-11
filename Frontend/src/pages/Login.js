@@ -1,32 +1,44 @@
-// src/pages/Login.js
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import './Login.css';
-
+import { login } from '../serviceAPI/userAPI';
 const Login = () => {
   const navigate = useNavigate();
-  const mobileInputRef = useRef(null);
+  // const mobileInputRef = useRef(null);
   const firstOtpInputRef = useRef(Array.from({ length: 6 }).map(() => React.createRef()));
-  const [mobileNumber, setMobileNumber] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('9426818697');
   const [otp, setOtp] = useState(Array.from({ length: 6 }).map(() => ''));
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
 
-  useEffect(() => {
-    window.recaptchaVerifier = new RecaptchaVerifier('send-otp-button', {
+  const setUpRecaptcha = () => {
+    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha', {
       'size': 'invisible',
       'callback': (response) => {
-        handleSendOtp();
+        // reCAPTCHA solved, allow signInWithPhoneNumber.
+        // ...
       }
     }, auth);
+  };
+
+  useEffect(() => {
+    setUpRecaptcha();
   }, []);
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     const phoneNumber = `+91${mobileNumber}`;
     const appVerifier = window.recaptchaVerifier;
+    console.log(phoneNumber);
+    if (!phoneNumber) {
+      console.error("Invalid phone number");
+      return;
+    }
 
+    if (!appVerifier) {
+      setUpRecaptcha();
+    }
     signInWithPhoneNumber(auth, phoneNumber, appVerifier)
       .then((confirmationResult) => {
         window.confirmationResult = confirmationResult;
@@ -39,13 +51,20 @@ const Login = () => {
       });
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const code = otp.join('');
-    window.confirmationResult.confirm(code).then((result) => {
+    window.confirmationResult.confirm(code).then(async (result) => {
       const user = result.user;
       console.log("OTP verified! User:", user);
-      setOtpVerified(true);
-      navigate('/dashboard');
+      const loggedIn = await login(mobileNumber);
+      if (loggedIn) {
+        setOtpVerified(true);
+        navigate('/dashboard');
+        // Redirect or do something after successful login
+      } else {
+        // Handle login failure
+      }
+
     }).catch((error) => {
       console.error("Error verifying OTP:", error);
     });
@@ -69,7 +88,7 @@ const Login = () => {
           <input
             type="text"
             id="phoneNumber"
-            ref={mobileInputRef}
+            // ref={mobileInputRef}
             value={mobileNumber}
             onChange={(e) => setMobileNumber(e.target.value)}
             disabled={otpSent}
@@ -110,6 +129,7 @@ const Login = () => {
             >
               Verify OTP
             </button>
+
           </div>
         )}
         {otpVerified && (
@@ -117,6 +137,7 @@ const Login = () => {
             <p>OTP Verified!</p>
           </div>
         )}
+        <div id="recaptcha"></div>
       </div>
     </div>
   );
