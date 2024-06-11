@@ -110,7 +110,7 @@ const User = () => {
     <div>
       <div className='user'>
         <div className='title-btn'>
-          <h1>User</h1>
+          <h1>Role Manager</h1>
           <button className="btn" onClick={togglePopup}>Add</button>
           <Popup 
             isOpen={isPopupOpen} 

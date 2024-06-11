@@ -83,7 +83,19 @@ const Popup = ({ isOpen, onClose, addEntry, initialData }) => {
             <input type="number" name="number" placeholder='Number' value={formValues.number} onChange={handleInputChange} required /> 
             <input type="email" name="mail" placeholder='E-mail' value={formValues.mail} onChange={handleInputChange} />
           </div>
-          <div className='popup-1'>
+          
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Popup;
+
+
+
+{/* <div className='popup-1'>
             <input type="text" name="buildingName" placeholder='Building Name' value={formValues.buildingName} onChange={handleInputChange} required />
           </div>
           <div>
@@ -124,12 +136,4 @@ const Popup = ({ isOpen, onClose, addEntry, initialData }) => {
                 disabled={!formValues.flat}
               />
             </div>
-          </div>
-          <button type="submit">Submit</button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-export default Popup;
+          </div> */}

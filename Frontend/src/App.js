@@ -20,6 +20,8 @@ import Popup from './components/popup';
 import Sidebar from './components/Sidebar';
 import DataComponent from './components/DataComponent';
 import User from './dashboard/User';
+import Table from './dashboard/Table';
+
 
 
 const directories = [
@@ -31,7 +33,8 @@ const directories = [
   { "VehicleInsurance": [] },
   { "Consumer": [] },
   { "Builder": [] },
-  { "User": [] }
+  { "User": [] },
+  { "Table": [] }
 ];
 
 const AppContent = () => {
@@ -47,7 +50,8 @@ const AppContent = () => {
     '/loan',
     '/consumer',
     '/builder',
-    '/user'
+    '/user',
+    '/table'
   ];
 
   // Define the paths where the Sidebar should be hidden
@@ -84,6 +88,7 @@ const AppContent = () => {
           <Route path="/builder" element={<Builder />} />
           <Route path="/data" element={<DataComponent />} />
           <Route path="/user" element={<User />} />
+          <Route path="/table" element={<Table />} />
         </Routes>
         <Popup isOpen={location.pathname === ''} onClose={() => {}} />
         <CustomScrollbar />

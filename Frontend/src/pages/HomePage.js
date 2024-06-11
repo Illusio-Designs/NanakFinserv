@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Footer from "../components/Footer.js";
-import { InfiniteMovingCards } from "../components/infinite-moving-cards.tsx";
 import { FlipWords } from "../components/flip-words.tsx";
 import Slider from "../components/Slider.js";
 import FAQ from "../components/faq.js";
@@ -33,31 +32,7 @@ const HomePage = () => {
   const togglePopup = () => {
     setIsPopupOpen(!isPopupOpen);
   };
-
-  // useEffect(() => {
-  //   const fetchedItems = [
-  //     {
-  //       quote:
-  //         "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair.",
-  //       name: "Charles Dickens",
-  //       title: "A Tale of Two Cities",
-  //     },
-  //     {
-  //       quote:
-  //         "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
-  //       name: "Jane Austen",
-  //       title: "Pride and Prejudice",
-  //     },
-  //     {
-  //       quote:
-  //         "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
-  //       name: "Herman Melville",
-  //       title: "Moby-Dick",
-  //     },
-  //   ];
-  //   setItems(fetchedItems);
-  // }, []);
-
+  
   const toggleFAQ = (index) => {
     setFaqs(
       faqs.map((faq, i) => {
@@ -82,20 +57,20 @@ const HomePage = () => {
             <h1 className="hero-sec-font">BUY</h1>
           </div>
           <div className="hero-sec-animation">
-            <FlipWords words={["Loan", "Insurance", "Mediclaim"]} />
+            <FlipWords words={["loan", "insurance", "mediclaim"]} />
           </div>
         </div>
       </div>
 
       <div className="contai">
         <div className="half-width-container-1">
-          <p>Check our services</p>
+          {/* <p>Check our services</p>
           <div className="hf-btn">
               <button className="btn btn-margin">1</button>
               <button className="btn btn-margin">2</button>
               <button className="btn btn-margin">3</button>
               <button className="btn btn-margin">4</button>
-          </div>
+          </div> */}
         </div>
         <div className="img-con">
           <img src="/Assets/family.png" alt="Family" />
@@ -203,16 +178,6 @@ const HomePage = () => {
           </div>
         </div>
       </div>
-
-      <div className="review-con">
-        <InfiniteMovingCards
-          items={items}
-          direction="left"
-          speed="normal"
-          className=""
-        />
-      </div>
-
       <div className="main-faq">
         <div className="faq-1">
           <img src="/Assets/needtoknow.png"></img>

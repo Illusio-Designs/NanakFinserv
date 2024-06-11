@@ -75,12 +75,15 @@ const Contact = () => {
                         <input type="tel" name="phone" placeholder="Your Phone Number" value={formData.phone} onChange={handleChange} required />
                         <div className="services-dropdown">
                             <h3>Services</h3>
-                            <select multiple name="services" value={formData.services} onChange={handleChange} required>
-                                <option value="Loan">Loan</option>
-                                <option value="Mediclaim">Mediclaim</option>
-                                <option value="Life Insurance">Life Insurance</option>
-                                <option value="Vehicle Insurance">Vehicle Insurance</option>
-                            </select>
+                            <div className="custom-select">
+                                <select value={formData.services} onChange={handleChange} required>
+                                    <option value="Loan">Loan</option>
+                                    <option value="Mediclaim">Mediclaim</option>
+                                    <option value="Life Insurance">Life Insurance</option>
+                                    <option value="Vehicle Insurance">Vehicle Insurance</option>
+                                </select>
+                                <span className="custom-arrow"></span>
+                            </div>
                         </div>
                         <button type="submit">Submit</button>
                     </form>

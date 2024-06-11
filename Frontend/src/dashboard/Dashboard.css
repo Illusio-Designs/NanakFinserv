@@ -1,13 +1,13 @@
 @import '../styles/Colors.css';
 
 .dashboard-main {
-    background-color: var(--font-color);
+    background-color: var(--backgro-color);
 }
 
 .dashboard {
     width: 77%;
     margin-left: 22%;
-    background-color: var(--background-color);
+    background-color: white;
     height: 100%;
     padding: 10px;
     margin-top: 10px;
