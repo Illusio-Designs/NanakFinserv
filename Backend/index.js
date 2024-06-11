@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes'); // Correct path
 const sequelize = require('./config/database');
 const authRoutes = require('./routes/authRoutes');
+const builderRoutes = require('./builderRoutes');
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/users', userRoutes); // Correct path for users
 app.use('/api/auth', authRoutes);
+app.use('/api/builders', builderRoutes);
 
 // Error handling for invalid JSON payloads
 app.use((err, req, res, next) => {
