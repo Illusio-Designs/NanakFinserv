@@ -1,0 +1,8 @@
+.common-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  border: 1px solid #f3f4f6;
+} 

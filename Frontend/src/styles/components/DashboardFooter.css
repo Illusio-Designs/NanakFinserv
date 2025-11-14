@@ -1,0 +1,131 @@
+.dashboard-footer {
+  background: linear-gradient(180deg, var(--font-color) 0%, var(--btn-color) 100%);
+  color: white;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+}
+
+.footer-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.support-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  color: white;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  justify-content: center;
+}
+
+.support-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  color: white;
+  text-decoration: none;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.support-icon {
+  font-size: 18px;
+  color: white !important;
+}
+
+.support-btn svg,
+.support-btn i {
+  color: white !important;
+  font-size: 18px;
+}
+
+.support-btn:hover svg,
+.support-btn:hover i {
+  color: white !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-footer {
+    padding: 12px 16px;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .footer-text {
+    font-size: 13px;
+  }
+  
+  .support-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+  
+  .support-icon {
+    font-size: 16px;
+  }
+  
+  .support-btn svg,
+  .support-btn i {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-footer {
+    padding: 10px 12px;
+  }
+  
+  .footer-text {
+    font-size: 12px;
+  }
+  
+  .support-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-width: 110px;
+  }
+  
+  .support-icon {
+    font-size: 15px;
+  }
+  
+  .support-btn svg,
+  .support-btn i {
+    font-size: 15px;
+  }
+} 

@@ -1,0 +1,174 @@
+/* Elegant Client Logo Slider */
+.clients-slider-container {
+  padding: 20px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.clients-carousel {
+  position: relative;
+  z-index: 2;
+}
+
+/* Hide scrollbar for webkit browsers */
+.clients-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+.clients-carousel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Hide scrollbar for IE and Edge */
+.clients-carousel::-ms-scrollbar {
+  display: none;
+}
+
+.client-logo-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 45px;
+  transition: all 0.3s ease;
+}
+
+.logo-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 100px;
+  border: 1px solid rgba(0, 125, 196, 0.1);
+}
+
+.logo-wrapper:hover {
+  box-shadow: 0 8px 25px rgba(0, 125, 196, 0.15);
+  transform: translateY(-2px);
+  border-color: rgba(0, 125, 196, 0.2);
+}
+
+.client-logo {
+  width: 100px;
+  height: 60px;
+  object-fit: contain;
+  filter: grayscale(100%);
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.logo-wrapper:hover .client-logo {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* Owl Carousel Custom Styling */
+.owl-carousel .owl-stage {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+}
+
+.owl-carousel .owl-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hide scrollbar for owl carousel */
+.owl-carousel .owl-stage-outer {
+  overflow: hidden;
+}
+
+.owl-carousel .owl-stage-outer::-webkit-scrollbar {
+  display: none;
+}
+
+.owl-carousel .owl-stage-outer {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Smooth animations */
+.owl-carousel .owl-item.active .logo-wrapper {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .client-logo-item {
+    padding: 10px;
+  }
+  
+  .logo-wrapper {
+    padding: 15px;
+    width: 120px;
+    height: 80px;
+  }
+  
+  .client-logo {
+    width: 80px;
+    height: 50px;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .client-logo-item {
+    padding: 8px;
+  }
+  
+  .logo-wrapper {
+    padding: 12px;
+    width: 100px;
+    height: 70px;
+  }
+  
+  .client-logo {
+    width: 70px;
+    height: 40px;
+  }
+}
+
+/* Loading state */
+.clients-slider-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  animation: shimmer 2s infinite;
+  z-index: 1;
+  opacity: 0;
+}
+
+.clients-slider-container.loading::before {
+  opacity: 1;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

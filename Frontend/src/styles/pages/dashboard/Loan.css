@@ -1,0 +1,22 @@
+.filter-inputs {
+    display: flex;
+    margin-top: 10px;
+    padding-left: 20px;
+  }
+  .filter-inputs div {
+    margin-right: 20px;
+  }
+  
+  .filter-inputs label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+  
+  .filter-inputs input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 150px;
+  }
+  

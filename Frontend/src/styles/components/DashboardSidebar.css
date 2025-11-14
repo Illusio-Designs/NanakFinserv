@@ -1,0 +1,418 @@
+.dashboard-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  background: linear-gradient(180deg, var(--font-color) 0%, var(--btn-color) 100%);
+  color: var(--background-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  position: relative;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.sidebar-logo::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.5));
+  border-radius: 18px;
+  z-index: -1;
+  opacity: 0.4;
+}
+
+
+.logo-image {
+  object-fit: contain;
+  min-width: 60px;
+  filter: brightness(1.1) contrast(1.1);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-text {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-family-medium);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  overflow: hidden;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(45deg, #ffffff, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+.logo-text::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, #ffffff, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0.8;
+  z-index: -1;
+}
+
+.dashboard-sidebar:not(.collapsed) .logo-text {
+  opacity: 1;
+}
+
+/* Collapsed sidebar logo adjustments */
+.dashboard-sidebar.collapsed .sidebar-logo {
+  justify-content: center;
+  gap: 0;
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.dashboard-sidebar.collapsed .logo-image {
+  min-width: 40px;
+  filter: brightness(1.2) contrast(1.2);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 24px 16px;
+  overflow-y: auto;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  margin: 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  width: 100%;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--background-color);
+  transform: translateX(4px);
+}
+
+.nav-item.active .nav-link {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--background-color);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.nav-text {
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* Submenu Styles */
+.submenu-item {
+  margin: 0;
+  position: relative;
+}
+
+.submenu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+}
+
+.submenu-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--background-color);
+}
+
+.submenu-toggle.open {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--background-color);
+}
+
+.submenu-arrow {
+  font-size: 12px;
+  margin-left: auto;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.submenu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin: 4px 0 4px 20px;
+}
+
+.submenu.open {
+  max-height: 300px;
+  padding: 8px 0;
+}
+
+.submenu-item {
+  margin: 0;
+}
+
+.submenu-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-size: 13px;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  margin: 2px 8px;
+}
+
+.submenu-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--background-color);
+  transform: translateX(4px);
+}
+
+.submenu-item.active .submenu-link {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--background-color);
+  font-weight: 500;
+}
+
+.submenu-icon {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: 24px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.user-profile:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.profile-avatar {
+  position: relative;
+}
+
+.profile-avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  object-fit: cover;
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #10b981;
+  border-radius: 50%;
+  border: 2px solid var(--background-color);
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--background-color);
+}
+
+.user-role {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Collapsed sidebar styles */
+.dashboard-sidebar.collapsed {
+  width: 80px;
+}
+
+.dashboard-sidebar.collapsed .logo-text,
+.dashboard-sidebar.collapsed .nav-text,
+.dashboard-sidebar.collapsed .profile-info,
+.dashboard-sidebar.collapsed .submenu-arrow {
+  display: none;
+}
+
+.dashboard-sidebar.collapsed .sidebar-header,
+.dashboard-sidebar.collapsed .sidebar-footer {
+  padding: 16px 8px;
+}
+
+.dashboard-sidebar.collapsed .sidebar-nav {
+  padding: 16px 8px;
+}
+
+.dashboard-sidebar.collapsed .nav-link,
+.dashboard-sidebar.collapsed .submenu-toggle {
+  justify-content: center;
+  padding: 16px 8px;
+}
+
+.dashboard-sidebar.collapsed .user-profile {
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+.dashboard-sidebar.collapsed .submenu {
+  margin: 4px 0 4px 0;
+}
+
+/* Show submenu when collapsed in the same sidebar area */
+.dashboard-sidebar.collapsed .submenu {
+  display: block;
+  max-height: none;
+  overflow: visible;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin: 4px 0 4px 0;
+  padding: 8px 0;
+}
+
+.dashboard-sidebar.collapsed .submenu.open {
+  display: block;
+}
+
+/* Keep submenu toggle interactive when collapsed */
+.dashboard-sidebar.collapsed .submenu-toggle {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.dashboard-sidebar.collapsed .submenu-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--background-color);
+  transform: translateX(4px);
+}
+
+/* Style submenu links when collapsed - show only icons */
+.dashboard-sidebar.collapsed .submenu-link {
+  justify-content: center;
+  padding: 12px 8px;
+}
+
+.dashboard-sidebar.collapsed .submenu-link span {
+  display: none;
+}
+
+/* Scrollbar Styling */
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .dashboard-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+}

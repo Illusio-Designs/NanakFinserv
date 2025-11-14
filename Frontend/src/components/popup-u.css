@@ -1,0 +1,245 @@
+@import '../styles/Colors.css';
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.7);
+  /* Darker overlay */
+  animation: fadeInOverlay 0.4s ease-in-out;
+}
+
+.popup-content {
+  background: linear-gradient(145deg, #ffffff, #f3f3f3);
+  /* Soft gradient for modern feel */
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15), inset 0 -3px 6px rgba(0, 0, 0, 0.1);
+  padding: 0px 0px 20px 0px;
+  position: relative;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 50%;
+  /* Limit modal width */
+  max-height: 90vh;
+  /* Ensure modal doesn't overflow */
+  overflow-y: auto;
+  animation: scaleUp 0.3s ease-in-out;
+  border: 1px solid #ddd;
+}
+
+.form-label {
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: block;
+  font-size: 1rem;
+}
+
+.text-green{
+  color: red;
+  font-weight: bold;
+}
+@keyframes scaleUp {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.popup-header {
+  position: sticky;
+  top: 0;
+  background-color: #fff;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--font-color);
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #ddd;
+  /* Stylish divider */
+}
+
+.popup-header h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+  color: white !important;
+  margin: 0;
+  flex-grow: 1;
+  text-align: left;
+}
+
+.close-btn {
+  font-size: 2.4rem;
+  color: white !important;
+  cursor: pointer;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.close-btn:hover {
+  color: #d9534f;
+  /* Hover color for close button */
+  transform: scale(1.2);
+  /* Interactive hover effect */
+}
+
+.close-btn:hover {
+  color: #ff5252;
+  /* Subtle hover effect */
+}
+.popup-form{
+  padding: 10px 20px;
+}
+
+.popup-form input,
+.popup-form select,
+.popup-form textarea {
+  border-bottom: 1px solid var(--font-color);
+  font-size: 1rem;
+  padding: 12px;
+  margin: 10px 0px;
+  color: var(--font-color);
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  background: #f9f9f9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.popup-form input:focus,
+.popup-form select:focus {
+  outline: none;
+  border-color: #6c63ff;
+  /* Highlight border color */
+  box-shadow: 0 0 10px rgba(108, 99, 255, 0.4);
+  /* Glowing effect */
+  background-color: #ffffff;
+  /* Focus effect */
+}
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 25px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.checkbox-list label {
+  font-size: 18px;
+  margin-top: 2px;
+  margin-left: 5px;
+  color: #000;
+  width: 50%;
+}
+
+label {
+  font-size: 1rem;
+  color: #555;
+}
+
+.checkbox-list select {
+  width: 50%;
+}
+
+.popup-content .btn-blue {
+  text-align: center;
+  display: block;
+  margin: auto;
+}
+
+.display {
+  display: flex;
+  width: 100%;
+}
+
+.display-one {
+  width: 49%;
+}
+
+.display-two {
+  width: 49%;
+  margin-left: 2%;
+}
+
+.display-two select {
+  padding: 11px;
+}
+
+.popup-btn {
+  border: none;
+  padding: 5px 10px;
+  font-size: 20px;
+  width: 15%;
+  margin-left: 43%;
+  border-radius: 5px;
+}
+
+.selector select {
+  padding: 11px;
+}
+
+@media screen and (max-width: 768px) {
+  .popup-content {
+    padding: 15px;
+    max-width: 90%;
+  }
+
+  .popup-header h2 {
+    font-size: 1.4rem;
+  }
+
+  button {
+    font-size: 0.9rem;
+  }
+}
+
+.popup-content::-webkit-scrollbar {
+  width: 0px; /* Thicker scrollbar width */
+}
+
+.select-multipl {
+  width: 100%;
+  height: 150px;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: auto;
+}
+
+.select-multipl option {
+  padding: 10px;
+}
+
+select option:checked {
+  border: 1px solid #fff;
+  background-color: var(--font-color); /* Change background color of selected option */
+  color: white;  /* Change text color for selected option */
+} 

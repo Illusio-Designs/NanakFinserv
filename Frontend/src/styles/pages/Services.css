@@ -1,0 +1,505 @@
+/* Services Page Styles - Unique and Minimal Design */
+
+/* Hero Section */
+.services-hero-section {
+    padding: 150px 0 80px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.services-hero-content {
+    padding-right: 40px;
+}
+
+.services-main-heading {
+    font-size: 42px;
+    font-weight: 400;
+    color: #007cc2;
+    margin-bottom: 25px;
+    line-height: 1.2;
+    font-family: 'Poppins', sans-serif;
+}
+
+.services-hero-description {
+    font-size: 18px;
+    line-height: 1.7;
+    color: #6c757d;
+    margin-bottom: 25px;
+}
+
+.services-sub-heading {
+    font-size: 28px;
+    font-weight: 400;
+    color: #007cc2;
+    margin-bottom: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.services-hero-image-wrapper {
+    position: relative;
+    border-radius: 20px;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+}
+
+.services-hero-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 20px;
+}
+
+.services-experience-badge {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    background: linear-gradient(135deg, #007cc2 0%, #005a8b 100%);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 15px;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    text-align: center;
+    min-width: 180px;
+    backdrop-filter: blur(10px);
+}
+
+.services-experience-badge h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.services-experience-badge p {
+    margin: 5px 0 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Services Focus Section */
+
+.services-focus-section{
+    padding: 0 0 80px;
+}
+
+.services-focus-header {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.services-focus-heading {
+    font-size: 36px;
+    font-weight: 400;
+    color: #007cc2;
+    margin-bottom: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.services-focus-card {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    border: 1px solid #e8eaed;
+    height: 100%;
+    transition: all 0.3s ease;
+    text-align: center;
+    cursor: pointer;
+}
+
+.services-focus-card:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    box-shadow: 0 8px 25px rgba(0, 124, 194, 0.12), inset 0 2px 8px rgba(0, 124, 194, 0.08);
+    border-color: rgba(0, 124, 194, 0.1);
+}
+
+.services-focus-card h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #007cc2;
+    margin-bottom: 20px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.services-focus-card p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Responsive Design - 1440px */
+@media (max-width: 1440px) {
+    .services-hero-section {
+        padding: 140px 0 75px;
+    }
+    
+    .services-focus-section {
+        padding: 0 0 75px;
+    }
+    
+    .services-main-heading {
+        font-size: 38px;
+    }
+    
+    .services-sub-heading {
+        font-size: 26px;
+    }
+    
+    .services-focus-heading {
+        font-size: 34px;
+    }
+}
+
+/* Responsive Design - 1024px */
+@media (max-width: 1024px) {
+    .services-hero-section {
+        padding: 110px 0 45px;
+    }
+    
+    .services-focus-section {
+        padding: 0 0 45px;
+    }
+    
+    .services-hero-content {
+        padding-right: 20px;
+    }
+    
+    .services-main-heading {
+        font-size: 30px;
+        margin-bottom: 18px;
+    }
+    
+    .services-sub-heading {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+    
+    .services-focus-heading {
+        font-size: 26px;
+    }
+    
+    .services-focus-header {
+        margin-bottom: 45px;
+    }
+    
+    .services-hero-description {
+        font-size: 15px;
+        margin-bottom: 18px;
+        line-height: 1.6;
+    }
+    
+    .services-focus-card {
+        padding: 30px 22px;
+    }
+    
+    .services-focus-card h3 {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+    
+    .services-focus-card p {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    
+    .services-experience-badge {
+        padding: 16px 20px;
+        min-width: 155px;
+    }
+}
+
+/* Responsive Design - 768px */
+@media (max-width: 768px) {
+    .services-hero-section {
+        padding: 100px 0 45px;
+    }
+    
+    .services-hero-section .row {
+        flex-direction: column-reverse;
+    }
+    
+    .services-hero-image-wrapper {
+        margin-bottom: 25px;
+    }
+    
+    .services-focus-section {
+        padding: 0 0 45px;
+    }
+    
+    .services-hero-content {
+        padding-right: 0;
+        margin-bottom: 25px;
+    }
+    
+    .services-main-heading {
+        font-size: 28px;
+        margin-bottom: 18px;
+    }
+    
+    .services-sub-heading {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+    
+    .services-focus-heading {
+        font-size: 24px;
+    }
+    
+    .services-hero-description {
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
+    
+    .services-focus-header {
+        margin-bottom: 40px;
+    }
+    
+    .services-focus-card {
+        padding: 28px 20px;
+    }
+    
+    .services-focus-card h3 {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+    
+    .services-focus-card p {
+        font-size: 14px;
+    }
+    
+    .services-experience-badge {
+        bottom: -12px;
+        right: -12px;
+        padding: 14px 18px;
+        min-width: 150px;
+    }
+    
+    .services-experience-badge h4 {
+        font-size: 15px;
+    }
+    
+    .services-experience-badge p {
+        font-size: 17px;
+    }
+}
+
+/* Responsive Design - 426px */
+@media (max-width: 426px) {
+    .services-hero-section {
+        padding: 100px 0 50px;
+    }
+    
+    .services-hero-content {
+        text-align: center;
+    }
+    
+    .services-focus-section {
+        padding: 0 0 50px;
+    }
+    
+    .services-main-heading {
+        font-size: 26px;
+    }
+    
+    .services-sub-heading {
+        font-size: 20px;
+    }
+    
+    .services-focus-heading {
+        font-size: 22px;
+    }
+    
+    .services-hero-description {
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
+    
+    .services-focus-header {
+        margin-bottom: 40px;
+    }
+    
+    .services-focus-card {
+        padding: 28px 20px;
+    }
+    
+    .services-focus-card h3 {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+    
+    .services-focus-card p {
+        font-size: 14px;
+    }
+    
+    .services-experience-badge {
+        bottom: -12px;
+        right: -12px;
+        padding: 14px 18px;
+        min-width: 145px;
+    }
+    
+    .services-experience-badge h4 {
+        font-size: 15px;
+    }
+    
+    .services-experience-badge p {
+        font-size: 17px;
+    }
+}
+
+/* Responsive Design - 383px */
+@media (max-width: 383px) {
+    .services-main-heading {
+        font-size: 24px;
+    }
+    
+    .services-sub-heading {
+        font-size: 19px;
+    }
+    
+    .services-focus-heading {
+        font-size: 21px;
+    }
+    
+    .services-focus-card {
+        padding: 26px 18px;
+    }
+    
+    .services-focus-card h3 {
+        font-size: 19px;
+    }
+    
+    .services-experience-badge {
+        bottom: -10px;
+        right: -10px;
+        padding: 13px 16px;
+        min-width: 135px;
+    }
+}
+
+/* Responsive Design - 375px */
+@media (max-width: 375px) {
+    .services-hero-section {
+        padding: 80px 0 45px;
+    }
+    
+    .services-focus-section {
+        padding: 0 0 45px;
+    }
+    
+    .services-main-heading {
+        font-size: 23px;
+    }
+    
+    .services-sub-heading {
+        font-size: 18px;
+    }
+    
+    .services-focus-heading {
+        font-size: 20px;
+    }
+    
+    .services-hero-description {
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    
+    .services-focus-card {
+        padding: 24px 16px;
+    }
+    
+    .services-focus-card h3 {
+        font-size: 18px;
+        margin-bottom: 14px;
+    }
+    
+    .services-focus-card p {
+        font-size: 13px;
+    }
+    
+    .services-experience-badge h4 {
+        font-size: 14px;
+    }
+    
+    .services-experience-badge p {
+        font-size: 16px;
+    }
+}
+
+/* Responsive Design - 320px */
+@media (max-width: 320px) {
+    .services-hero-section {
+        padding: 85px 0 40px;
+    }
+    
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .services-focus-section {
+        padding: 0 0 40px;
+    }
+    
+    .services-main-heading {
+        font-size: 21px;
+        margin-bottom: 20px;
+    }
+    
+    .services-sub-heading {
+        font-size: 17px;
+        margin-bottom: 18px;
+    }
+    
+    .services-focus-heading {
+        font-size: 19px;
+    }
+    
+    .services-hero-description {
+        font-size: 13px;
+        margin-bottom: 15px;
+        line-height: 1.6;
+    }
+    
+    .services-focus-header {
+        margin-bottom: 35px;
+    }
+    
+    .services-focus-card {
+        padding: 22px 14px;
+        border-radius: 14px;
+    }
+    
+    .services-focus-card h3 {
+        font-size: 17px;
+        margin-bottom: 12px;
+    }
+    
+    .services-focus-card p {
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    
+    .services-experience-badge {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        margin-top: 15px;
+        padding: 12px 14px;
+        min-width: 125px;
+        border-radius: 12px;
+    }
+    
+    .services-experience-badge h4 {
+        font-size: 13px;
+    }
+    
+    .services-experience-badge p {
+        font-size: 15px;
+    }
+}

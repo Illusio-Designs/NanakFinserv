@@ -1,0 +1,724 @@
+/* About Page Styles - Unique class names to avoid conflicts */
+
+/* Hero Section */
+.about-hero-section {
+    padding: 150px 0 80px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.about-hero-image-wrapper {
+    position: relative;
+    border-radius: 20px;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+}
+
+.about-hero-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 20px;
+}
+
+.about-experience-badge {
+    position: absolute;
+    bottom: -20px;
+    right: -20px;
+    background: linear-gradient(135deg, #007cc2 0%, #005a8b 100%);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 15px;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    text-align: center;
+    min-width: 180px;
+    backdrop-filter: blur(10px);
+}
+
+.about-experience-badge h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.about-experience-badge p {
+    margin: 5px 0 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.about-hero-content {
+    padding-left: 40px;
+}
+
+.about-main-heading {
+    font-size: 42px;
+    font-weight: 400;
+    color: #007cc2;
+    margin-bottom: 25px;
+    line-height: 1.2;
+    font-family: 'Poppins', sans-serif;
+}
+
+.about-hero-description {
+    font-size: 18px;
+    line-height: 1.7;
+    color: #6c757d;
+    margin-bottom: 30px;
+}
+
+/* FAQ Accordion */
+.about-faq-accordion {
+    margin-top: 40px;
+}
+
+.about-faq-item {
+    border: none;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    background: white;
+    transition: all 0.3s ease;
+    border: 1px solid #f0f0f0;
+}
+
+.about-faq-item:hover {
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    border-color: #e0e0e0;
+}
+
+.about-faq-button {
+    width: 100%;
+    text-align: left;
+    padding: 25px 30px;
+    background: white;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.about-faq-button span {
+    flex: 1;
+    margin-right: 20px;
+    line-height: 1.5;
+}
+
+.about-faq-icon {
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    position: relative;
+    color: #007cc2;
+}
+
+.about-faq-icon::before,
+.about-faq-icon::after {
+    content: '';
+    position: absolute;
+    background: currentColor;
+    transition: all 0.3s ease;
+}
+
+.about-faq-icon::before {
+    width: 2px;
+    height: 14px;
+    top: 3px;
+    left: 9px;
+}
+
+.about-faq-icon::after {
+    width: 14px;
+    height: 2px;
+    top: 9px;
+    left: 3px;
+}
+
+.about-faq-button:hover {
+    background: #f8f9fa;
+    color: #007cc2;
+}
+
+.about-faq-button:hover .about-faq-icon {
+    transform: rotate(45deg);
+}
+
+.about-faq-button:not(.collapsed) {
+    background: #007cc2;
+    color: white;
+}
+
+.about-faq-button:not(.collapsed) .about-faq-icon {
+    transform: rotate(45deg);
+    color: white;
+}
+
+.about-faq-collapse {
+    background: #f8f9fa;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.about-faq-collapse.show {
+    max-height: 200px;
+}
+
+.about-faq-body {
+    padding: 25px 30px;
+    background: #f8f9fa;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #6c757d;
+    margin: 0;
+}
+
+/* Mission Section */
+.about-mission-section {
+    padding: 100px 0;
+    background: white;
+}
+
+.about-section-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #007cc2 0%, #005a8b 100%);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+}
+
+.about-section-heading {
+    font-size: 36px;
+    font-weight: 400;
+    color: #007cc2;
+    margin-bottom: 25px;
+    line-height: 1.3;
+    font-family: 'Poppins', sans-serif;
+}
+
+.about-mission-description {
+    font-size: 18px;
+    line-height: 1.7;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.about-features-list {
+    background: white;
+    padding: 40px 35px;
+    border-radius: 16px;
+    height: 100%;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    border: 1px solid #e8eaed;
+}
+
+.about-features-heading {
+    font-size: 24px;
+    font-weight: 400;
+    color: #007cc2;
+    margin-bottom: 30px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.about-features-ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.about-feature-item {
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f3f4;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #5f6368;
+    transition: color 0.3s ease;
+}
+
+.about-feature-item:last-child {
+    border-bottom: none;
+}
+
+.about-feature-item:hover {
+    color: #2c3e50;
+}
+
+.about-feature-item strong {
+    color: #2c3e50;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 16px;
+}
+
+/* Statistics Section */
+.about-stats-section {
+    padding: 100px 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.about-stat-card {
+    text-align: center;
+    padding: 35px 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 25px;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+    cursor: pointer;
+}
+
+.about-stat-card:hover {
+    background: white;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.15);
+    border-color: rgba(0, 124, 194, 0.1);
+}
+
+.about-stat-icon {
+    font-size: 36px;
+    margin-bottom: 15px;
+    color: #007cc2;
+    transition: color 0.3s ease;
+}
+
+.about-stat-card:hover .about-stat-icon {
+    color: #005a8b;
+}
+
+.about-stat-number {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #2c3e50;
+    font-family: 'Poppins', sans-serif;
+    line-height: 1.2;
+}
+
+.about-stat-label {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+/* Responsive Design - 1440px */
+@media (max-width: 1440px) {
+    .about-main-heading {
+        font-size: 38px;
+    }
+    
+    .about-section-heading {
+        font-size: 34px;
+    }
+    
+    .about-hero-description,
+    .about-mission-description {
+        font-size: 17px;
+    }
+}
+
+/* Responsive Design - 1024px */
+@media (max-width: 1024px) {
+    .about-hero-section {
+        padding: 110px 0 45px;
+    }
+    
+    .about-mission-section,
+    .about-stats-section {
+        padding: 45px 0;
+    }
+    
+    .about-main-heading {
+        font-size: 30px;
+        margin-bottom: 18px;
+    }
+    
+    .about-section-heading {
+        font-size: 26px;
+        margin-bottom: 18px;
+    }
+    
+    .about-hero-description,
+    .about-mission-description {
+        font-size: 15px;
+        margin-bottom: 18px;
+        line-height: 1.6;
+    }
+    
+    .about-hero-content {
+        padding-left: 20px;
+    }
+    
+    .about-features-list {
+        padding: 28px 22px;
+        margin-top: 25px;
+    }
+    
+    .about-features-heading {
+        font-size: 22px;
+        margin-bottom: 25px;
+    }
+    
+    .about-stat-card {
+        padding: 28px 16px;
+        margin-bottom: 18px;
+    }
+    
+    .about-stat-icon {
+        font-size: 34px;
+        margin-bottom: 12px;
+    }
+    
+    .about-stat-number {
+        font-size: 26px;
+    }
+    
+    .about-stat-label {
+        font-size: 13px;
+    }
+}
+
+/* Responsive Design - 768px */
+@media (max-width: 768px) {
+    .about-hero-section {
+        padding: 100px 0 45px;
+    }
+    
+    .about-hero-section .row {
+        flex-direction: column-reverse;
+    }
+    
+    .about-hero-image-wrapper {
+        margin-bottom: 25px;
+    }
+    
+    .about-mission-section,
+    .about-stats-section {
+        padding: 45px 0;
+    }
+    
+    .about-hero-content {
+        padding-left: 0;
+        margin-bottom: 25px;
+    }
+    
+    .about-main-heading {
+        font-size: 28px;
+        margin-bottom: 18px;
+    }
+    
+    .about-section-heading {
+        font-size: 24px;
+        margin-bottom: 18px;
+    }
+    
+    .about-hero-description,
+    .about-mission-description {
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
+    
+    .about-features-list {
+        margin-top: 25px;
+        padding: 28px 22px;
+    }
+    
+    .about-features-heading {
+        font-size: 22px;
+        margin-bottom: 25px;
+    }
+    
+    .about-stat-card {
+        padding: 28px 14px;
+        margin-bottom: 18px;
+    }
+    
+    .about-stat-number {
+        font-size: 24px;
+    }
+    
+    .about-stat-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+    }
+    
+    .about-faq-button {
+        padding: 18px 22px;
+        font-size: 14px;
+    }
+    
+    .about-faq-body {
+        padding: 18px 22px;
+        font-size: 14px;
+    }
+    
+    .about-experience-badge {
+        bottom: -12px;
+        right: -12px;
+        padding: 16px 20px;
+        min-width: 160px;
+    }
+    
+    .about-experience-badge h4 {
+        font-size: 16px;
+    }
+    
+    .about-experience-badge p {
+        font-size: 18px;
+    }
+}
+
+/* Responsive Design - 426px */
+@media (max-width: 426px) {
+    .about-hero-section {
+        padding: 100px 0 50px;
+    }
+    
+    .about-hero-content {
+        text-align: center;
+    }
+    
+    .about-hero-content .btn {
+        display: inline-block;
+    }
+    
+    .about-mission-section,
+    .about-stats-section {
+        padding: 50px 0;
+    }
+    
+    .about-main-heading {
+        font-size: 26px;
+    }
+    
+    .about-section-heading {
+        font-size: 22px;
+    }
+    
+    .about-hero-description,
+    .about-mission-description {
+        font-size: 15px;
+    }
+    
+    .about-features-list {
+        padding: 25px 20px;
+    }
+    
+    .about-features-heading {
+        font-size: 20px;
+    }
+    
+    .about-stat-card {
+        padding: 25px 12px;
+    }
+    
+    .about-stat-number {
+        font-size: 24px;
+    }
+    
+    .about-stat-icon {
+        font-size: 32px;
+    }
+    
+    .about-faq-button {
+        padding: 18px 20px;
+        font-size: 14px;
+    }
+    
+    .about-faq-body {
+        padding: 18px 20px;
+        font-size: 14px;
+    }
+    
+    .about-experience-badge {
+        bottom: -12px;
+        right: -12px;
+        padding: 15px 18px;
+        min-width: 150px;
+    }
+    
+    .about-experience-badge h4 {
+        font-size: 16px;
+    }
+    
+    .about-experience-badge p {
+        font-size: 18px;
+    }
+}
+
+/* Responsive Design - 383px */
+@media (max-width: 383px) {
+    .about-main-heading {
+        font-size: 24px;
+    }
+    
+    .about-section-heading {
+        font-size: 20px;
+    }
+    
+    .about-features-list {
+        padding: 22px 18px;
+    }
+    
+    .about-features-heading {
+        font-size: 19px;
+    }
+    
+    .about-stat-card {
+        padding: 22px 10px;
+    }
+    
+    .about-experience-badge {
+        bottom: -10px;
+        right: -10px;
+        padding: 12px 15px;
+        min-width: 140px;
+    }
+    
+    .about-experience-badge h4 {
+        font-size: 15px;
+    }
+    
+    .about-experience-badge p {
+        font-size: 17px;
+    }
+}
+
+/* Responsive Design - 375px */
+@media (max-width: 375px) {
+    .about-hero-section {
+        padding: 80px 0 45px;
+    }
+    
+    .about-main-heading {
+        font-size: 23px;
+    }
+    
+    .about-section-heading {
+        font-size: 19px;
+    }
+    
+    .about-stat-number {
+        font-size: 22px;
+    }
+    
+    .about-stat-icon {
+        font-size: 30px;
+    }
+    
+    .about-faq-button {
+        padding: 16px 18px;
+        font-size: 13px;
+    }
+    
+    .about-faq-body {
+        padding: 16px 18px;
+        font-size: 13px;
+    }
+}
+
+/* Responsive Design - 320px */
+@media (max-width: 320px) {
+    .about-hero-section {
+        padding: 85px 0 40px;
+    }
+    
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .about-mission-section,
+    .about-stats-section {
+        padding: 40px 0;
+    }
+    
+    .about-main-heading {
+        font-size: 21px;
+    }
+    
+    .about-section-heading {
+        font-size: 18px;
+    }
+    
+    .about-hero-description,
+    .about-mission-description {
+        font-size: 14px;
+    }
+    
+    .about-features-list {
+        padding: 20px 15px;
+    }
+    
+    .about-features-heading {
+        font-size: 18px;
+    }
+    
+    .about-feature-item {
+        padding: 12px 0;
+        font-size: 14px;
+    }
+    
+    .about-stat-card {
+        padding: 20px 8px;
+    }
+    
+    .about-stat-number {
+        font-size: 20px;
+    }
+    
+    .about-stat-icon {
+        font-size: 28px;
+    }
+    
+    .about-stat-label {
+        font-size: 13px;
+    }
+    
+    .about-faq-button {
+        padding: 14px 15px;
+        font-size: 12px;
+    }
+    
+    .about-faq-body {
+        padding: 14px 15px;
+        font-size: 12px;
+    }
+    
+    .about-experience-badge {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        margin-top: 15px;
+        padding: 10px 12px;
+        min-width: 130px;
+    }
+    
+    .about-experience-badge h4 {
+        font-size: 14px;
+    }
+    
+    .about-experience-badge p {
+        font-size: 16px;
+    }
+}

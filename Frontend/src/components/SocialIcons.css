@@ -1,0 +1,77 @@
+@import url(https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.css);
+@import '../styles/Colors.css';
+
+:root {
+    --timing: 265ms;
+    --icon-color: #00B5F5;
+    --accent: #002A8F;
+    --bluefade: #0043E0;
+    --gradient: #00B5F5;
+    --gunmetal: #042938ff;
+    --midnight-green: #043641ff;
+    --gunmetal-2: #032433ff;
+    --oxford-blue: #030B22ff;
+    --midnight-green-2: #044950ff;
+    --font-color: #36EC81;
+    --font-hover-color: #066A68;
+}
+
+body {
+    background-color: rgba(var(--icon-color), 0.05);
+}
+
+.social-container {
+    width: 400px;
+    margin: 40vh auto;
+    text-align: center;
+}
+
+.social-icons {
+    padding: 0;
+    list-style: none;
+    margin: 0.5rem;
+}
+
+.social-icons li {
+    display: inline-block;
+    margin: 0.15em;
+    position: relative;
+    font-size: 1.2em;
+}
+
+.social-icons i {
+    color: var(--font-color); /* Changed color to custom variable */
+    position: absolute;
+    top: 21px;
+    left: 21px;
+    transition: all var(--timing) ease-out;
+}
+
+.social-icons a {
+    display: inline-block;
+}
+
+.social-icons a:before {
+    content: " ";
+    width: 60px;
+    height: 60px;
+    border-radius: 100%;
+    display: block;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    transition: all var(--timing) ease-out;
+}
+
+.social-icons a:hover:before {
+    transform: scale(0);
+    transition: all var(--timing) ease-in;
+}
+
+.social-icons a:hover i {
+    transform: scale(2.2);
+    color: var(--icon-color);
+    background: -webkit-linear-gradient(45deg, var(--gunmetal), var(--midnight-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    transition: all var(--timing) ease-in;
+}

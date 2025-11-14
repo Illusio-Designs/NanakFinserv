@@ -1,0 +1,261 @@
+.edit-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.edit-popup-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 1000px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.edit-popup-header {
+    background-color: #007dc4;
+    color: white;
+    padding: 16px 24px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.edit-popup-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 500;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.edit-popup-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 400;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.9;
+}
+.edit-popup-close-btn:hover {
+    opacity: 1;
+}
+
+.edit-popup-body {
+    padding: 24px 32px 32px;
+}
+
+.form-step {
+    animation: slideIn 0.4s ease-in-out;
+}
+
+.step-title {
+    font-size: 1.5rem;
+    color: #007dc4;
+    font-weight: 500;
+    margin-bottom: 24px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 400;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"] {
+    width: 100%;
+    padding: 16px 18px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 400;
+    background-color: #fafbfc;
+    color: #495057;
+    box-shadow: 0 2px 8px rgba(60,60,60,0.04);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input[type="text"]::placeholder, .form-group input[type="email"]::placeholder {
+    color: #888;
+    opacity: 1;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.radio-group > label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 12px;
+}
+
+.radio-options {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    padding-top: 8px;
+}
+
+.radio-options label {
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #212529;
+}
+
+.radio-options input[type="radio"] {
+    margin-right: 8px;
+    width: 1.15em;
+    height: 1.15em;
+}
+
+.popup-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 32px;
+    padding-top: 0;
+    border-top: none;
+    gap: 12px;
+}
+
+.popup-footer button {
+    width: 200px;
+    margin-bottom: 8px;
+}
+
+.popup-footer button:last-child {
+    margin-bottom: 0;
+}
+
+.btn-next, .btn-submit {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.btn-next:hover, .btn-submit:hover {
+    background-color: #0b5ed7;
+}
+
+.btn-back {
+    background-color: #6c757d;
+    color: white;
+}
+.btn-back:hover {
+    background-color: #5a6268;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.form-group.radio-group label {
+    display: block;
+}
+
+/* Make Policy Type radio buttons vertical */
+.policy-type-vertical .radio-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.policy-tenure-input {
+    width: 100%;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 16px;
+    background: #fafbfc;
+    box-shadow: 0 2px 8px rgba(60, 60, 60, 0.07);
+    font-size: 1.1rem;
+    color: #1976d2;
+    outline: none;
+    transition: box-shadow 0.2s;
+}
+
+.policy-tenure-input:focus {
+    box-shadow: 0 4px 16px rgba(60, 60, 60, 0.12);
+}
+
+.policy-tenure-input::-webkit-inner-spin-button,
+.policy-tenure-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.policy-tenure-input[type=number] {
+    -moz-appearance: textfield;
+}
+
+.btn-add-new {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.btn-add-new:hover {
+    background-color: #0056b3;
+}
+
+.add-new-container {
+    margin-top: 15px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.add-new-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: flex-end;
+} 
