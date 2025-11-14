@@ -1,0 +1,13 @@
+body {
+  font-family: 'Poppins', Arial, Helvetica, sans-serif;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.no-scroll {
+  overflow: hidden !important;
+  height: 100vh !important;
+}

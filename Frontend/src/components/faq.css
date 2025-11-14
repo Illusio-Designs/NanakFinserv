@@ -1,0 +1,22 @@
+.faq .accordion .accordion-item {
+    border: 0px !important;
+    background-color: var(--font-color);
+    color: var(--background-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.faq .accordion .accordion-item .accordion-header {
+    border: 1px solid var(--font-color);
+    background-color: var(--background-color) !important;
+    border-radius: 10px;
+}
+.faq .accordion .accordion-item .accordion-header button {
+    border-radius: 0px !important;
+}
+.faq .accordion-button:not(.collapsed) {
+    background-color: var(--background-color);
+    border-radius: 0px !important;
+    box-shadow: none;
+    color: var(--font-color);
+}

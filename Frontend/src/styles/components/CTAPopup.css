@@ -1,0 +1,321 @@
+@import '../Colors.css';
+
+/* CTA Popup Overlay */
+.cta-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* CTA Popup Container */
+.cta-popup-container {
+    background: transparent;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: visible;
+    position: relative;
+    animation: slideIn 0.3s ease-out;
+}
+
+/* CTA Popup Close Button */
+.cta-popup-close {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    background: linear-gradient(45deg, #007cc2, #005a8b);
+    border: 3px solid white;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.cta-popup-close:hover {
+    background: linear-gradient(45deg, #005a8b, #007cc2);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* CTA Popup Title */
+.cta-popup-title {
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.cta-popup-title h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-family: 'Poppins', sans-serif;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.cta-popup-title p {
+    font-size: 16px;
+    opacity: 0.9;
+    font-family: var(--font-family-nunito);
+    margin: 0;
+}
+
+/* CTA Popup Content - Using exact footer CTA styling */
+.cta-popup-content {
+    background: transparent;
+}
+
+.cta-popup-content .cta {
+    margin-bottom: 0;
+    z-index: 9;
+    position: relative;
+}
+
+.cta-popup-content .cta form {
+    background: linear-gradient(135deg, var(--font-color) 0%, #005a8b 50%, var(--btn-hover-color) 100%);
+    padding: 40px 50px;
+    font-family: var(--font-family-nunito);
+    border-radius: 25px;
+    box-shadow: 0 6px 24px rgba(0, 124, 194, 0.25);
+    backdrop-filter: blur(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 800px;
+    margin: 0 auto;
+    border: none;
+    outline: none;
+}
+
+.cta-popup-content .cta form input, 
+.cta-popup-content .cta form select {
+    background-color: var(--background-color);
+    border: 0;
+    border-radius: 8px;
+    font-family: var(--font-family-nunito);
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 12px 15px;
+    color: #000000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+.cta-popup-content .cta form .form-select:focus option {
+    color: #000;
+}
+
+.cta-popup-content .cta form input::placeholder, 
+.cta-popup-content .cta form select::placeholder {
+    color: #666;
+    opacity: 0.8;
+}
+
+.cta-popup-content .cta .form-control:focus, 
+.cta-popup-content .cta .form-select:focus {
+    background-color: var(--background-color);
+    color: #333 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    outline: none;
+    border: none;
+}
+
+/* Two Column Layout for Form Fields */
+.cta-popup-content .cta form .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -15px;
+}
+
+.cta-popup-content .cta form .col-lg-3, 
+.cta-popup-content .cta form .col-md-6 {
+    padding: 0 15px;
+    margin-bottom: 20px;
+}
+
+.cta-popup-content .cta form .col-lg-3 {
+    flex: 0 0 25%;
+    max-width: 25%;
+}
+
+.cta-popup-content .cta form .col-md-6 {
+    flex: 0 0 50%;
+    max-width: 50%;
+}
+
+.cta-popup-content .cta form .col-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    padding: 0 15px;
+}
+
+/* Blue Submit Button - Same as Footer */
+.cta-popup-content .cta button {
+    text-transform: uppercase;
+    border-radius: 20px;
+    padding: 12px 28px;
+    background: linear-gradient(45deg, var(--background-color), #f8f9fa, var(--background-color));
+    background-size: 200% 200%;
+    color: var(--font-color);
+    font-family: var(--font-family-nunito);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 124, 194, 0.3);
+    margin: 0 8px;
+    outline: none;
+}
+
+.cta-popup-content .cta button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 124, 194, 0.2), transparent);
+    transition: left 0.8s ease;
+}
+
+.cta-popup-content .cta button::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 124, 194, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    transform: scale(0);
+}
+
+.cta-popup-content .cta button:hover::before {
+    left: 100%;
+}
+
+.cta-popup-content .cta button:hover::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.cta-popup-content .cta button:hover {
+    background-position: 100% 100%;
+    box-shadow: 0 12px 30px rgba(0, 124, 194, 0.4);
+    color: var(--font-color);
+}
+
+.cta-popup-content .cta button:active {
+    box-shadow: 0 8px 25px rgba(0, 124, 194, 0.3);
+}
+
+/* Error Messages - Same as Footer */
+.cta-popup-content .text-error {
+    color: #ffeb3b;
+    font-size: 0.875rem;
+    margin-top: 8px;
+    font-family: var(--font-family-nunito);
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Responsive Design - Same as Footer */
+@media screen and (max-width: 991px) {
+    .cta-popup-content .cta input, 
+    .cta-popup-content .cta button {
+        margin-bottom: 15px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .cta-popup-container {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .cta-popup-content .cta form {
+        padding: 30px 25px;
+    }
+    
+    .cta-popup-title h2 {
+        font-size: 28px;
+    }
+    
+    .cta-popup-title p {
+        font-size: 14px;
+    }
+    
+    .cta-popup-close {
+        top: -15px;
+        right: -15px;
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    .cta-popup-container {
+        width: 98%;
+        margin: 10px;
+    }
+    
+    .cta-popup-content .cta form {
+        padding: 25px 20px;
+    }
+    
+    .cta-popup-close {
+        top: -10px;
+        right: -10px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .cta-popup-title h2 {
+        font-size: 24px;
+    }
+    
+    .cta-popup-title p {
+        font-size: 13px;
+    }
+} 

@@ -1,0 +1,256 @@
+/* src/dashboard/Dashboard.css */
+.dashboard-container {
+  color: #333;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.total-consumer {
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--font-size-h2);
+  color: var(--font-color);
+  margin-right: 15px;
+}
+
+.number {
+  font-family: var(--font-family-nunito);
+  font-size: var(--font-size-h2);
+}
+
+.overview-section {
+  text-align: center;
+}
+
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+.board-item {
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  padding: 40px 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  margin-bottom: 20px;
+}
+.board-item:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+.board-item h2 {
+  margin: 0 0 10px;
+  font-size: 25px;
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
+}
+.text-highlight {
+  color: #fff; /* Vibrant pink for numbers */
+  font-family: var(--font-family-nunito);
+  font-size: 2.5rem;
+  margin-bottom: 0;
+}
+
+
+.charts-section {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.charts-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.mediclaim-card p {
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  color: #de411a;
+}
+.mediclaim-card .number {
+  line-height: 1;
+  color: #000;
+}
+
+
+
+.dashboard-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 10px;
+}
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+}
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .dashboard-header {
+  font-size: 2rem;
+}
+
+    .board-item h2 {
+      font-size: 1rem;
+    }
+  
+    .animated-count {
+      font-size: 2rem;
+  }
+}
+
+.filter-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9f9f9;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-inputs {
+  display: flex;
+}
+.filter-inputs div {
+  margin-right: 20px;
+}
+
+.filter-inputs label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.filter-inputs input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 150px;
+}
+
+.search-button {
+  padding: 10px 20px;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.search-button:hover {
+  background: #0056b3;
+}
+
+.board-item {
+  text-align: center;
+  padding: 20px;
+  border-radius: 8px;
+  color: #fff;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.blue-bg { background: #2196f3; }
+.green-bg { background: #4caf50; }
+
+.text-highlight {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.charts-section {
+  margin-top: 30px;
+}
+
+.mediclaim-expiry-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mediclaim-expiry-section h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.expiry-cards {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.expiry-card {
+  flex: 1;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.expiry-card:hover {
+  transform: translateY(-5px);
+}
+
+.expiry-card.urgent {
+  background: #fff5f5;
+  border: 1px solid #ff6b6b;
+}
+
+.expiry-card.warning {
+  background: #fff9f0;
+  border: 1px solid #ffa502;
+}
+
+.expiry-card.info {
+  background: #f0f7ff;
+  border: 1px solid #4dabf7;
+}
+
+.expiry-card h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.expiry-card .count {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.expiry-card.urgent .count {
+  color: #ff6b6b;
+}
+
+.expiry-card.warning .count {
+  color: #ffa502;
+}
+
+.expiry-card.info .count {
+  color: #4dabf7;
+}
+
+.expiry-card .status {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+

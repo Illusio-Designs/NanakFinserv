@@ -1,0 +1,28 @@
+@import '../styles/Colors.css';
+
+.scroll-parent {
+  position: relative;
+  height: 40px;
+  line-height: 40px;
+  color: var(--background-color);
+  background-color: var(--font-color); 
+}
+
+.line {
+  font-size: 18px;
+  font-weight: bold;
+  font-family: var(--font-family-thin);
+  color: var(--background-color);
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-50px); /* Moves to the height of one line */
+  }
+  100% {
+    transform: translateX(-100px); /* Moves to the height of two lines */
+  }
+}

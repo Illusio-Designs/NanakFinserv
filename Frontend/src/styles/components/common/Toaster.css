@@ -1,0 +1,50 @@
+.common-toaster {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  min-width: 260px;
+  max-width: 340px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(99,102,241,0.10);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  z-index: 2000;
+  animation: slideIn 0.4s cubic-bezier(0.4,0,0.2,1);
+  border: 1.5px solid #f3f4f6;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.common-toaster.success {
+  border-left: 5px solid #22c55e;
+}
+.common-toaster.error {
+  border-left: 5px solid #ef4444;
+}
+.common-toaster.info {
+  border-left: 5px solid #6366f1;
+}
+.common-toaster.warning {
+  border-left: 5px solid #f59e42;
+}
+.toaster-icon {
+  font-size: 1.4rem;
+}
+.toaster-message {
+  flex: 1;
+}
+.toaster-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: #6366f1;
+  cursor: pointer;
+  margin-left: 8px;
+  line-height: 1;
+} 

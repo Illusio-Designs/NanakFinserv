@@ -1,0 +1,109 @@
+/* Base input style */
+.common-input {
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  background: #fff;
+  color: #222;
+}
+.common-input:focus {
+  border: 1.5px solid #6366f1;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+}
+
+/* File input */
+.common-input[type="file"] {
+  padding: 8px 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+.common-input[type="file"]::-webkit-file-upload-button {
+  background: linear-gradient(90deg, #6366f1 0%, #60a5fa 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.08);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  cursor: pointer;
+}
+.common-input[type="file"]::-webkit-file-upload-button:hover {
+  background: linear-gradient(90deg, #4f46e5 0%, #2563eb 100%);
+}
+
+/* Phone input (react-phone-input-2) */
+.common-input.phone-input {
+  padding-left: 48px;
+}
+.phone-input .flag-dropdown {
+  border-radius: 6px 0 0 6px;
+  border: 1px solid #e5e7eb;
+  background: #f3f4f6;
+  height: 48px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.phone-input .flag-dropdown.open {
+  border: 1.5px solid #6366f1;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+}
+.phone-input input {
+  border-radius: 0 6px 6px 0;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 1rem;
+  padding: 10px 16px;
+  outline: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  color: #222;
+  height: 48px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.phone-input input:focus {
+  border: 1.5px solid #6366f1;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+}
+.phone-input .country-list {
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(99,102,241,0.10);
+  border: 1px solid #f3f4f6;
+  font-size: 1rem;
+  background: #fff;
+}
+.phone-input .country-list .country {
+  padding: 8px 16px;
+  transition: background 0.15s;
+}
+.phone-input .country-list .country.highlight {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* OTP input */
+.otp-input-wrapper {
+  display: flex;
+  gap: 8px;
+}
+.otp-input-box {
+  width: 40px;
+  height: 48px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 1.3rem;
+  text-align: center;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.otp-input-box:focus {
+  border: 1.5px solid #6366f1;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.10);
+} 

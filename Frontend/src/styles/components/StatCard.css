@@ -1,0 +1,105 @@
+.stat-card {
+  --card-color: #2196F3;
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-width: 120px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid #e0e0e0;
+}
+
+.stat-card:hover {
+  border-color: var(--card-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card.active {
+  border-color: var(--card-color);
+  background: color-mix(in srgb, var(--card-color) 5%, white);
+}
+
+.stat-card-count {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--card-color);
+  line-height: 1;
+}
+
+.stat-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-card-description {
+  font-size: 10px;
+  color: #999;
+  font-weight: 400;
+}
+
+.check-mark {
+  font-size: 10px;
+  color: var(--card-color);
+}
+
+/* Stat cards container */
+.stat-cards-container {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.stat-cards-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.stat-cards-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.stat-cards-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.stat-cards-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .stat-card {
+    min-width: 100px;
+    padding: 10px 12px;
+  }
+
+  .stat-card-count {
+    font-size: 20px;
+  }
+
+  .stat-card-title {
+    font-size: 11px;
+  }
+
+  .stat-card-description {
+    font-size: 9px;
+  }
+}
+

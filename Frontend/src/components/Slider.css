@@ -1,0 +1,56 @@
+@import '../styles/Colors.css';
+
+.slider {
+  width: 100%;
+  margin: auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.slider ul {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  width: 100%; /* Double the width to accommodate a smooth loop */
+  animation: cambio 50s infinite linear;
+}
+
+.slider li {
+  flex: 1 0 auto; /* Ensure flex items do not shrink */
+  padding: 0 10px;
+  list-style: none;
+}
+
+.slider img {
+  max-width: 100%;
+  height: 100px;
+  width: 100%;
+}
+
+@keyframes cambio {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  padding-left: 20px;
+}
+
+.dropdown .s-btn {
+  padding: 5px 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+@media screen and (max-width: 991px) {
+  .slider img {
+    height: 70px;
+  }
+}
+

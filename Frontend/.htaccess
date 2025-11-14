@@ -1,0 +1,24 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Serve existing files directly
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Redirect all other requests to index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Set MIME types for static files
+AddType application/javascript .js
+AddType text/css .css
+AddType application/json .json
+
+# Enable caching for static assets
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|css|js|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|otf)$">
+        Header set Cache-Control "public, max-age=31536000"
+    </FilesMatch>
+</IfModule>

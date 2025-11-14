@@ -1,0 +1,77 @@
+@import '../styles/Colors.css';
+
+.review-parent {
+  position: relative;
+  width: auto;
+  height: 300px;
+  overflow-x: hidden;
+  background-color: var(--font-color);
+}
+
+.review-element {
+  width: auto;
+  display: flex;
+  height: 250px;
+  margin-top: 25px;
+  position: absolute;
+  background-color: var(--font-color);
+  left: 100%; /* Start from the right edge of the parent */
+  padding: 4px 15px 4px 4px;
+  color: var(--font-color);
+  font-size: larger;
+  font-weight: bold;
+  font-family: var(--font-family); /* Use the custom font */
+}
+
+.r-mini {
+    height: 250px;
+    width: 400px;
+    margin-left: 10px;
+    border-radius: 10px;
+    background-color: var(--background-color);
+}
+
+.r-primary {
+  animation: primary 10s linear infinite; /* Adjusted animation duration */
+}
+
+@keyframes r-primary {
+    0% {
+        left: 100%;
+    }
+    100% {
+        left: -100%;
+    }
+}
+
+/* Media query for small screens */
+@media (max-width: 768px) {
+  .scroll-parent {
+    height: 30px; /* Adjust height for smaller screens */
+  }
+
+  .scroll-element {
+    font-size: medium; /* Adjust font size for smaller screens */
+    padding: 2px 10px 2px 2px; /* Adjust padding for smaller screens */
+  }
+
+  .primary {
+    animation: primary 10s linear infinite; /* Adjust animation duration for smaller screens */
+  }
+}
+
+/* Media query for extra small screens */
+@media (max-width: 480px) {
+  .scroll-parent {
+    height: 25px; /* Further adjust height for extra small screens */
+  }
+
+  .scroll-element {
+    font-size: small; /* Further adjust font size for extra small screens */
+    padding: 1px 5px 1px 1px; /* Further adjust padding for extra small screens */
+  }
+
+  .primary {
+    animation: primary 12s linear infinite; /* Further adjust animation duration for extra small screens */
+  }
+}

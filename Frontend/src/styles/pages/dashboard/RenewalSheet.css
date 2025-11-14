@@ -1,0 +1,215 @@
+/* RenewalSheet.css */
+
+body .renewal-sheet-title-bar {
+    background-color: #007bff !important; /* Correct, brighter blue from design */
+    padding: 0.75rem 1.5rem !important;
+    margin-bottom: 1rem !important;
+    border-radius: 8px !important; /* Added rounded corners */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+.renewal-sheet-title-bar h4 {
+    margin: 0;
+    font-weight: 500;
+    font-size: 1.25rem;
+    color: white !important;
+}
+
+.filters-container {
+    background-color: white;
+    padding: 1.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 8px; /* Added for consistency */
+}
+
+.renewal-table thead {
+    background-color: #007bff; /* Correct, brighter blue for header */
+}
+
+.renewal-table th {
+    vertical-align: middle;
+    text-align: center;
+    padding: 0.75rem;
+    font-weight: 600;
+    white-space: normal;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-color: #007bff; /* Darker blue for borders to remove gaps */
+}
+
+.renewal-table td {
+    vertical-align: middle;
+    text-align: left;
+    padding: 0.75rem;
+}
+
+.renewal-table td:first-child, .renewal-table td:last-child {
+    text-align: center;
+}
+
+.remark-cell {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    min-height: 38px;
+}
+
+.remark-cell i {
+    color: #007bff;
+    visibility: visible; /* Make icon always visible */
+    transition: visibility 0.2s ease-in-out;
+}
+
+.remark-cell:hover i {
+    visibility: visible;
+}
+
+.action-icon {
+    font-size: 1.2rem;
+    color: #007bff;
+    cursor: pointer;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.btn-renew {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    border-radius: 6px !important; /* Rounded corners for the renew button */
+}
+
+/* Popup styles */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    padding: 2rem;
+}
+
+.popup-container.view-details-popup {
+    width: 50%;
+    max-width: 50%;
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f0f2f5; /* Light grey-blue background */
+    padding: 0;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.view-details-popup .popup-header {
+    background-color: #007bff; /* Matching brighter blue */
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-bottom: none;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.view-details-popup .popup-header h3 {
+    color: white;
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 600; /* Bolder font weight */
+}
+
+.view-details-popup .popup-close-btn {
+    color: white;
+    opacity: 0.9;
+    font-size: 1.5rem;
+    font-weight: normal;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.view-details-popup .popup-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.popup-section {
+    margin-bottom: 1rem;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    overflow: hidden;
+    background-color: white;
+}
+
+.popup-section-header {
+    background-color: #007bff;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+}
+
+.popup-section-content {
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 2rem; /* Reduced row gap, increased column gap */
+}
+
+.popup-section-content.single-column {
+    grid-template-columns: 1fr;
+}
+
+.popup-detail-row {
+    display: grid;
+    grid-template-columns: max-content 1fr; /* Label takes space it needs, value takes the rest */
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #e9ecef;
+    align-items: baseline;
+}
+
+.popup-detail-row:last-child {
+    border-bottom: none;
+}
+
+.popup-detail-label {
+    font-weight: bold;
+    color: #333;
+    white-space: nowrap;
+}
+
+.popup-detail-value {
+    color: #555;
+    word-break: break-word;
+}
+
+.view-details-popup .popup-footer {
+    padding: 1rem 1.5rem;
+    text-align: right;
+    border-top: 1px solid #eee;
+    background-color: transparent;
+    flex-shrink: 0;
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

@@ -1,0 +1,30 @@
+.guide-questions .accordion .accordion-item {
+    border: 0px !important;
+    background-color: var(--font-color);
+    color: var(--background-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0px 5px 15px 0px var(--btn-hover-color);
+}
+.guide-questions .accordion .accordion-item .accordion-header {
+    border: none;
+    background-color: var(--background-color) !important;
+    border-radius: 10px;
+}
+.guide-questions .accordion .accordion-item .accordion-header button {
+    border-radius: 0px !important;
+}
+.guide-questions .accordion-button:not(.collapsed) {
+    background-color: var(--background-color);
+    border-radius: 0px !important;
+    box-shadow: none;
+    color: var(--font-color);
+}
+.guide-questions .collapsed {
+    /* background: var(--btn-hover-color); */
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(1.4px);
+    -webkit-backdrop-filter: blur(1.4px);
+    border: 1px solid rgba(255, 255, 255, 0.51);
+}

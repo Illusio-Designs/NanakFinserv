@@ -1,0 +1,25 @@
+.testimonial .owl-theme {
+    text-align: center;
+    background-color: var(--font-color);
+    color: var(--background-color) !important;
+    padding: 60px 40px;
+    border-radius: 15px;
+}
+.testimonial .item:before {
+    content: "\f10d";
+    display: block;
+    font-size: 60px;
+    font-family: FontAwesome;
+    opacity: 0.5;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.testimonial .item p {
+    color: var(--background-color);
+    position: relative;
+    font-style: italic;
+}
+.testimonial .item h3 {
+    color: var(--background-color);
+}

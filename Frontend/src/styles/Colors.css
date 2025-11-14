@@ -1,0 +1,145 @@
+/* @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600&display=swap'); */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+/* GT-Walsheim fonts removed - using Google Fonts instead */
+/* If you need these specific fonts, download them and place in src/fonts/ directory */
+
+:root {
+  --background-color: #fff;
+  --btn-hover-color: #76c6f0;
+  --btn-color: #196084;
+  --font-color: #007dc4;
+  --light-background-color: #32c690ab;
+  --black: #000;
+  --font-family-bold: 'Poppins', 'GT-Walsheim-Black-Trial';
+  --font-family-medium: 'Poppins', 'GT-Walsheim-Medium-Trial';
+  --font-family-regular: 'Poppins', 'GT-Walsheim-Regular-Trial';
+  --font-family-light: 'Poppins', 'GT-Walsheim-Light-Trial';
+  --font-family-thin: 'Poppins', 'GT-Walsheim-Thin-Trial';
+  --font-family-nunito: 'Poppins', 'Nunito';
+  --font-familt-marcellus: 'Poppins', 'Marcellus';
+  --font-size-base: 16px;
+  --font-size-h1: 42px;
+  --font-size-h2: 35px;
+  --font-size-h3: 24px;
+  --font-size-h4: 22px;
+  --font-size-h5: 20px;
+  --font-size-h6: 18px;
+  --font-size-p: 18px;
+}
+
+/* Global Typography Standardization */
+* {
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+}
+
+/* Headings - All use same font family and weight */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--font-color);
+  margin: 0;
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.5px;
+}
+
+h1 { font-size: var(--font-size-h1); }
+h2 { font-size: var(--font-size-h2); }
+h3 { font-size: var(--font-size-h3); }
+h4 { font-size: var(--font-size-h4); }
+h5 { font-size: var(--font-size-h5); }
+h6 { font-size: var(--font-size-h6); }
+
+/* Paragraphs and text */
+p { 
+  font-size: var(--font-size-p); 
+  font-family: 'Poppins', var(--font-familt-marcellus) !important; 
+  color: #000; 
+  font-weight: 400 !important;
+}
+
+ul li { 
+  font-size: var(--font-size-p); 
+  padding: 0; 
+  margin: 0; 
+  list-style-type: none; 
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+  font-weight: 400 !important;
+}
+
+/* Table Typography Standardization */
+table, th, td, tr {
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+}
+
+thead th {
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+tbody td {
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
+}
+
+/* Form Elements Typography */
+input, textarea, select, label, button {
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+  font-weight: 400 !important;
+}
+
+/* Button Typography */
+.btn {
+  color: var(--background-color);
+  background-color: var(--font-color);
+  font-family: 'Poppins', var(--font-familt-marcellus) !important;
+  font-weight: 600 !important;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 35px;
+}
+
+/* Hover styles for buttons */
+.btn:hover {
+  background-color: var(--btn-hover-color);
+  color: var(--background-color);
+}
+
+.btn-white {
+  background-color: var(--background-color);
+  color: var(--font-color);
+}
+
+.btn-margin {
+  margin-right: 20px;
+}
+
+/* Heading Class */
+.heading {
+  font-size: var(--font-size-h1);
+  line-height: normal;
+  margin-bottom: 20px;
+  font-family: var(--font-family-medium) !important;
+}
+
+h3.heading {
+  font-size: var(--font-size-h2);
+  font-family: var(--font-family-medium) !important;
+}
+.sidebar.open .page-wrapper{
+  margin-left: 250px;
+}
+.blue-bg {
+  background-color: #007cc3;
+}
+.green-bg {
+  background-color: #005e65;
+}
+.orange-bg {
+  background-color: #de411a;
+}
+.yellow-bg {
+  background-color: #f8c300;
+}

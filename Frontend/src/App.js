@@ -1,0 +1,303 @@
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate, Outlet, BrowserRouter } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './pages/HomePage';
+import Services from './pages/Services';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Blog from './pages/Blog';
+import Login from './pages/Login';
+import Dashboard from './pages/dashboard/Dashboard';
+import LifeInsurance from './pages/dashboard/LifeInsurance';
+import LifeInsuranceRenewalSheet from './pages/dashboard/LifeInsuranceRenewalSheet';
+import VehicleInsurance from './pages/dashboard/VehicleInsurance';
+import VehiclePolicies from './pages/dashboard/VehiclePolicies';
+import Mediclaim from './pages/dashboard/Mediclaim';
+import MediclaimAllPolicies from './pages/dashboard/MediclaimAllPolicies';
+import Loan from './pages/dashboard/Loan';
+import LoanI from './pages/dashboard/Loaninterested';
+import LoanNI from './pages/dashboard/Loanni';
+import LoanCancelled from './pages/dashboard/Loancancelled';
+import Consumer from './pages/dashboard/Consumer';
+import Builder from './pages/dashboard/Builder';
+import Unit from './pages/dashboard/Unit';
+import CustomScrollbar from './CustomScrollbar';
+import Popup from './components/popup';
+// import DataComponent from './components/DataComponent';
+import User from './pages/dashboard/User';
+import Cookies from 'js-cookie';
+import Building from './pages/dashboard/Building';
+import Loandisbuss from './pages/dashboard/Loandisbuss';
+import { ToasterProvider } from './components/Toaster';
+import MediclaimCompany from './pages/dashboard/MediclaimCompany';
+import MediclaimProduct from './pages/dashboard/MedicliamProduct';
+import { Toaster } from 'react-hot-toast';
+import LoanConfiguration from './pages/dashboard/LoanConfiguration';
+import RenewalSheet from './pages/dashboard/RenewalSheet';
+import Inquiries from './pages/dashboard/Inquiries';
+import BlogDashboard from './pages/dashboard/Blog';
+import VehicleRenewalSheet from './pages/dashboard/VehicleRenewalSheet';
+import Support from './pages/dashboard/Support';
+
+import BlogDetail from './pages/BlogDetail';
+import WidgetDemo from './pages/WidgetDemo';
+
+const directories = [
+  { "Dashboard": [] },
+  { "Loan": [] },
+  { "LifeInsurance": [] },
+  { "Mediclaim": [] },
+  { "VehicleInsurance": [] },
+  { "Consumer": [] },
+  { "Builder": [] },
+  { "User": [] },
+  { "Login": [] }
+];
+
+const AppContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [category, setCategory] = useState([]);
+  const [userData, setUserData] = useState(null);
+
+  // Helper function to safely parse cookies
+  const safeParseCookie = (cookieName, defaultValue = null) => {
+    try {
+      const cookieValue = Cookies.get(cookieName);
+      if (cookieValue) {
+        return JSON.parse(cookieValue);
+      }
+      return defaultValue;
+    } catch (error) {
+      console.error(`🔍 [APP] Error parsing ${cookieName} cookie:`, error);
+      return defaultValue;
+    }
+  };
+
+  // Helper function to parse category cookie (supports both JSON array and CSV string)
+  const parseCategoryCookie = () => {
+    try {
+      const categoryCookie = Cookies.get('category');
+      if (!categoryCookie) return [];
+      
+      // Accept JSON array ("[1,2,4]") OR CSV string ("1,2,4")
+      if (categoryCookie.trim().startsWith('[')) {
+        return JSON.parse(categoryCookie);
+      } else {
+        return categoryCookie
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((n) => Number(n))
+          .filter((n) => !Number.isNaN(n));
+      }
+    } catch (error) {
+      console.error('🔍 [APP] Error parsing category cookie:', error);
+      return [];
+    }
+  };
+
+  // Helper function to check if user is Super Admin
+  const isSuperAdmin = () => {
+    const user = safeParseCookie('user', {});
+    const categoryId = parseCategoryCookie();
+    return (user && user.role_id === 1) || (Array.isArray(categoryId) && categoryId.includes(1));
+  };
+
+  const dashboardPaths = [
+    '/dashboard',
+    '/dashboard/support',
+    '/lifeinsurance',
+    '/vehicle-insurance',
+    '/vehicle-insurance/renewal',
+    '/vehicle-insurance/consumer',
+    '/vehicle-policies',
+    '/mediclaim',
+    '/mediclaim/company',
+    '/mediclaim/renewal',
+    '/loan',
+    '/loan/interested',
+    '/loan/not-interested',
+    '/loan/cancelled',
+    '/loan/configuration',
+    '/loan/disburse',
+    '/loan/completed',
+    '/consumer',
+    '/builder',
+    '/unit',
+    '/user',
+    '/inquiries',
+    '/blog'
+  ];
+
+  const pagesPaths = [
+    '/',
+    '/services',
+    '/about',
+    '/login',
+    '/contact',
+    '/blog',
+  ];
+
+  useEffect(() => {
+    try {
+      const userCookie = Cookies.get('user');
+      const user = userCookie ? JSON.parse(userCookie) : null;
+      setUserData(user);
+      if (user && user.category && Array.isArray(user.category)) {
+        let data = user.category.map((item) => item['category.category_id']);
+        setCategory(data);
+      }
+    } catch (error) {
+      console.error("Error parsing user cookie:", error);
+      setUserData(null);
+    }
+  }, []);
+
+
+  const PrivateRoutes = () => {
+    const token = Cookies.get('token');
+    return token ? <Outlet /> : <Navigate to='/login' />;
+  };
+
+  const PrivateDashboard = ({ element }) => {
+    const user = Cookies.get('user') && JSON.parse(Cookies.get('user'));
+    const categoryId = Cookies.get('category');
+    return user && user.role_id != 2 ? element : user ? <Navigate to="/consumer" /> : <Navigate to="/login" />;
+  };
+
+  const PrivateLoan = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const categoryId = parseCategoryCookie();
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (categoryId && categoryId.includes(2))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateMediclaim = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const categoryId = parseCategoryCookie();
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (categoryId && categoryId.includes(4))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateInquiries = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const categoryId = parseCategoryCookie();
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (categoryId && categoryId.includes(4))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateLife = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const categoryId = parseCategoryCookie();
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (categoryId && categoryId.includes(5))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateVehicle = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const categoryId = parseCategoryCookie();
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (categoryId && categoryId.includes(6))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateBuilder = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (user && user.role_id === 2)) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateBuildingManager = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (user && (user.role_id === 2 || user.role_id === 7))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateConsumer = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const superAdmin = isSuperAdmin();
+    return (superAdmin || (user && (user.role_id === 2 || user.role_id === 7))) ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateRoleUser = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const superAdmin = isSuperAdmin();
+    return superAdmin ? element : <Navigate to="/dashboard" />;
+  };
+
+  const PrivateBlog = ({ element }) => {
+    const user = safeParseCookie('user', {});
+    const superAdmin = isSuperAdmin();
+    return superAdmin ? element : <Navigate to="/dashboard" />;
+  };
+
+  const shouldHideNavbarAndScrollbar = location.pathname.includes('builder') || location.pathname.includes('unit') || location.pathname.includes('mediclaim') ? true : dashboardPaths.includes(location.pathname);
+
+  const isUserLoggedIn = () => {
+    const user = safeParseCookie('user', {});
+    return !!user;
+  };
+
+  const PrivateRoute = ({ element }) => {
+    const user = isUserLoggedIn();
+    return user ? element : <Navigate to="/login" />;
+  };
+
+  return (
+    <ToasterProvider>
+      <Toaster position="top-right" reverseOrder={false} />
+      <div className="App">
+        {/* Remove global Navbar rendering here */}
+        <Routes>
+          <Route exact path="/login" element={<Login />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogDetail />} />
+          <Route path="/dashboard" element={<PrivateDashboard element={<Dashboard />} />} />
+          <Route path="/dashboard/support" element={<PrivateDashboard element={<Support />} />} />
+          <Route path="/consumer" element={<PrivateConsumer element={<Consumer />} />} />
+          <Route path="/builder" element={<PrivateBuilder element={<Builder />} />} />
+          <Route path="/unit/:id" element={<PrivateBuildingManager element={<Unit />} />} />
+          <Route path="/builder/building" element={<PrivateBuildingManager element={<Building />} />} />
+          {/* <Route path="/data" element={<PrivateRoute element={<DataComponent />} />} /> */}
+          <Route path="/user" element={<PrivateRoute element={<User />} />} />
+          <Route path="/loan" element={<PrivateLoan element={<Loan />} />} />
+          <Route path="/loan/interested" element={<PrivateLoan element={<LoanI />} />} />
+          <Route path="/loan/not-interested" element={<PrivateLoan element={<LoanNI />} />} />
+          <Route path="/loan/cancelled" element={<PrivateLoan element={<LoanCancelled />} />} />
+          <Route path="/loan/configuration" element={<PrivateLoan element={<LoanConfiguration />} />} />
+          <Route path="/loan/completed" element={<PrivateLoan element={<Loandisbuss />} />} />
+          <Route path="/mediclaim" element={<PrivateMediclaim element={<Mediclaim />} />} />
+          <Route path="/mediclaim/all-policies" element={<PrivateMediclaim element={<MediclaimAllPolicies />} />} />
+          <Route path="/mediclaim/company" element={<PrivateMediclaim element={<MediclaimCompany />} />} />
+          <Route path="/mediclaim/renewal" element={<PrivateMediclaim element={<RenewalSheet />} />} />
+          <Route path="/mediclaim/company/:id" element={<PrivateMediclaim element={<MediclaimProduct />} />} />
+          <Route path="/inquiries" element={<PrivateInquiries element={<Inquiries />} />} />
+          <Route path="/lifeinsurance" element={<PrivateLife element={<LifeInsurance />} />} />
+          <Route path="/lifeinsurance/renewal" element={<PrivateLife element={<LifeInsuranceRenewalSheet />} />} />
+          <Route path="/vehicle-insurance" element={<PrivateVehicle element={<VehicleInsurance />} />} />
+          <Route path="/vehicle-insurance/renewal" element={<PrivateVehicle element={<VehicleRenewalSheet />} />} />
+          <Route path="/vehicle-policies" element={<PrivateVehicle element={<VehiclePolicies />} />} />
+          <Route path="/dashboard/blog" element={<PrivateBlog element={<BlogDashboard />} />} />
+          <Route path="/widgets" element={<WidgetDemo />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+        <Popup isOpen={location.pathname === ''} onClose={() => { }} />
+        <CustomScrollbar />
+      </div>
+    </ToasterProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+};
+
+export default App;
