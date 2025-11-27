@@ -895,6 +895,337 @@ const VehicleRenewalSheet = () => {
   //         navigate('/vehicle-insurance');
   //     };
 
+// const handleRenewal = async (item) => {
+//   console.log("🔄 [RENEWAL SHEET] Starting renewal process for:", item);
+
+//   const originalData = item.originalData || item;
+//   console.log("🔍 [RENEWAL SHEET] Using originalData:", originalData);
+
+//   // Extract vehicle_user_id safely - check both locations
+//   const vehicleUserId =
+//     originalData.vehicleRecords?.[0]?.vehicle_user_id ||
+//     originalData.vehicle_user_id;
+//   console.log("🔍 [RENEWAL SHEET] Vehicle user ID:", vehicleUserId);
+
+//   let completeUserData = originalData;
+
+//   // Helper to safely get value or fallback to empty string
+//   const getValue = (obj, ...keys) => {
+//     for (let key of keys) {
+//       if (
+//         obj &&
+//         obj[key] !== undefined &&
+//         obj[key] !== null &&
+//         obj[key] !== ""
+//       )
+//         return obj[key];
+//     }
+//     return "";
+//   };
+
+//   // Nominee age calculation
+//   const calculateNomineeAge = (dob) => {
+//     if (!dob) return "";
+//     const dobDate = new Date(dob);
+//     const today = new Date();
+//     let age = today.getFullYear() - dobDate.getFullYear();
+//     const monthDiff = today.getMonth() - dobDate.getMonth();
+//     if (
+//       monthDiff < 0 ||
+//       (monthDiff === 0 && today.getDate() < dobDate.getDate())
+//     )
+//       age--;
+//     return age;
+//   };
+
+//   // If vehicle_user_id exists, fetch full vehicle data
+//   if (vehicleUserId) {
+//     try {
+//       const fullData = await getVehicleUserById(vehicleUserId);
+
+//       if (fullData) {
+//         console.log("🔍 [RENEWAL] Full data received:", fullData);
+//         console.log("🔍 [RENEWAL] Running policy:", fullData.runningPolicy);
+//         console.log(
+//           "🔍 [RENEWAL] Previous policies array:",
+//           fullData.previousPolicies
+//         );
+
+//         // Get running policy (current active policy)
+//         const runningPolicy = fullData.runningPolicy || {};
+
+//         // Get previous policy from previousPolicies array
+//         const previousPolicy =
+//           (Array.isArray(fullData.previousPolicies)
+//             ? fullData.previousPolicies
+//                 .filter((p) => p.status !== "active")
+//                 .sort(
+//                   (a, b) => new Date(b.PolicyTo) - new Date(a.PolicyTo)
+//                 )[0]
+//             : null) ||
+//           fullData.previousPolicy ||
+//           {};
+
+//         console.log(
+//           "✅ [RENEWAL] Previous policy (from array):",
+//           previousPolicy
+//         );
+//         console.log(
+//           "✅ [RENEWAL] Running policy (current active):",
+//           runningPolicy
+//         );
+
+//         const documents =
+//           fullData.documents || fullData.vehicle_documents || [];
+
+//         // Helper to find document by multiple ids or names
+//         const findDoc = (ids) =>
+//           documents.find((doc) =>
+//             ids.includes(
+//               doc.categoryId || doc.category_id || doc.documentType
+//             )
+//           );
+
+//         completeUserData = {
+//           ...fullData,
+//           runningPolicy: runningPolicy,
+//           previousPolicy: previousPolicy,
+//           documents,
+//           AadharFileName: getValue(
+//             findDoc([1, "1", "Aadhar", "AADHAR"]),
+//             "file",
+//             ""
+//           ),
+//           PanFileName: getValue(findDoc([2, "2", "Pan", "PAN"]), "file", ""),
+//           GstFileName: getValue(findDoc([3, "3", "Gst", "GST"]), "file", ""),
+//           RcBookFileName: getValue(
+//             findDoc([4, "4", "RCBook", "RC_BOOK"]),
+//             "file",
+//             ""
+//           ),
+//         };
+//       }
+//     } catch (error) {
+//       console.error("❌ [RENEWAL] Failed to fetch vehicle user data:", error);
+//       completeUserData = originalData;
+//     }
+//   } else {
+//     console.warn(
+//       "⚠️ [RENEWAL] No vehicle_user_id found, using originalData."
+//     );
+//   }
+
+//   // Build final form data
+//   const user = completeUserData.user_pk_vehicle_id || {};
+//   const runningPolicy = completeUserData.runningPolicy || {};
+//   const previousPolicy = completeUserData.previousPolicy || {};
+//   const reference = completeUserData.reference || {};
+
+//   const mappedData = {
+//     // Consumer info
+//     Name: getValue(
+//       completeUserData,
+//       "Name",
+//       "name",
+//       "username",
+//       user.username
+//     ),
+//     Email: getValue(completeUserData, "Email", "email", user.email),
+//     MobileNumber: getValue(
+//       completeUserData,
+//       "MobileNumber",
+//       "mobile_number",
+//       "mobileNumber",
+//       user.mobileNumber
+//     ),
+//     ContactPersonName: getValue(completeUserData, "contact_person_name"),
+//     ContactPersonMobileNumber: getValue(
+//       completeUserData,
+//       "contact_person_no"
+//     ),
+//     Type: getValue(completeUserData, "nominee_type", "Type", "Individual"),
+
+//     // Vehicle info
+//     VehicleType: getValue(completeUserData, "vehicle_type"),
+//     VehicleNumber: getValue(completeUserData, "vehicle_number"),
+//     Make: getValue(completeUserData, "make"),
+//     Model: getValue(completeUserData, "model"),
+//     ManufacturingYear: getValue(completeUserData, "manufacturing_year"),
+//     EngineNumber: getValue(completeUserData, "engine_number"),
+//     ChassisNumber: getValue(completeUserData, "chassis_number"),
+
+//     // RUNNING POLICY: Keep current active policy data
+//     PolicyNumber: runningPolicy.PolicyNumber || "",
+//     PolicyIssuedDate: runningPolicy.PolicyIssuedDate || "",
+//     PolicyExpiryDate:
+//       runningPolicy.PolicyTo ||
+//       runningPolicy.ExpiryDate ||
+//       runningPolicy.PolicyExpiryDate ||
+//       "",
+//     PolicyTenure: runningPolicy.PolicyTenure || "",
+//     PremiumAmount: runningPolicy.PremiumAmount || "",
+//     NCB: runningPolicy.NCB || "",
+//     IDV: runningPolicy.IDV || "",
+//     From: runningPolicy.PolicyFrom || "",
+//     To: runningPolicy.PolicyTo || "",
+
+//     CompanyName:
+//       runningPolicy.CompanyType?.company_name ||
+//       completeUserData.company_name ||
+//       "",
+//     Vendor: runningPolicy.Vendor || completeUserData.vendor || "",
+
+//     // Policy type settings - Set to Renewal
+//     policyRadio: "Renewal",
+//     vehicle_policy_type: "Renewal",
+
+//     // Clear nominee info for new entry
+//     NomineeName: "",
+//     NomineeRelation: "",
+//     NomineeAge: "",
+//     NomineeDob: "",
+//     hasNominee: "no",
+
+//     // Agent info
+//     AgentName: getValue(
+//       completeUserData,
+//       "agentName",
+//       "agent_name",
+//       "AgentName"
+//     ),
+//     AgentCode: getValue(
+//       completeUserData,
+//       "agentCode",
+//       "agent_code",
+//       "AgentCode"
+//     ),
+//     AgentContactNumber: getValue(
+//       completeUserData,
+//       "agentContactNumber",
+//       "agent_contact_number",
+//       "AgentContactNumber"
+//     ),
+
+//     // Reference info
+//     Reference: getValue(reference, "reference_name", "Reference"),
+//     reference_id: getValue(completeUserData, "reference_id", null),
+
+//     // Documents
+//     AadharFileName: getValue(completeUserData, "AadharFileName", ""),
+//     PanFileName: getValue(completeUserData, "PanFileName", ""),
+//     GstFileName: getValue(completeUserData, "GstFileName", ""),
+//     RcBookFileName: getValue(completeUserData, "RcBookFileName", ""),
+//     RunningPolicyFileName: "",
+
+//     // PREVIOUS POLICY: Actual old previous policy
+//     previousPolicy: {
+//       PolicyNumber: previousPolicy.PolicyNumber || "",
+//       CompanyName:
+//         previousPolicy.CompanyType?.company_name ||
+//         previousPolicy.CompanyName ||
+//         "",
+//       PolicyFrom: previousPolicy.PolicyFrom || "",
+//       PolicyTo: previousPolicy.PolicyTo || "",
+//       PolicyIssuedDate: previousPolicy.PolicyIssuedDate || "",
+//       PolicyExpiryDate:
+//         previousPolicy.PolicyTo || previousPolicy.ExpiryDate || "",
+//       PolicyTenure: previousPolicy.PolicyTenure || "",
+//       PremiumAmount: previousPolicy.PremiumAmount || "",
+//       IDV: previousPolicy.IDV || "",
+//       NCB: previousPolicy.NCB || "",
+//       NomineeName: previousPolicy.NomineeName || "",
+//       NomineeRelation: previousPolicy.NomineeRelation || "",
+//       NomineeDob: previousPolicy.NomineeDob || "",
+//       NomineeAge: previousPolicy.NomineeAge || "",
+//       PdfFile:
+//         previousPolicy.CurrentPolicyFile || previousPolicy.PdfFile || "",
+//       PdfFileName:
+//         previousPolicy.CurrentPolicyFile || previousPolicy.PdfFileName || "",
+//       agentName: previousPolicy.agentName || previousPolicy.AgentName || "",
+//       agentCode: previousPolicy.agentCode || previousPolicy.AgentCode || "",
+//       agentContactNumber:
+//         previousPolicy.agentContactNumber ||
+//         previousPolicy.AgentContactNumber ||
+//         "",
+//     },
+
+//     // RUNNING POLICY: Current active policy object
+//     runningPolicy: {
+//       PolicyNumber: runningPolicy.PolicyNumber || "",
+//       PolicyIssuedDate: runningPolicy.PolicyIssuedDate || "",
+//       PolicyExpiryDate:
+//         runningPolicy.PolicyTo || runningPolicy.ExpiryDate || "",
+//       PolicyFrom: runningPolicy.PolicyFrom || "",
+//       PolicyTo: runningPolicy.PolicyTo || "",
+//       PolicyTenure: runningPolicy.PolicyTenure || "",
+//       PremiumAmount: runningPolicy.PremiumAmount || "",
+//       IDV: runningPolicy.IDV || "",
+//       NCB: runningPolicy.NCB || "",
+//       NomineeName: runningPolicy.NomineeName || "",
+//       NomineeRelation: runningPolicy.NomineeRelation || "",
+//       NomineeAge: runningPolicy.NomineeAge || "",
+//       NomineeDob: runningPolicy.NomineeDob || "",
+//       Vendor: runningPolicy.Vendor || "",
+//       CurrentPolicyFile: runningPolicy.CurrentPolicyFile || "",
+//       CompanyType: runningPolicy.CompanyType || null,
+//       policy_type_id:
+//         runningPolicy.policy_type_id || runningPolicy.PolicyTypeId || null,
+//       policy_plan_id: runningPolicy.policy_plan_id || null,
+//       // Add human-readable names so the renewal form can autofill previous policy dropdowns
+//       PolicyType:
+//         (runningPolicy.policyType &&
+//           (runningPolicy.policyType.PolicyTypeName ||
+//             runningPolicy.policyType.policy_type_name)) ||
+//         runningPolicy.PolicyType ||
+//         runningPolicy.policy_type ||
+//         runningPolicy.policy_type_name ||
+//         "",
+//       PolicyPlanType:
+//         (runningPolicy.policyPlan &&
+//           (runningPolicy.policyPlan.PolicyPlanType ||
+//             runningPolicy.policyPlan.policy_plan_type)) ||
+//         runningPolicy.PolicyPlanType ||
+//         runningPolicy.policy_plan_type ||
+//         "",
+//     },
+
+//     // Other data
+//     documents: completeUserData.documents || [],
+//     user_pk_vehicle_id: user,
+//     vehicle_user_id: vehicleUserId,
+//     reference: reference,
+//     consumer_role_id: getValue(completeUserData, "consumer_role_id", ""),
+//     remark: getValue(completeUserData, "remark", ""),
+    
+//     // Add flag to indicate this is a renewal from renewal sheet
+//     isRenewalFromSheet: true,
+//   };
+
+//   console.log("✅ [RENEWAL SHEET] Final mapped data:", {
+//     previousPolicyNumber: mappedData.previousPolicy.PolicyNumber,
+//     runningPolicyNumber: mappedData.runningPolicy.PolicyNumber,
+//     policyRadio: mappedData.policyRadio,
+//     CompanyName: mappedData.CompanyName,
+//   });
+
+//   // Store data and navigate to vehicle insurance page
+//   try {
+//     localStorage.setItem("isVehicleRenew", "true");
+//     localStorage.setItem("vehicleRenewalData", JSON.stringify(mappedData));
+//     console.log(
+//       "🔄 [RENEWAL SHEET] Data stored, navigating to vehicle insurance page"
+//     );
+//     navigate("/vehicle-insurance", { state: mappedData });
+//   } catch (e) {
+//     console.error("Failed to store vehicle renewal data in localStorage", e);
+//     toast.error("Failed to prepare renewal data. Please try again.");
+//     return;
+//   }
+// };
+
+
+// In VehicleRenewalSheet.jsx - Replace the handleRenewal function with this updated version
+
 const handleRenewal = async (item) => {
   console.log("🔄 [RENEWAL SHEET] Starting renewal process for:", item);
 
@@ -1021,6 +1352,43 @@ const handleRenewal = async (item) => {
   const previousPolicy = completeUserData.previousPolicy || {};
   const reference = completeUserData.reference || {};
 
+  // 🔥 NEW: Helper function to resolve policy type name from ID
+  const resolvePolicyTypeName = (policyTypeId) => {
+    if (!policyTypeId) return "";
+    const foundType = policyTypes.find(
+      (pt) => String(pt.policy_type_id) === String(policyTypeId)
+    );
+    return foundType?.policy_type_name || "";
+  };
+
+  // 🔥 NEW: Helper function to resolve policy plan name from ID
+  const resolvePolicyPlanName = (policyPlanId) => {
+    if (!policyPlanId) return "";
+    const foundPlan = policyPlans.find(
+      (pp) => String(pp.policy_plan_id) === String(policyPlanId)
+    );
+    return foundPlan?.policy_name || "";
+  };
+
+  // 🔥 NEW: Derive policy type and plan type names for the CURRENT running policy
+  const derivedCurrentPolicyType =
+    resolvePolicyTypeName(
+      runningPolicy.policy_type_id || runningPolicy.PolicyTypeId
+    ) ||
+    runningPolicy.policy_type_name ||
+    runningPolicy.policy_type ||
+    runningPolicy.PolicyType ||
+    "";
+
+  const derivedCurrentPolicyPlanType =
+    resolvePolicyPlanName(runningPolicy.policy_plan_id) ||
+    runningPolicy.policy_plan_type ||
+    runningPolicy.PolicyPlanType ||
+    "";
+
+  console.log("🔍 [RENEWAL] Derived current policy type:", derivedCurrentPolicyType);
+  console.log("🔍 [RENEWAL] Derived current policy plan type:", derivedCurrentPolicyPlanType);
+
   const mappedData = {
     // Consumer info
     Name: getValue(
@@ -1117,7 +1485,7 @@ const handleRenewal = async (item) => {
     RcBookFileName: getValue(completeUserData, "RcBookFileName", ""),
     RunningPolicyFileName: "",
 
-    // PREVIOUS POLICY: Actual old previous policy
+    // 🔥 UPDATED: PREVIOUS POLICY with derived policy type and plan type names
     previousPolicy: {
       PolicyNumber: previousPolicy.PolicyNumber || "",
       CompanyName:
@@ -1147,6 +1515,9 @@ const handleRenewal = async (item) => {
         previousPolicy.agentContactNumber ||
         previousPolicy.AgentContactNumber ||
         "",
+      // 🔥 NEW: Add derived policy type and plan type names from CURRENT running policy
+      PolicyType: derivedCurrentPolicyType,
+      PolicyPlanType: derivedCurrentPolicyPlanType,
     },
 
     // RUNNING POLICY: Current active policy object
@@ -1171,6 +1542,9 @@ const handleRenewal = async (item) => {
       policy_type_id:
         runningPolicy.policy_type_id || runningPolicy.PolicyTypeId || null,
       policy_plan_id: runningPolicy.policy_plan_id || null,
+      // Add human-readable names
+      PolicyType: derivedCurrentPolicyType,
+      PolicyPlanType: derivedCurrentPolicyPlanType,
     },
 
     // Other data
@@ -1187,6 +1561,8 @@ const handleRenewal = async (item) => {
 
   console.log("✅ [RENEWAL SHEET] Final mapped data:", {
     previousPolicyNumber: mappedData.previousPolicy.PolicyNumber,
+    previousPolicyType: mappedData.previousPolicy.PolicyType,
+    previousPolicyPlanType: mappedData.previousPolicy.PolicyPlanType,
     runningPolicyNumber: mappedData.runningPolicy.PolicyNumber,
     policyRadio: mappedData.policyRadio,
     CompanyName: mappedData.CompanyName,

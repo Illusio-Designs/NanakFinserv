@@ -2,7 +2,7 @@
 
 import DashboardLayout from '../../components/DashboardLayout';
 
-import { getAllMedicalimConsumerData } from '../../serviceAPI/userAPI';
+import { getAllMedicalimConsumerData , getAllMediclaimCompany } from '../../serviceAPI/userAPI';
 
 import * as XLSX from 'xlsx';
 
@@ -23,7 +23,12 @@ import '../../styles/pages/dashboard/Consumer.css';
 
 
 const MediclaimAllPolicies = () => {
-
+  const getCompanyName = (id, companyList) => {
+    if (!id || !companyList) return 'N/A';
+  
+    const found = companyList.find(c => c.mediclaim_company_id == id);
+    return found ? found.mediclaim_company_name : 'N/A';
+  };
   const [data, setData] = useState([]);
 
   const [filteredData, setFilteredData] = useState([]);
@@ -44,10 +49,19 @@ const MediclaimAllPolicies = () => {
 
   const [itemsPerPage] = useState(25);
 
-
+  const [companyData, setCompanyData] = useState([]);
 
   // Fetch mediclaim policy records
-
+  const fetchCompanyData = async () => {
+    try {
+      const response = await getAllMediclaimCompany();
+      if (response?.data && response?.data?.length) {
+        setCompanyData(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching company data:', error);
+    }
+  };
   const fetchMediclaimPolicies = async () => {
 
     setLoading(true);
@@ -179,7 +193,7 @@ const MediclaimAllPolicies = () => {
 
 
   useEffect(() => {
-
+    fetchCompanyData();
     fetchMediclaimPolicies();
 
   }, []);
@@ -342,6 +356,63 @@ const MediclaimAllPolicies = () => {
 
   const transformedData = [];
 
+  const parseDateValue = (value) => {
+    if (!value) return null;
+
+    if (typeof value === 'string') {
+      const parts = value.split('/');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+          const parsed = new Date(year, month, day);
+          if (!isNaN(parsed.getTime())) {
+            return parsed;
+          }
+        }
+      }
+    }
+
+    const parsedDate = new Date(value);
+    return isNaN(parsedDate.getTime()) ? null : parsedDate;
+  };
+
+  const formatDateValue = (value) => {
+    const parsed = parseDateValue(value);
+    return parsed ? parsed.toLocaleDateString('en-GB') : 'N/A';
+  };
+
+  const hasDisplayablePolicyData = (policy = {}) => {
+    const fieldsToCheck = [
+      'PolicyNumber',
+      'PolicyFrom',
+      'PolicyTo',
+      'PolicyIssuedDate',
+      'CompanyName',
+      'SumInsured',
+      'PremiumAmount',
+      'NoClaimBonus',
+      'RenewDate',
+      'PdfFile',
+      'ClaimStatementPDFfile',
+      'PreviousPolicyNumber',
+      'NomineeName',
+      'NomineeRelation',
+      'ClaimExpireInPolicy'
+    ];
+
+    return fieldsToCheck.some((field) => {
+      const value = policy[field];
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (typeof value === 'number') return !isNaN(value);
+      if (typeof value === 'boolean') return true;
+      return !!value;
+    });
+  };
+
   
 
   filteredData.forEach(item => {
@@ -358,141 +429,96 @@ const MediclaimAllPolicies = () => {
 
     // Helper function to create a policy row
 
-    const createPolicyRow = (policy, policyType, companyName) => ({
-
-      issueDate: policy.PolicyIssuedDate ? new Date(policy.PolicyIssuedDate).toLocaleDateString('en-GB') : 'N/A',
-
-      expiryDate: policy.PolicyTo ? new Date(policy.PolicyTo).toLocaleDateString('en-GB') : (policy.ExpiryDate ? new Date(policy.ExpiryDate).toLocaleDateString('en-GB') : 'N/A'),
-
-      name: user.username || 'N/A',
-
-      email: user.email || 'N/A',
-
-      mobileNumber: user.mobileNumber || 'N/A',
-
-      reference: item.referenceName || 'N/A',
-
-      policyTypeText: policyType, // Store text for Excel export
-
-      policyType: (
-
-        <span style={{
-
-          padding: '4px 12px',
-
-          borderRadius: '4px',
-
-          fontSize: '12px',
-
-          fontWeight: '600',
-
-          backgroundColor: policyType === 'Running' ? '#e8f5e9' : '#fff3e0',
-
-          color: policyType === 'Running' ? '#2e7d32' : '#e65100',
-
-          border: `1px solid ${policyType === 'Running' ? '#4caf50' : '#ff9800'}`,
-
-          display: 'inline-block',
-
-          whiteSpace: 'nowrap'
-
-        }}>
-
-          {policyType}
-
-        </span>
-
-      ), // 'Running' or 'Previous'
-
-      policyNumber: policy.PolicyNumber || 'N/A',
-
-      companyName: companyName || 'N/A',
-
-      sumInsured: policy.SumInsured ? `₹${policy.SumInsured.toLocaleString()}` : (item.sumInsured ? `₹${item.sumInsured.toLocaleString()}` : 'N/A'),
-
-      noClaimBonus: policy.NoClaimBonus || item.noClaimBonus || 'N/A',
-
-      premiumAmount: policy.PremiumAmount ? `₹${policy.PremiumAmount.toLocaleString()}` : 'N/A',
-
-      policyFrom: policy.PolicyFrom ? new Date(policy.PolicyFrom).toLocaleDateString('en-GB') : 'N/A',
-
-      policyTo: policy.PolicyTo ? new Date(policy.PolicyTo).toLocaleDateString('en-GB') : 'N/A',
-
-      policyTenure: policy.PolicyTenure || 'N/A',
-
-      nomineeName: policy.NomineeName || 'N/A',
-
-      nomineeRelation: policy.NomineeRelation || 'N/A',
-
-      nomineeAge: policy.NomineeAge || 'N/A',
-
-      nomineeDob: policy.NomineeDob ? new Date(policy.NomineeDob).toLocaleDateString('en-GB') : 'N/A',
-
-      createdDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB') : 'N/A',
-
-      actions: (
-
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-
-          <button
-
-            className="action-btn view-btn"
-
-            onClick={() => handleViewDetails(item)}
-
-            title="View Details"
-
-            style={{
-
-              cursor: 'pointer',
-
-              width: '40px',
-
-              height: '40px',
-
-              border: '2px solid #3b82f6',
-
-              borderRadius: '8px',
-
-              background: '#3b82f6',
-
-              color: 'white',
-
-              display: 'flex',
-
-              alignItems: 'center',
-
-              justifyContent: 'center',
-
-              transition: 'all 0.2s ease',
-
-              boxShadow: '0 2px 8px rgba(59,130,246,0.2)'
-
-            }}
-
-          >
-
-            <FiEye size={20} strokeWidth={2.5} />
-
-          </button>
-
-        </div>
-
-      ),
-
-      originalData: item, // Keep original data for view operations
-
-      // Add raw expiry date for filtering
-
-      rawExpiryDate: policy.PolicyTo || policy.ExpiryDate
-
-    });
+    const createPolicyRow = (policy, policyType, companyName) => {
+      const issueDateSource = policy.PolicyIssuedDate || policy.RenewDate || policy.PolicyFrom || policy.createdAt;
+      const expirySource = policy.PolicyTo || policy.ExpiryDate;
+      const policyFromSource = policy.PolicyFrom;
+      const policyToSource = policy.PolicyTo;
+      const nomineeDobSource = policy.NomineeDob;
+      const createdDateSource = item.createdAt;
+
+      const sumInsuredValue = policy.SumInsured ?? item.sumInsured;
+      const premiumValue = policy.PremiumAmount ?? null;
+
+      const formatCurrency = (value) => {
+        if (value === null || value === undefined || value === '') return 'N/A';
+        const numericValue = Number(value);
+        if (isNaN(numericValue)) return 'N/A';
+        return `₹${numericValue.toLocaleString('en-IN')}`;
+      };
+
+      return {
+        issueDate: formatDateValue(issueDateSource),
+        expiryDate: formatDateValue(expirySource),
+        name: user.username || 'N/A',
+        email: user.email || 'N/A',
+        mobileNumber: user.mobileNumber || 'N/A',
+        reference: item.referenceName || 'N/A',
+        policyTypeText: policyType, // Store text for Excel export
+        policyType: (
+          <span style={{
+            padding: '4px 12px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '600',
+            backgroundColor: policyType === 'Running' ? '#e8f5e9' : '#fff3e0',
+            color: policyType === 'Running' ? '#2e7d32' : '#e65100',
+            border: `1px solid ${policyType === 'Running' ? '#4caf50' : '#ff9800'}`,
+            display: 'inline-block',
+            whiteSpace: 'nowrap'
+          }}>
+            {policyType}
+          </span>
+        ), // 'Running' or 'Previous'
+        policyNumber: policy.PolicyNumber || 'N/A',
+        companyName: companyName || 'N/A',
+        sumInsured: formatCurrency(sumInsuredValue),
+        noClaimBonus: policy.NoClaimBonus || item.noClaimBonus || 'N/A',
+        premiumAmount: formatCurrency(premiumValue),
+        policyFrom: formatDateValue(policyFromSource),
+        policyTo: formatDateValue(policyToSource),
+        policyTenure: policy.PolicyTenure || 'N/A',
+        nomineeName: policy.NomineeName || 'N/A',
+        nomineeRelation: policy.NomineeRelation || 'N/A',
+        nomineeAge: policy.NomineeAge || 'N/A',
+        nomineeDob: formatDateValue(nomineeDobSource),
+        createdDate: formatDateValue(createdDateSource),
+        actions: (
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            <button
+              className="action-btn view-btn"
+              onClick={() => handleViewDetails(item)}
+              title="View Details"
+              style={{
+                cursor: 'pointer',
+                width: '40px',
+                height: '40px',
+                border: '2px solid #3b82f6',
+                borderRadius: '8px',
+                background: '#3b82f6',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(59,130,246,0.2)'
+              }}
+            >
+              <FiEye size={20} strokeWidth={2.5} />
+            </button>
+          </div>
+        ),
+        originalData: item, // Keep original data for view operations
+        // Add raw expiry date for filtering
+        rawExpiryDate: expirySource
+      };
+    };
 
 
 
     // Add running policy row
 
-    if (runningPolicy && Object.keys(runningPolicy).length > 0) {
+    if (runningPolicy && hasDisplayablePolicyData(runningPolicy)) {
 
       transformedData.push(createPolicyRow(
 
@@ -514,8 +540,15 @@ const MediclaimAllPolicies = () => {
 
       previousPolicies.forEach(prevPolicy => {
 
-        const prevCompanyName = prevPolicy.CompanyName || 'N/A';
+        if (!hasDisplayablePolicyData(prevPolicy)) {
+          return;
+        }
 
+        // const prevCompanyName = prevPolicy.CompanyName || mediclaimCompany.mediclaim_company_name || 'N/A';
+        // const prevCompanyName = getCompanyName(prevPolicy.CompanyName, data.map(d => d.mediclaimcompany));
+
+
+        const prevCompanyName = getCompanyName(prevPolicy.CompanyName, companyData);
         transformedData.push(createPolicyRow(
 
           prevPolicy, 
@@ -637,7 +670,8 @@ const MediclaimAllPolicies = () => {
   };
 
 
-
+ 
+  
   return (
 
     <DashboardLayout onSearch={(searchQuery) => {
@@ -1952,7 +1986,13 @@ const MediclaimAllPolicies = () => {
 
                         <label>Company Name:</label>
 
-                        <span>{viewData.previousPolicy.CompanyName || 'N/A'}</span>
+                        {/* <span>{viewData.previousPolicy.CompanyName || 'N/A'}</span> */}
+                        <span>
+  {/* {getCompanyName(viewData.previousPolicy.CompanyName, data.map(d => d.mediclaimcompany))} */}
+ {getCompanyName(viewData.previousPolicy.CompanyName, companyData)}
+
+</span>
+
 
                       </div>
 

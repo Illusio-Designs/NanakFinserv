@@ -2406,6 +2406,59 @@ const VehicleInsurance = () => {
         const runningPolicy =
           parsed.runningPolicy || parsed.running_policy || {};
 
+        // Derive previous policy type & plan type names for autofill
+        let derivedPreviousPolicyType = "";
+        let derivedPreviousPolicyPlanType = "";
+
+        // Try to resolve policy type name from ID using lookup
+        const prevPolicyTypeId =
+          runningPolicy.PolicyTypeId || runningPolicy.policy_type_id;
+        if (
+          prevPolicyTypeId &&
+          Array.isArray(policyTypes) &&
+          policyTypes.length > 0
+        ) {
+          const foundType = policyTypes.find(
+            (pt) => String(pt.policy_type_id) === String(prevPolicyTypeId)
+          );
+          if (foundType?.policy_type_name) {
+            derivedPreviousPolicyType = foundType.policy_type_name;
+          }
+        }
+        // Fallbacks if we couldn't resolve by ID
+        if (!derivedPreviousPolicyType) {
+          derivedPreviousPolicyType =
+            runningPolicy.PolicyType ||
+            runningPolicy.policy_type ||
+            runningPolicy.policy_type_name ||
+            parsed.policy_type_name ||
+            parsed.running_policy_type ||
+            "";
+        }
+
+        // Try to resolve policy plan name from ID using lookup
+        const prevPolicyPlanId = runningPolicy.policy_plan_id;
+        if (
+          prevPolicyPlanId &&
+          Array.isArray(policyPlans) &&
+          policyPlans.length > 0
+        ) {
+          const foundPlan = policyPlans.find(
+            (pp) => String(pp.policy_plan_id) === String(prevPolicyPlanId)
+          );
+          if (foundPlan?.policy_name) {
+            derivedPreviousPolicyPlanType = foundPlan.policy_name;
+          }
+        }
+        // Fallbacks if we couldn't resolve by ID
+        if (!derivedPreviousPolicyPlanType) {
+          derivedPreviousPolicyPlanType =
+            runningPolicy.PolicyPlanType ||
+            runningPolicy.policy_plan_type ||
+            parsed.policy_plan_type ||
+            "";
+        }
+
         const previousFromRunning = {
           ...runningPolicy,
           PdfFile:
@@ -2425,6 +2478,9 @@ const VehicleInsurance = () => {
             runningPolicy.CompanyType?.company_name ||
             parsed.CompanyName ||
             "",
+          // Ensure these are available for the "Previous Policy" section in the form
+          PolicyType: derivedPreviousPolicyType,
+          PolicyPlanType: derivedPreviousPolicyPlanType,
         };
 
         const resetRunning = {
@@ -2566,7 +2622,7 @@ const VehicleInsurance = () => {
     } catch (e) {
       console.error("Failed to open vehicle renew modal from stored data", e);
     }
-  }, []);
+  },[policyPlans, policyTypes]);
 
   const handleInputChange = (field, value) => {
     console.log(`Setting ${field} to:`, value);
@@ -3131,6 +3187,44 @@ const VehicleInsurance = () => {
         CurrentPolicyFile: formData.CurrentPolicyFile || "",
       };
 
+      // const payload = {
+      //   Name: formData.Name || "",
+      //   Email: formData.Email || "",
+      //   MobileNumber: formData.MobileNumber || "",
+      //   company_name: formData.CompanyName || "",
+      //   contact_person_name: formData.ContactPersonName || "",
+      //   contact_person_no: formData.ContactPersonMobileNumber || "",
+      //   vehicle_number: formData.VehicleNumber || "",
+      //   make: formData.Make || "",
+      //   model: formData.Model || "",
+      //   manufacturing_year: formData.ManufacturingYear || "",
+      //   engine_number: formData.EngineNumber || "",
+      //   chassis_number: formData.ChassisNumber || "",
+      //   agent_name: formData.AgentName || "",
+      //   agent_code: formData.AgentCode || "",
+      //   agent_contact_number: formData.AgentContactNumber || "",
+      //   status: formData.Status || "interested",
+      //   type: formData.Type || "",
+      //   vehicle_id: vehicle_id,
+      //   reference_id: reference_id,
+      //   remark: formData.Remark || "",
+      //   runningPolicy: runningPolicy,
+      //   previousPolicy: formData.previousPolicy || {},
+      //   vehicle_type: formData.VehicleType || "",
+      //   vendor: formData.Vendor || "",
+      //   policy_plan_type: formData.PolicyPlanType || "",
+      //   policy_type: formData.policyRadio || "",
+      //   running_policy_type: formData.PolicyType || "",
+      //   vehicle_user_id: formData.vehicle_user_id,
+      //   consumer_role_id: formData.ConsumerRoleId || "",
+      //   documentFiles: documentFiles,
+      //   customDocuments: customDocuments,
+      //   // Add flag to indicate renewal from renewal sheet
+      //   isRenewalFromSheet: formData.isRenewalFromSheet || false,
+      // };
+
+      
+      
       const payload = {
         Name: formData.Name || "",
         Email: formData.Email || "",
@@ -3153,7 +3247,12 @@ const VehicleInsurance = () => {
         reference_id: reference_id,
         remark: formData.Remark || "",
         runningPolicy: runningPolicy,
-        previousPolicy: formData.previousPolicy || {},
+        previousPolicy: {
+          ...formData.previousPolicy,
+          // Ensure policy type and plan type names are included for backend resolution
+          PolicyType: formData.previousPolicy?.PolicyType || formData.PolicyType || "",
+          PolicyPlanType: formData.previousPolicy?.PolicyPlanType || formData.PolicyPlanType || "",
+        },
         vehicle_type: formData.VehicleType || "",
         vendor: formData.Vendor || "",
         policy_plan_type: formData.PolicyPlanType || "",
@@ -3166,7 +3265,6 @@ const VehicleInsurance = () => {
         // Add flag to indicate renewal from renewal sheet
         isRenewalFromSheet: formData.isRenewalFromSheet || false,
       };
-
       let res;
 
       // Check if this is a renewal from renewal sheet
@@ -5644,45 +5742,156 @@ const VehicleInsurance = () => {
               </div>
             )}
 
-            {step === 5 &&
-              (formData.policyRadio === "Renewal" ||
-                formData.policyRadio === "Portability") && (
-                <div className="form-section">
-                  <h5>Previous Policy Details</h5>
+{step === 5 &&
+  (formData.policyRadio === "Renewal" ||
+    formData.policyRadio === "Portability") && (
+    <div className="form-section">
+      <h5>Previous Policy Details</h5>
 
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Previous Policy Number</label>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Previous Policy Number</label>
+          <Input
+            type="text"
+            value={formData.previousPolicy?.PolicyNumber || ""}
+            onChange={(e) =>
+              handleInputChange(
+                "PreviousPolicyNumber",
+                e.target.value
+              )
+            }
+            placeholder="Enter previous policy number"
+          />
+        </div>
 
-                      <Input
-                        type="text"
-                        value={formData.previousPolicy?.PolicyNumber || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "PreviousPolicyNumber",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter previous policy number"
-                      />
-                    </div>
+        <div className="form-group">
+          <label>Previous Policy Type</label>
+          <Select
+            options={policyTypes.map((policyType) => ({
+              value: policyType.policy_type_name,
+              label: policyType.policy_type_name,
+            }))}
+            value={
+              formData.previousPolicy?.PolicyType
+                ? {
+                    value: formData.previousPolicy.PolicyType,
+                    label: formData.previousPolicy.PolicyType,
+                  }
+                : null
+            }
+            onChange={(option) =>
+              handleInputChange(
+                "PreviousPolicyType",
+                option ? option.value : ""
+              )
+            }
+            placeholder="Select previous policy type"
+            isClearable
+          />
+        </div>
+      </div>
 
-                    <div className="form-group">
-                      <label>Previous Company Name</label>
+      <div className="form-row">
+        <div className="form-group">
+          <label>Previous Policy Plan Type</label>
+          <Select
+            options={policyPlans.map((plan) => ({
+              value: plan.policy_name,
+              label: plan.policy_name,
+            }))}
+            value={
+              formData.previousPolicy?.PolicyPlanType
+                ? {
+                    value: formData.previousPolicy.PolicyPlanType,
+                    label: formData.previousPolicy.PolicyPlanType,
+                  }
+                : null
+            }
+            onChange={(option) =>
+              handleInputChange(
+                "PreviousPolicyPlanType",
+                option ? option.value : ""
+              )
+            }
+            placeholder="Select previous policy plan"
+            isClearable
+          />
+        </div>
 
-                      <Input
-                        type="text"
-                        value={formData.previousPolicy?.CompanyName || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "PreviousCompanyName",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter previous company name"
-                      />
-                    </div>
-                  </div>
+        <div className="form-group">
+          <label>Previous Company Name</label>
+          
+          {/* CHANGE THIS PART - Add conditional rendering */}
+          {formData.policyRadio === "Portability" ? (
+            <Select
+              options={companyTypes.map((company) => ({
+                value: company.company_name,
+                label: company.company_name,
+              }))}
+              value={
+                formData.previousPolicy?.CompanyName
+                  ? {
+                      value: formData.previousPolicy.CompanyName,
+                      label: formData.previousPolicy.CompanyName,
+                    }
+                  : null
+              }
+              onChange={(option) =>
+                handleInputChange(
+                  "PreviousCompanyName",
+                  option ? option.value : ""
+                )
+              }
+              placeholder="Select previous company"
+              isClearable
+            />
+          ) : (
+            <Input
+              type="text"
+              value={formData.previousPolicy?.CompanyName || ""}
+              onChange={(e) =>
+                handleInputChange(
+                  "PreviousCompanyName",
+                  e.target.value
+                )
+              }
+              placeholder="Enter previous company name"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ADD THIS NEW SECTION - Only for Portability */}
+      {formData.policyRadio === "Portability" && (
+        <div className="form-row">
+          <div className="form-group">
+            <label>Previous Vendor</label>
+            <Input
+              type="text"
+              value={formData.previousPolicy?.Vendor || ""}
+              onChange={(e) =>
+                handleInputChange("PreviousVendor", e.target.value)
+              }
+              placeholder="Enter previous vendor"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Previous Policy Issued Date</label>
+            <Input
+              type="date"
+              value={formData.previousPolicy?.PolicyIssuedDate || ""}
+              onChange={(e) =>
+                handleInputChange(
+                  "PreviousPolicyIssuedDate",
+                  e.target.value
+                )
+              }
+            />
+          </div>
+        </div>
+      )}
+
 
                   <div className="form-row">
                     <div className="form-group">
