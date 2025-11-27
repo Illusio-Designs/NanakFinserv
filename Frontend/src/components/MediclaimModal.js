@@ -23,6 +23,46 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
   const [showCategoryInput, setShowCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [removedDocuments, setRemovedDocuments] = useState([]); // Track documents marked for removal
+
+  const hasMeaningfulPreviousPolicyPayload = (policy) => {
+    if (!policy || typeof policy !== 'object') return false;
+
+    const fieldsToCheck = [
+      'PolicyNumber',
+      'PolicyFrom',
+      'PolicyTo',
+      'PolicyIssuedDate',
+      'CompanyName',
+      'SumInsured',
+      'PremiumAmount',
+      'NoClaimBonus',
+      'RenewDate',
+      'PdfFile',
+      'PdfFileName',
+      'ClaimStatementPDFfile',
+      'ClaimStatementPDFfileName',
+      'PreviousPolicyNumber',
+      'NomineeName',
+      'NomineeRelation',
+      'NomineeDob',
+      'NomineeAge',
+      'AddOnCover',
+      'ClaimExpireInPolicy',
+      'PreviousAgentName',
+      'PreviousAgentCode',
+      'PreviousAgentContactNumber'
+    ];
+
+    return fieldsToCheck.some((field) => {
+      const value = policy[field];
+
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string') return value.trim() !== '';
+      if (typeof value === 'number') return !isNaN(value);
+      if (typeof value === 'boolean') return true;
+      return !!value;
+    });
+  };
   const [formState, setFormState] = useState({
     formData: {
       Name: '',
@@ -55,6 +95,7 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
         PolicyNumber: '',
         PolicyTenure: '',
         PremiumAmount: '',
+        ClaimExpireInPolicy: '',
         NomineeName: '',
         NomineeRelation: '',
         NomineeAge: '',
@@ -133,254 +174,525 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
     errors: {},
   });
 
-  useEffect(() => {
-    console.log('🔍 [MEDICLAIM MODAL] initialData received:', initialData);
-    if (initialData && initialData.id) {
-      // Initialize form with existing data for edit mode
-      const familyMembers = initialData.familymembers?.map(item => ({
-        DateOfBirth: item.DateOfBirth ? item.DateOfBirth.slice(0, 10) : "",
-        Age: item.Age || 0,
-        Gender: item.Gender || "",
-        RelationshipWithPolicyHolder: item.RelationshipWithPolicyHolder || "",
-        FamilyName: item.FamilyName || "",
-        DateOfJoining: item.DateOfJoining ? item.DateOfJoining.slice(0, 10) : "",
-        PreExistingIllness: item.PreExistingIllness || "",
-      })) || [];
+  // useEffect(() => {
+  //   console.log('🔍 [MEDICLAIM MODAL] initialData received:', initialData);
+  //   if (initialData && initialData.id) {
+  //     // Initialize form with existing data for edit mode
+  //     const familyMembers = initialData.familymembers?.map(item => ({
+  //       DateOfBirth: item.DateOfBirth ? item.DateOfBirth.slice(0, 10) : "",
+  //       Age: item.Age || 0,
+  //       Gender: item.Gender || "",
+  //       RelationshipWithPolicyHolder: item.RelationshipWithPolicyHolder || "",
+  //       FamilyName: item.FamilyName || "",
+  //       DateOfJoining: item.DateOfJoining ? item.DateOfJoining.slice(0, 10) : "",
+  //       PreExistingIllness: item.PreExistingIllness || "",
+  //     })) || [];
 
-      const employees = initialData.employees?.map(item => ({
-        DateOfBirth: item.DateOfBirth ? item.DateOfBirth.slice(0, 10) : "",
-        Age: item.Age || 0,
-        Gender: item.Gender || "",
-        RelationshipWithPolicyHolder: item.RelationshipWithPolicyHolder || "",
-        EmployeeName: item.EmployeeName || "",
-        DateOfJoining: item.DateOfJoining ? item.DateOfJoining.slice(0, 10) : "",
-        PreExistingIllness: item.PreExistingIllness || "",
-      })) || [];
+  //     const employees = initialData.employees?.map(item => ({
+  //       DateOfBirth: item.DateOfBirth ? item.DateOfBirth.slice(0, 10) : "",
+  //       Age: item.Age || 0,
+  //       Gender: item.Gender || "",
+  //       RelationshipWithPolicyHolder: item.RelationshipWithPolicyHolder || "",
+  //       EmployeeName: item.EmployeeName || "",
+  //       DateOfJoining: item.DateOfJoining ? item.DateOfJoining.slice(0, 10) : "",
+  //       PreExistingIllness: item.PreExistingIllness || "",
+  //     })) || [];
 
-      const {
-        medicliam_type,
-        medicliam_policy_type,
-        dob,
-        age,
-        gender,
-        relationshipWithPolicyHolder,
-        sumInsured,
-        noClaimBonus,
-        preExistingIllness,
-        nomineeName,
-        previousPolicy,
-        agentName,
-        agentCode,
-        agentContactNumber,
-        mediclaim_product_id,
-        mediclaim_company_id,
-        runningPolicy,
-        // Individual Insured Person fields
-        insuredPersonName,
-        insuredPersonRelationship,
-        insuredPersonDateOfBirth,
-        insuredPersonAge,
-        insuredPersonGender,
-        insuredPersonDateOfJoining,
-        insuredPersonPreExistingIllness
-      } = initialData;
+  //     const {
+  //       medicliam_type,
+  //       medicliam_policy_type,
+  //       dob,
+  //       age,
+  //       gender,
+  //       relationshipWithPolicyHolder,
+  //       sumInsured,
+  //       noClaimBonus,
+  //       preExistingIllness,
+  //       nomineeName,
+  //       previousPolicy,
+  //       agentName,
+  //       agentCode,
+  //       agentContactNumber,
+  //       mediclaim_product_id,
+  //       mediclaim_company_id,
+  //       runningPolicy,
+  //       // Individual Insured Person fields
+  //       insuredPersonName,
+  //       insuredPersonRelationship,
+  //       insuredPersonDateOfBirth,
+  //       insuredPersonAge,
+  //       insuredPersonGender,
+  //       insuredPersonDateOfJoining,
+  //       insuredPersonPreExistingIllness
+  //     } = initialData;
 
-      // Check if this is a renewal BEFORE setting form state
-      let isRenew = localStorage.getItem('isRenew') || '';
-      let MediclaimID = localStorage.getItem('MediclaimID') || '';
+  //     // Check if this is a renewal BEFORE setting form state
+  //     let isRenew = localStorage.getItem('isRenew') || '';
+  //     let MediclaimID = localStorage.getItem('MediclaimID') || '';
       
-      console.log('🔍 [MEDICLAIM MODAL] Checking renewal flags:', { isRenew, MediclaimID });
-      console.log('🔍 [MEDICLAIM MODAL] Initial runningPolicy:', runningPolicy);
-      console.log('🔍 [MEDICLAIM MODAL] Initial previousPolicy:', previousPolicy);
+  //     console.log('🔍 [MEDICLAIM MODAL] Checking renewal flags:', { isRenew, MediclaimID });
+  //     console.log('🔍 [MEDICLAIM MODAL] Initial runningPolicy:', runningPolicy);
+  //     console.log('🔍 [MEDICLAIM MODAL] Initial previousPolicy:', previousPolicy);
       
-      let finalRunningPolicy = runningPolicy;
-      let finalPreviousPolicy = previousPolicy;
-      let finalPolicyType = medicliam_policy_type;
+  //     let finalRunningPolicy = runningPolicy;
+  //     let finalPreviousPolicy = previousPolicy;
+  //     let finalPolicyType = medicliam_policy_type;
       
-      if (isRenew && MediclaimID) {
-        console.log('🔄 [MEDICLAIM RENEWAL] Processing renewal - moving running policy to previous policy');
-        console.log('🔄 [MEDICLAIM RENEWAL] Current running policy:', runningPolicy);
+  //     if (isRenew && MediclaimID) {
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Processing renewal - moving running policy to previous policy');
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Current running policy:', runningPolicy);
         
-        // Move current running policy to previous policy
-        finalPreviousPolicy = {
-          PolicyNumber: runningPolicy?.PolicyNumber || '',
-          Zone: runningPolicy?.Zone || '',
-          PolicyTenure: runningPolicy?.PolicyTenure || '',
-          PremiumAmount: runningPolicy?.PremiumAmount || '',
-          SumInsured: sumInsured || '',
-          NoClaimBonus: noClaimBonus || '',
-          NomineeName: runningPolicy?.NomineeName || '',
-          NomineeRelation: runningPolicy?.NomineeRelation || '',
-          NomineeAge: runningPolicy?.NomineeAge || '',
-          NomineeDob: runningPolicy?.NomineeDob || '',
-          PolicyFrom: runningPolicy?.PolicyFrom || '',
-          PolicyTo: runningPolicy?.PolicyTo || '',
-          PolicyIssuedDate: runningPolicy?.PolicyIssuedDate || '',
-          ExpiryDate: runningPolicy?.ExpiryDate || '',
-          PolicyPlanType: runningPolicy?.PolicyPlanType || '',
-          AddOnCover: runningPolicy?.AddOnCover || '',
-          PdfFile: runningPolicy?.CurrentPolicyFile || '',
-          PdfFileName: runningPolicy?.CurrentPolicyFile || '',
-          RenewDate: new Date().toISOString().split('T')[0], // ✅ Set to today's date for renewal
-          ClaimExpireInPolicy: runningPolicy?.ClaimExpireInPolicy || '', // ✅ Transfer from running policy
-          PreviousPolicyNumber: runningPolicy?.PolicyNumber || '', // ✅ Set to current policy number
-          CompanyName: mediclaim_company_id || '',
-          mediclaim_product_id: mediclaim_product_id || '', // ✅ Transfer product selection
-          ClaimStatementPDFfile: '',
-          ClaimStatementPDFfileName: '',
-          PreviousAgentName: '',
-          PreviousAgentCode: '',
-          PreviousAgentContactNumber: '',
-        };
+  //       // Move current running policy to previous policy
+  //       finalPreviousPolicy = {
+  //         PolicyNumber: runningPolicy?.PolicyNumber || '',
+  //         Zone: runningPolicy?.Zone || '',
+  //         PolicyTenure: runningPolicy?.PolicyTenure || '',
+  //         PremiumAmount: runningPolicy?.PremiumAmount || '',
+  //         SumInsured: sumInsured || '',
+  //         NoClaimBonus: noClaimBonus || '',
+  //         NomineeName: runningPolicy?.NomineeName || '',
+  //         NomineeRelation: runningPolicy?.NomineeRelation || '',
+  //         NomineeAge: runningPolicy?.NomineeAge || '',
+  //         NomineeDob: runningPolicy?.NomineeDob || '',
+  //         PolicyFrom: runningPolicy?.PolicyFrom || '',
+  //         PolicyTo: runningPolicy?.PolicyTo || '',
+  //         PolicyIssuedDate: runningPolicy?.PolicyIssuedDate || '',
+  //         ExpiryDate: runningPolicy?.ExpiryDate || '',
+  //         PolicyPlanType: runningPolicy?.PolicyPlanType || '',
+  //         AddOnCover: runningPolicy?.AddOnCover || '',
+  //         PdfFile: runningPolicy?.CurrentPolicyFile || '',
+  //         PdfFileName: runningPolicy?.CurrentPolicyFile || '',
+  //         RenewDate: new Date().toISOString().split('T')[0], // ✅ Set to today's date for renewal
+  //         ClaimExpireInPolicy: runningPolicy?.ClaimExpireInPolicy || '', // ✅ Transfer from running policy
+  //         PreviousPolicyNumber: runningPolicy?.PolicyNumber || '', // ✅ Set to current policy number
+  //         CompanyName: mediclaim_company_id || '',
+  //         mediclaim_product_id: mediclaim_product_id || '', // ✅ Transfer product selection
+  //         ClaimStatementPDFfile: '',
+  //         ClaimStatementPDFfileName: '',
+  //         PreviousAgentName: '',
+  //         PreviousAgentCode: '',
+  //         PreviousAgentContactNumber: '',
+  //       };
         
-        // Reset running policy for new entry
-        finalRunningPolicy = {
-          Zone: '',
-          PolicyNumber: '',
-          PolicyTenure: '',
-          PremiumAmount: '',
-          AddOnCover: '',
-          NomineeName: '',
-          NomineeRelation: '',
-          PolicyPlanType: '',
-          NomineeAge: '',
-          NomineeDob: '',
-          PolicyIssuedDate: '',
-          ExpiryDate: '',
-          PreviousPolicyFlag: '',
-          PolicyFrom: '',
-          PolicyTo: '',
-          CurrentPolicyFile: '',
-          CurrentPolicyFileName: '',
-        };
+  //       // Reset running policy for new entry
+  //       finalRunningPolicy = {
+  //         Zone: '',
+  //         PolicyNumber: '',
+  //         PolicyTenure: '',
+  //         PremiumAmount: '',
+  //         AddOnCover: '',
+  //         NomineeName: '',
+  //         NomineeRelation: '',
+  //         PolicyPlanType: '',
+  //         NomineeAge: '',
+  //         NomineeDob: '',
+  //         PolicyIssuedDate: '',
+  //         ExpiryDate: '',
+  //         PreviousPolicyFlag: '',
+  //         PolicyFrom: '',
+  //         PolicyTo: '',
+  //         CurrentPolicyFile: '',
+  //         CurrentPolicyFileName: '',
+  //       };
         
-        // Set policy type to Renewal
-        finalPolicyType = medicliam_policy_type == 'Fresh' ? "Renewal" : medicliam_policy_type == 'Renewal' ? "Renewal" : "Portability";
+  //       // Set policy type to Renewal
+  //       finalPolicyType = medicliam_policy_type == 'Fresh' ? "Renewal" : medicliam_policy_type == 'Renewal' ? "Renewal" : "Portability";
         
-        console.log('🔄 [MEDICLAIM RENEWAL] Updated previous policy:', finalPreviousPolicy);
-        console.log('🔄 [MEDICLAIM RENEWAL] Reset running policy:', finalRunningPolicy);
-        console.log('🔄 [MEDICLAIM RENEWAL] Claim Expiry transferred:', finalPreviousPolicy.ClaimExpireInPolicy);
-        console.log('🔄 [MEDICLAIM RENEWAL] Product ID transferred:', finalPreviousPolicy.mediclaim_product_id);
-        console.log('🔄 [MEDICLAIM RENEWAL] Renew Date set:', finalPreviousPolicy.RenewDate);
-        console.log('🔄 [MEDICLAIM RENEWAL] Previous Policy Number set:', finalPreviousPolicy.PreviousPolicyNumber);
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Updated previous policy:', finalPreviousPolicy);
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Reset running policy:', finalRunningPolicy);
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Claim Expiry transferred:', finalPreviousPolicy.ClaimExpireInPolicy);
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Product ID transferred:', finalPreviousPolicy.mediclaim_product_id);
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Renew Date set:', finalPreviousPolicy.RenewDate);
+  //       console.log('🔄 [MEDICLAIM RENEWAL] Previous Policy Number set:', finalPreviousPolicy.PreviousPolicyNumber);
         
-        // Don't reset productType - keep it for the previous policy
-        // setProductType(''); // ❌ This was clearing the product selection
+  //       // Don't reset productType - keep it for the previous policy
+  //       // setProductType(''); // ❌ This was clearing the product selection
         
-        // Clear renewal flags
-        setTimeout(() => {
-          localStorage.removeItem('isRenew');
-          localStorage.removeItem('MediclaimID');
-          console.log('🔄 [MEDICLAIM RENEWAL] Cleanup complete - removed renewal flags from localStorage');
-        }, 1000);
-      }
+  //       // Clear renewal flags
+  //       setTimeout(() => {
+  //         localStorage.removeItem('isRenew');
+  //         localStorage.removeItem('MediclaimID');
+  //         console.log('🔄 [MEDICLAIM RENEWAL] Cleanup complete - removed renewal flags from localStorage');
+  //       }, 1000);
+  //     }
 
-      setFormState({
-        formData: {
-          Name: initialData.user?.username || initialData.displayName || '',
-          MobileNumber: initialData.user?.mobileNumber || initialData.displayMobile || '',
-          Email: initialData.user?.email || initialData.displayEmail || '',
-          ReferenceName: initialData.referenceName || initialData.displayReference || '',
-          RadioButton: medicliam_type || '',
-          policyRadio: finalPolicyType || '',
-          DateOfBirth: dob ? dob.slice(0, 10) : '',
-          Age: age || 0,
-          Gender: gender || '',
-          RelationshipWithPolicyHolder: relationshipWithPolicyHolder || '',
-          SumInsured: sumInsured || '',
-          NoClaimBonus: noClaimBonus || '',
-          PreExistingIllness: preExistingIllness || '',
-          NomineeName: nomineeName || '',
+  //     setFormState({
+  //       formData: {
+  //         Name: initialData.user?.username || initialData.displayName || '',
+  //         MobileNumber: initialData.user?.mobileNumber || initialData.displayMobile || '',
+  //         Email: initialData.user?.email || initialData.displayEmail || '',
+  //         ReferenceName: initialData.referenceName || initialData.displayReference || '',
+  //         RadioButton: medicliam_type || '',
+  //         policyRadio: finalPolicyType || '',
+  //         DateOfBirth: dob ? dob.slice(0, 10) : '',
+  //         Age: age || 0,
+  //         Gender: gender || '',
+  //         RelationshipWithPolicyHolder: relationshipWithPolicyHolder || '',
+  //         SumInsured: sumInsured || '',
+  //         NoClaimBonus: noClaimBonus || '',
+  //         PreExistingIllness: preExistingIllness || '',
+  //         NomineeName: nomineeName || '',
           
-          // Individual Insured Person fields
-          InsuredPersonName: insuredPersonName || '',
-          InsuredPersonRelationship: insuredPersonRelationship || '',
-          InsuredPersonDateOfBirth: insuredPersonDateOfBirth ? insuredPersonDateOfBirth.slice(0, 10) : '',
-          InsuredPersonAge: insuredPersonAge || 0,
-          InsuredPersonGender: insuredPersonGender || '',
-          InsuredPersonDateOfJoining: insuredPersonDateOfJoining ? insuredPersonDateOfJoining.slice(0, 10) : '',
-          InsuredPersonPreExistingIllness: insuredPersonPreExistingIllness || '',
+  //         // Individual Insured Person fields
+  //         InsuredPersonName: insuredPersonName || '',
+  //         InsuredPersonRelationship: insuredPersonRelationship || '',
+  //         InsuredPersonDateOfBirth: insuredPersonDateOfBirth ? insuredPersonDateOfBirth.slice(0, 10) : '',
+  //         InsuredPersonAge: insuredPersonAge || 0,
+  //         InsuredPersonGender: insuredPersonGender || '',
+  //         InsuredPersonDateOfJoining: insuredPersonDateOfJoining ? insuredPersonDateOfJoining.slice(0, 10) : '',
+  //         InsuredPersonPreExistingIllness: insuredPersonPreExistingIllness || '',
 
-          runningPolicy: {
-            Zone: finalRunningPolicy?.Zone || '',
-            PolicyNumber: finalRunningPolicy?.PolicyNumber || '',
-            PolicyTenure: finalRunningPolicy?.PolicyTenure,
-            PremiumAmount: finalRunningPolicy?.PremiumAmount,
-            AddOnCover: finalRunningPolicy?.AddOnCover || '',
-            NomineeName: finalRunningPolicy?.NomineeName || '',
-            NomineeRelation: finalRunningPolicy?.NomineeRelation || '',
-            PolicyPlanType: finalRunningPolicy?.PolicyPlanType || '',
-            NomineeAge: finalRunningPolicy?.NomineeAge,
-            NomineeDob: finalRunningPolicy?.NomineeDob && finalRunningPolicy?.NomineeDob.slice(0, 10) || '',
-            PolicyIssuedDate: finalRunningPolicy?.PolicyIssuedDate && finalRunningPolicy?.PolicyIssuedDate.slice(0, 10) || '',
-            ExpiryDate: finalRunningPolicy?.ExpiryDate && finalRunningPolicy?.ExpiryDate.slice(0, 10) || '',
-            PreviousPolicyFlag: finalRunningPolicy?.PreviousPolicyFlag && finalRunningPolicy?.PreviousPolicyFlag || '',
-            PolicyFrom: finalRunningPolicy?.PolicyFrom ? finalRunningPolicy?.PolicyFrom.slice(0, 10) : '',
-            PolicyTo: finalRunningPolicy?.PolicyTo ? finalRunningPolicy?.PolicyTo.slice(0, 10) : '',
-            CurrentPolicyFile: finalRunningPolicy?.CurrentPolicyFile || '',
-            CurrentPolicyFileName: finalRunningPolicy?.CurrentPolicyFile || '',
-          },
+  //         runningPolicy: {
+  //           Zone: finalRunningPolicy?.Zone || '',
+  //           PolicyNumber: finalRunningPolicy?.PolicyNumber || '',
+  //           PolicyTenure: finalRunningPolicy?.PolicyTenure,
+  //           PremiumAmount: finalRunningPolicy?.PremiumAmount,
+  //           AddOnCover: finalRunningPolicy?.AddOnCover || '',
+  //           NomineeName: finalRunningPolicy?.NomineeName || '',
+  //           NomineeRelation: finalRunningPolicy?.NomineeRelation || '',
+  //           PolicyPlanType: finalRunningPolicy?.PolicyPlanType || '',
+  //           NomineeAge: finalRunningPolicy?.NomineeAge,
+  //           NomineeDob: finalRunningPolicy?.NomineeDob && finalRunningPolicy?.NomineeDob.slice(0, 10) || '',
+  //           PolicyIssuedDate: finalRunningPolicy?.PolicyIssuedDate && finalRunningPolicy?.PolicyIssuedDate.slice(0, 10) || '',
+  //           ExpiryDate: finalRunningPolicy?.ExpiryDate && finalRunningPolicy?.ExpiryDate.slice(0, 10) || '',
+  //           PreviousPolicyFlag: finalRunningPolicy?.PreviousPolicyFlag && finalRunningPolicy?.PreviousPolicyFlag || '',
+  //           PolicyFrom: finalRunningPolicy?.PolicyFrom ? finalRunningPolicy?.PolicyFrom.slice(0, 10) : '',
+  //           PolicyTo: finalRunningPolicy?.PolicyTo ? finalRunningPolicy?.PolicyTo.slice(0, 10) : '',
+  //           CurrentPolicyFile: finalRunningPolicy?.CurrentPolicyFile || '',
+  //           CurrentPolicyFileName: finalRunningPolicy?.CurrentPolicyFile || '',
+  //         },
 
-          previousPolicy: {
-            Zone: finalPreviousPolicy?.Zone || '',
-            PolicyNumber: finalPreviousPolicy?.PolicyNumber || '',
-            PolicyFrom: finalPreviousPolicy?.PolicyFrom ? finalPreviousPolicy?.PolicyFrom.slice(0, 10) : '',
-            PolicyTo: finalPreviousPolicy?.PolicyTo ? finalPreviousPolicy?.PolicyTo.slice(0, 10) : '',
-            RenewDate: finalPreviousPolicy?.RenewDate ? finalPreviousPolicy?.RenewDate.slice(0, 10) : '',
-            PolicyTenure: finalPreviousPolicy?.PolicyTenure || '',
-            PremiumAmount: finalPreviousPolicy?.PremiumAmount || '',
-            SumInsured: finalPreviousPolicy?.SumInsured || '',
-            NoClaimBonus: finalPreviousPolicy?.NoClaimBonus || '',
-            PdfFile: finalPreviousPolicy?.PdfFile || '',
-            PdfFileName: finalPreviousPolicy?.PdfFileName || '',
-            ClaimStatementPDFfile: finalPreviousPolicy?.ClaimStatementPDFfile || '',
-            ClaimStatementPDFfileName: finalPreviousPolicy?.ClaimStatementPDFfileName || '',
-            ClaimExpireInPolicy: finalPreviousPolicy?.ClaimExpireInPolicy || '',
-            NomineeName: finalPreviousPolicy?.NomineeName || '',
-            NomineeRelation: finalPreviousPolicy?.NomineeRelation || '',
-            PreviousPolicyNumber: finalPreviousPolicy?.PreviousPolicyNumber || '',
-            CompanyName: finalPreviousPolicy?.CompanyName || '',
-            NomineeAge: finalPreviousPolicy?.NomineeAge,
-            NomineeDob: finalPreviousPolicy?.NomineeDob && finalPreviousPolicy?.NomineeDob.slice(0, 10) || '',
-            PreviousAgentName: finalPreviousPolicy?.PreviousAgentName || '',
-            PreviousAgentCode: finalPreviousPolicy?.PreviousAgentCode || '',
-            PreviousAgentContactNumber: finalPreviousPolicy?.PreviousAgentContactNumber || '',
-          },
-          AgentName: agentName || '',
-          AgentCode: agentCode || '',
-          AgentContactNumber: agentContactNumber || '',
-          ProductName: mediclaim_product_id || '',
-          CompanyName: mediclaim_company_id || '',
+  //         previousPolicy: {
+  //           Zone: finalPreviousPolicy?.Zone || '',
+  //           PolicyNumber: finalPreviousPolicy?.PolicyNumber || '',
+  //           PolicyFrom: finalPreviousPolicy?.PolicyFrom ? finalPreviousPolicy?.PolicyFrom.slice(0, 10) : '',
+  //           PolicyTo: finalPreviousPolicy?.PolicyTo ? finalPreviousPolicy?.PolicyTo.slice(0, 10) : '',
+  //           RenewDate: finalPreviousPolicy?.RenewDate ? finalPreviousPolicy?.RenewDate.slice(0, 10) : '',
+  //           PolicyTenure: finalPreviousPolicy?.PolicyTenure || '',
+  //           PremiumAmount: finalPreviousPolicy?.PremiumAmount || '',
+  //           SumInsured: finalPreviousPolicy?.SumInsured || '',
+  //           NoClaimBonus: finalPreviousPolicy?.NoClaimBonus || '',
+  //           PdfFile: finalPreviousPolicy?.PdfFile || '',
+  //           PdfFileName: finalPreviousPolicy?.PdfFileName || '',
+  //           ClaimStatementPDFfile: finalPreviousPolicy?.ClaimStatementPDFfile || '',
+  //           ClaimStatementPDFfileName: finalPreviousPolicy?.ClaimStatementPDFfileName || '',
+  //           ClaimExpireInPolicy: finalPreviousPolicy?.ClaimExpireInPolicy || '',
+  //           NomineeName: finalPreviousPolicy?.NomineeName || '',
+  //           NomineeRelation: finalPreviousPolicy?.NomineeRelation || '',
+  //           PreviousPolicyNumber: finalPreviousPolicy?.PreviousPolicyNumber || '',
+  //           CompanyName: finalPreviousPolicy?.CompanyName || '',
+  //           NomineeAge: finalPreviousPolicy?.NomineeAge,
+  //           NomineeDob: finalPreviousPolicy?.NomineeDob && finalPreviousPolicy?.NomineeDob.slice(0, 10) || '',
+  //           PreviousAgentName: finalPreviousPolicy?.PreviousAgentName || '',
+  //           PreviousAgentCode: finalPreviousPolicy?.PreviousAgentCode || '',
+  //           PreviousAgentContactNumber: finalPreviousPolicy?.PreviousAgentContactNumber || '',
+  //         },
+  //         AgentName: agentName || '',
+  //         AgentCode: agentCode || '',
+  //         AgentContactNumber: agentContactNumber || '',
+  //         ProductName: mediclaim_product_id || '',
+  //         CompanyName: mediclaim_company_id || '',
           
-          // Document file names
-          AadharFileName: initialData.AadharFileName || '',
-          PanFileName: initialData.PanFileName || '',
-          GstFileName: initialData.GstFileName || '',
+  //         // Document file names
+  //         AadharFileName: initialData.AadharFileName || '',
+  //         PanFileName: initialData.PanFileName || '',
+  //         GstFileName: initialData.GstFileName || '',
+  //       },
+  //       familyMembers,
+  //       employees,
+  //     });
+      
+  //     // Load custom documents if any
+  //     if (initialData.customDocuments && initialData.customDocuments.length > 0) {
+  //       setCustomDocuments(initialData.customDocuments);
+  //     }
+      
+  //     // Reset removed documents tracking
+  //     setRemovedDocuments([]);
+
+  //     console.log('🔍 [MEDICLAIM MODAL] Setting company type:', initialData.mediclaim_company_id);
+  //     setCompanyType(initialData.mediclaim_company_id || '');
+  //     if (initialData.mediclaim_company_id) {
+  //       console.log('🔍 [MEDICLAIM MODAL] Loading products for company:', initialData.mediclaim_company_id);
+  //       getProductData(initialData.mediclaim_company_id);
+  //       if (initialData?.previousPolicy?.mediclaim_product_id) {
+  //         setProductType(initialData?.previousPolicy?.mediclaim_product_id);
+  //       }
+  //     }
+  //   }
+  // }, [initialData]);
+
+ 
+ 
+ 
+ // Update the useEffect to handle product selection for previous policy
+// Replace the existing useEffect around line 200-400
+useEffect(() => {
+  console.log('🔍 [MEDICLAIM MODAL] initialData received:', initialData);
+  if (initialData && initialData.id) {
+    // Initialize form with existing data for edit mode
+    const familyMembers = initialData.familymembers?.map(item => ({
+      DateOfBirth: item.DateOfBirth ? item.DateOfBirth.slice(0, 10) : "",
+      Age: item.Age || 0,
+      Gender: item.Gender || "",
+      RelationshipWithPolicyHolder: item.RelationshipWithPolicyHolder || "",
+      FamilyName: item.FamilyName || "",
+      DateOfJoining: item.DateOfJoining ? item.DateOfJoining.slice(0, 10) : "",
+      PreExistingIllness: item.PreExistingIllness || "",
+    })) || [];
+
+    const employees = initialData.employees?.map(item => ({
+      DateOfBirth: item.DateOfBirth ? item.DateOfBirth.slice(0, 10) : "",
+      Age: item.Age || 0,
+      Gender: item.Gender || "",
+      RelationshipWithPolicyHolder: item.RelationshipWithPolicyHolder || "",
+      EmployeeName: item.EmployeeName || "",
+      DateOfJoining: item.DateOfJoining ? item.DateOfJoining.slice(0, 10) : "",
+      PreExistingIllness: item.PreExistingIllness || "",
+    })) || [];
+
+    const {
+      medicliam_type,
+      medicliam_policy_type,
+      dob,
+      age,
+      gender,
+      relationshipWithPolicyHolder,
+      sumInsured,
+      noClaimBonus,
+      preExistingIllness,
+      nomineeName,
+      previousPolicy,
+      agentName,
+      agentCode,
+      agentContactNumber,
+      mediclaim_product_id,
+      mediclaim_company_id,
+      runningPolicy,
+      insuredPersonName,
+      insuredPersonRelationship,
+      insuredPersonDateOfBirth,
+      insuredPersonAge,
+      insuredPersonGender,
+      insuredPersonDateOfJoining,
+      insuredPersonPreExistingIllness
+    } = initialData;
+
+    // Check if this is a renewal BEFORE setting form state
+    let isRenew = localStorage.getItem('isRenew') || '';
+    let MediclaimID = localStorage.getItem('MediclaimID') || '';
+    
+    console.log('🔍 [MEDICLAIM MODAL] Checking renewal flags:', { isRenew, MediclaimID });
+    console.log('🔍 [MEDICLAIM MODAL] Initial runningPolicy:', runningPolicy);
+    console.log('🔍 [MEDICLAIM MODAL] Initial previousPolicy:', previousPolicy);
+    console.log('🔍 [MEDICLAIM MODAL] Current product ID:', mediclaim_product_id);
+    
+    let finalRunningPolicy = runningPolicy;
+    let finalPreviousPolicy = previousPolicy;
+    let finalPolicyType = medicliam_policy_type;
+    let previousPolicyProductId = previousPolicy?.mediclaim_product_id || null;
+    let runningPolicyProductId = null; // ✅ Default to null for renewal
+    
+    if (isRenew && MediclaimID) {
+      console.log('🔄 [MEDICLAIM RENEWAL] Processing renewal - moving running policy to previous policy');
+      console.log('🔄 [MEDICLAIM RENEWAL] Current running policy:', runningPolicy);
+      console.log('🔄 [MEDICLAIM RENEWAL] Transferring product ID:', mediclaim_product_id);
+      
+      // Move current running policy to previous policy
+      finalPreviousPolicy = {
+        PolicyNumber: runningPolicy?.PolicyNumber || '',
+        Zone: runningPolicy?.Zone || '',
+        PolicyTenure: runningPolicy?.PolicyTenure || '',
+        PremiumAmount: runningPolicy?.PremiumAmount || '',
+        SumInsured: sumInsured || '',
+        NoClaimBonus: noClaimBonus || '',
+        NomineeName: runningPolicy?.NomineeName || '',
+        NomineeRelation: runningPolicy?.NomineeRelation || '',
+        NomineeAge: runningPolicy?.NomineeAge || '',
+        NomineeDob: runningPolicy?.NomineeDob || '',
+        PolicyFrom: runningPolicy?.PolicyFrom || '',
+        PolicyTo: runningPolicy?.PolicyTo || '',
+        PolicyIssuedDate: runningPolicy?.PolicyIssuedDate || '',
+        ExpiryDate: runningPolicy?.ExpiryDate || '',
+        PolicyPlanType: runningPolicy?.PolicyPlanType || '',
+        AddOnCover: runningPolicy?.AddOnCover || '',
+        PdfFile: runningPolicy?.CurrentPolicyFile || '',
+        PdfFileName: runningPolicy?.CurrentPolicyFile || '',
+        RenewDate: new Date().toISOString().split('T')[0],
+        ClaimExpireInPolicy: runningPolicy?.ClaimExpireInPolicy || '',
+        PreviousPolicyNumber: runningPolicy?.PolicyNumber || '',
+        CompanyName: mediclaim_company_id || '',
+        mediclaim_product_id: mediclaim_product_id || '', // ✅ Transfer product ID to previous policy
+        ClaimStatementPDFfile: '',
+        ClaimStatementPDFfileName: '',
+        PreviousAgentName: '',
+        PreviousAgentCode: '',
+        PreviousAgentContactNumber: '',
+      };
+      
+      // ✅ Set previous policy product ID for renewal
+      previousPolicyProductId = mediclaim_product_id;
+      
+      // ✅ KEEP runningPolicyProductId as null (empty) for renewal
+      runningPolicyProductId = null;
+      
+      // Reset running policy for new entry
+      finalRunningPolicy = {
+        Zone: '',
+        PolicyNumber: '',
+        PolicyTenure: '',
+        PremiumAmount: '',
+        AddOnCover: '',
+        NomineeName: '',
+        NomineeRelation: '',
+        PolicyPlanType: '',
+        NomineeAge: '',
+        NomineeDob: '',
+        PolicyIssuedDate: '',
+        ExpiryDate: '',
+        PreviousPolicyFlag: '',
+        PolicyFrom: '',
+        PolicyTo: '',
+        CurrentPolicyFile: '',
+        CurrentPolicyFileName: '',
+      };
+      
+      // Set policy type to Renewal
+      finalPolicyType = medicliam_policy_type == 'Fresh' ? "Renewal" : medicliam_policy_type == 'Renewal' ? "Renewal" : "Portability";
+      
+      console.log('🔄 [MEDICLAIM RENEWAL] Updated previous policy:', finalPreviousPolicy);
+      console.log('🔄 [MEDICLAIM RENEWAL] Reset running policy:', finalRunningPolicy);
+      console.log('🔄 [MEDICLAIM RENEWAL] Previous policy product ID:', previousPolicyProductId);
+      console.log('🔄 [MEDICLAIM RENEWAL] Running policy product ID (should be null):', runningPolicyProductId);
+      
+      // Clear renewal flags
+      setTimeout(() => {
+        localStorage.removeItem('isRenew');
+        localStorage.removeItem('MediclaimID');
+        console.log('🔄 [MEDICLAIM RENEWAL] Cleanup complete - removed renewal flags from localStorage');
+      }, 1000);
+    } else {
+      // ✅ For non-renewal cases, keep the existing product
+      runningPolicyProductId = mediclaim_product_id;
+    }
+
+    setFormState({
+      formData: {
+        Name: initialData.user?.username || initialData.displayName || '',
+        MobileNumber: initialData.user?.mobileNumber || initialData.displayMobile || '',
+        Email: initialData.user?.email || initialData.displayEmail || '',
+        ReferenceName: initialData.referenceName || initialData.displayReference || '',
+        RadioButton: medicliam_type || '',
+        policyRadio: finalPolicyType || '',
+        DateOfBirth: dob ? dob.slice(0, 10) : '',
+        Age: age || 0,
+        Gender: gender || '',
+        RelationshipWithPolicyHolder: relationshipWithPolicyHolder || '',
+        SumInsured: sumInsured || '',
+        NoClaimBonus: noClaimBonus || '',
+        PreExistingIllness: preExistingIllness || '',
+        NomineeName: nomineeName || '',
+        
+        InsuredPersonName: insuredPersonName || '',
+        InsuredPersonRelationship: insuredPersonRelationship || '',
+        InsuredPersonDateOfBirth: insuredPersonDateOfBirth ? insuredPersonDateOfBirth.slice(0, 10) : '',
+        InsuredPersonAge: insuredPersonAge || 0,
+        InsuredPersonGender: insuredPersonGender || '',
+        InsuredPersonDateOfJoining: insuredPersonDateOfJoining ? insuredPersonDateOfJoining.slice(0, 10) : '',
+        InsuredPersonPreExistingIllness: insuredPersonPreExistingIllness || '',
+
+        runningPolicy: {
+          Zone: finalRunningPolicy?.Zone || '',
+          PolicyNumber: finalRunningPolicy?.PolicyNumber || '',
+          PolicyTenure: finalRunningPolicy?.PolicyTenure,
+          PremiumAmount: finalRunningPolicy?.PremiumAmount,
+          ClaimExpireInPolicy: finalRunningPolicy?.ClaimExpireInPolicy || '',
+          AddOnCover: finalRunningPolicy?.AddOnCover || '',
+          NomineeName: finalRunningPolicy?.NomineeName || '',
+          NomineeRelation: finalRunningPolicy?.NomineeRelation || '',
+          PolicyPlanType: finalRunningPolicy?.PolicyPlanType || '',
+          NomineeAge: finalRunningPolicy?.NomineeAge,
+          NomineeDob: finalRunningPolicy?.NomineeDob && finalRunningPolicy?.NomineeDob.slice(0, 10) || '',
+          PolicyIssuedDate: finalRunningPolicy?.PolicyIssuedDate && finalRunningPolicy?.PolicyIssuedDate.slice(0, 10) || '',
+          ExpiryDate: finalRunningPolicy?.ExpiryDate && finalRunningPolicy?.ExpiryDate.slice(0, 10) || '',
+          PreviousPolicyFlag: finalRunningPolicy?.PreviousPolicyFlag && finalRunningPolicy?.PreviousPolicyFlag || '',
+          PolicyFrom: finalRunningPolicy?.PolicyFrom ? finalRunningPolicy?.PolicyFrom.slice(0, 10) : '',
+          PolicyTo: finalRunningPolicy?.PolicyTo ? finalRunningPolicy?.PolicyTo.slice(0, 10) : '',
+          CurrentPolicyFile: finalRunningPolicy?.CurrentPolicyFile || '',
+          CurrentPolicyFileName: finalRunningPolicy?.CurrentPolicyFile || '',
         },
-        familyMembers,
-        employees,
-      });
-      
-      // Load custom documents if any
-      if (initialData.customDocuments && initialData.customDocuments.length > 0) {
-        setCustomDocuments(initialData.customDocuments);
-      }
-      
-      // Reset removed documents tracking
-      setRemovedDocuments([]);
 
-      console.log('🔍 [MEDICLAIM MODAL] Setting company type:', initialData.mediclaim_company_id);
-      setCompanyType(initialData.mediclaim_company_id || '');
-      if (initialData.mediclaim_company_id) {
-        console.log('🔍 [MEDICLAIM MODAL] Loading products for company:', initialData.mediclaim_company_id);
-        getProductData(initialData.mediclaim_company_id);
-        if (initialData?.previousPolicy?.mediclaim_product_id) {
-          setProductType(initialData?.previousPolicy?.mediclaim_product_id);
-        }
+        previousPolicy: {
+          Zone: finalPreviousPolicy?.Zone || '',
+          PolicyNumber: finalPreviousPolicy?.PolicyNumber || '',
+          PolicyFrom: finalPreviousPolicy?.PolicyFrom ? finalPreviousPolicy?.PolicyFrom.slice(0, 10) : '',
+          PolicyTo: finalPreviousPolicy?.PolicyTo ? finalPreviousPolicy?.PolicyTo.slice(0, 10) : '',
+          RenewDate: finalPreviousPolicy?.RenewDate ? finalPreviousPolicy?.RenewDate.slice(0, 10) : '',
+          PolicyTenure: finalPreviousPolicy?.PolicyTenure || '',
+          PremiumAmount: finalPreviousPolicy?.PremiumAmount || '',
+          SumInsured: finalPreviousPolicy?.SumInsured || '',
+          NoClaimBonus: finalPreviousPolicy?.NoClaimBonus || '',
+          PdfFile: finalPreviousPolicy?.PdfFile || '',
+          PdfFileName: finalPreviousPolicy?.PdfFileName || '',
+          ClaimStatementPDFfile: finalPreviousPolicy?.ClaimStatementPDFfile || '',
+          ClaimStatementPDFfileName: finalPreviousPolicy?.ClaimStatementPDFfileName || '',
+          ClaimExpireInPolicy: finalPreviousPolicy?.ClaimExpireInPolicy || '',
+          NomineeName: finalPreviousPolicy?.NomineeName || '',
+          NomineeRelation: finalPreviousPolicy?.NomineeRelation || '',
+          PreviousPolicyNumber: finalPreviousPolicy?.PreviousPolicyNumber || '',
+          CompanyName: finalPreviousPolicy?.CompanyName || '',
+          mediclaim_product_id: previousPolicyProductId, // ✅ Store product ID in previous policy
+          NomineeAge: finalPreviousPolicy?.NomineeAge,
+          NomineeDob: finalPreviousPolicy?.NomineeDob && finalPreviousPolicy?.NomineeDob.slice(0, 10) || '',
+          PreviousAgentName: finalPreviousPolicy?.PreviousAgentName || '',
+          PreviousAgentCode: finalPreviousPolicy?.PreviousAgentCode || '',
+          PreviousAgentContactNumber: finalPreviousPolicy?.PreviousAgentContactNumber || '',
+        },
+        AgentName: agentName || '',
+        AgentCode: agentCode || '',
+        AgentContactNumber: agentContactNumber || '',
+        ProductName: runningPolicyProductId || '', // ✅ Use the correct product for running policy (empty for renewal)
+        CompanyName: mediclaim_company_id || '',
+        
+        AadharFileName: initialData.AadharFileName || '',
+        PanFileName: initialData.PanFileName || '',
+        GstFileName: initialData.GstFileName || '',
+      },
+      familyMembers,
+      employees,
+    });
+    
+    // Load custom documents if any
+    if (initialData.customDocuments && initialData.customDocuments.length > 0) {
+      setCustomDocuments(initialData.customDocuments);
+    }
+    
+    // Reset removed documents tracking
+    setRemovedDocuments([]);
+
+    console.log('🔍 [MEDICLAIM MODAL] Setting company type:', initialData.mediclaim_company_id);
+    setCompanyType(initialData.mediclaim_company_id || '');
+    
+    if (initialData.mediclaim_company_id) {
+      console.log('🔍 [MEDICLAIM MODAL] Loading products for company:', initialData.mediclaim_company_id);
+      getProductData(initialData.mediclaim_company_id);
+      
+      // ✅ For renewal cases, DON'T set productType (keep it empty for running policy)
+      if (isRenew && MediclaimID) {
+        console.log('🔄 [MEDICLAIM MODAL] Renewal case - keeping product empty for running policy');
+        setProductType(''); // ✅ Keep empty for running policy during renewal
+      } else if (previousPolicyProductId) {
+        console.log('🔄 [MEDICLAIM MODAL] Setting product type for previous policy:', previousPolicyProductId);
+        setProductType(previousPolicyProductId);
+      } else if (mediclaim_product_id) {
+        // Fallback to main product ID for non-renewal cases
+        console.log('🔄 [MEDICLAIM MODAL] Setting product type for running policy:', mediclaim_product_id);
+        setProductType(mediclaim_product_id);
       }
     }
-  }, [initialData]);
-
+  }
+}, [initialData]);
+ 
   useEffect(() => {
     getCompanyData();
   }, []);
@@ -454,118 +766,385 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('🔍 [SUBMIT] Form submission triggered, current step:', currentStep);
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   console.log('🔍 [SUBMIT] Form submission triggered, current step:', currentStep);
     
-    if (isSubmitting) {
-      console.log('🔍 [SUBMIT] Already submitting, returning');
-      return;
-    }
+  //   if (isSubmitting) {
+  //     console.log('🔍 [SUBMIT] Already submitting, returning');
+  //     return;
+  //   }
 
-    if (currentStep !== 6) {
-      console.log('🔍 [SUBMIT] Not on final step, returning');
-      return;
-    }
+  //   if (currentStep !== 6) {
+  //     console.log('🔍 [SUBMIT] Not on final step, returning');
+  //     return;
+  //   }
 
-    console.log('🔍 [SUBMIT] Starting submission process...');
-    setIsSubmitting(true);
+  //   console.log('🔍 [SUBMIT] Starting submission process...');
+  //   setIsSubmitting(true);
     
-    try {
-      const formDataPDF = new FormData();
-      if (formState?.formData?.runningPolicy?.CurrentPolicyFile) {
-        formDataPDF.append('CurrentPolicyFile', formState?.formData?.runningPolicy?.CurrentPolicyFile);
-      }
-      if (formState?.formData?.previousPolicy?.ClaimStatementPDFfile && formState?.formData?.previousPolicy?.ClaimExpireInPolicy === 'Yes') {
-        formDataPDF.append('ClaimStatementPDFfile', formState?.formData?.previousPolicy?.ClaimStatementPDFfile);
-      }
-      if (formState?.formData?.previousPolicy?.PdfFile) {
-        formDataPDF.append('PdfFile', formState?.formData?.previousPolicy?.PdfFile);
-      }
+  //   try {
+  //     const formDataPDF = new FormData();
+  //     if (formState?.formData?.runningPolicy?.CurrentPolicyFile) {
+  //       formDataPDF.append('CurrentPolicyFile', formState?.formData?.runningPolicy?.CurrentPolicyFile);
+  //     }
+  //     if (formState?.formData?.previousPolicy?.ClaimStatementPDFfile && formState?.formData?.previousPolicy?.ClaimExpireInPolicy === 'Yes') {
+  //       formDataPDF.append('ClaimStatementPDFfile', formState?.formData?.previousPolicy?.ClaimStatementPDFfile);
+  //     }
+  //     if (formState?.formData?.previousPolicy?.PdfFile) {
+  //       formDataPDF.append('PdfFile', formState?.formData?.previousPolicy?.PdfFile);
+  //     }
       
-      // Add document files
-      if (documentFiles.aadhar) {
-        formDataPDF.append('aadhar', documentFiles.aadhar);
-      }
-      if (documentFiles.pan) {
-        formDataPDF.append('pan', documentFiles.pan);
-      }
-      if (documentFiles.gst) {
-        formDataPDF.append('gst', documentFiles.gst);
-      }
+  //     // Add document files
+  //     if (documentFiles.aadhar) {
+  //       formDataPDF.append('aadhar', documentFiles.aadhar);
+  //     }
+  //     if (documentFiles.pan) {
+  //       formDataPDF.append('pan', documentFiles.pan);
+  //     }
+  //     if (documentFiles.gst) {
+  //       formDataPDF.append('gst', documentFiles.gst);
+  //     }
       
-      // Add custom documents
-      customDocuments.forEach((doc, idx) => {
-        if (doc.file) {
-          formDataPDF.append(`customDocument_${idx}`, doc.file);
-        }
-      });
+  //     // Add custom documents
+  //     customDocuments.forEach((doc, idx) => {
+  //       if (doc.file) {
+  //         formDataPDF.append(`customDocument_${idx}`, doc.file);
+  //       }
+  //     });
 
-      // Create a clean payload without File objects (they're sent separately in FormData)
-      const cleanRunningPolicy = { ...formState.formData.runningPolicy };
-      const cleanPreviousPolicy = { ...formState.formData.previousPolicy };
+  //     // Create a clean payload without File objects (they're sent separately in FormData)
+  //     const cleanRunningPolicy = { ...formState.formData.runningPolicy };
+  //     const cleanPreviousPolicy = { ...formState.formData.previousPolicy };
       
-      // Remove File objects from running policy (keep only strings for existing files)
-      if (cleanRunningPolicy.CurrentPolicyFile && typeof cleanRunningPolicy.CurrentPolicyFile === 'object') {
-        delete cleanRunningPolicy.CurrentPolicyFile;
-        delete cleanRunningPolicy.CurrentPolicyFileName;
-      }
+  //     // Remove File objects from running policy (keep only strings for existing files)
+  //     if (cleanRunningPolicy.CurrentPolicyFile && typeof cleanRunningPolicy.CurrentPolicyFile === 'object') {
+  //       delete cleanRunningPolicy.CurrentPolicyFile;
+  //       delete cleanRunningPolicy.CurrentPolicyFileName;
+  //     }
       
-      // Remove File objects from previous policy (keep only strings for existing files)
-      if (cleanPreviousPolicy.PdfFile && typeof cleanPreviousPolicy.PdfFile === 'object') {
-        delete cleanPreviousPolicy.PdfFile;
-        delete cleanPreviousPolicy.PdfFileName;
-      }
-      if (cleanPreviousPolicy.ClaimStatementPDFfile && typeof cleanPreviousPolicy.ClaimStatementPDFfile === 'object') {
-        delete cleanPreviousPolicy.ClaimStatementPDFfile;
-        delete cleanPreviousPolicy.ClaimStatementPDFfileName;
-      }
+  //     // Remove File objects from previous policy (keep only strings for existing files)
+  //     if (cleanPreviousPolicy.PdfFile && typeof cleanPreviousPolicy.PdfFile === 'object') {
+  //       delete cleanPreviousPolicy.PdfFile;
+  //       delete cleanPreviousPolicy.PdfFileName;
+  //     }
+  //     if (cleanPreviousPolicy.ClaimStatementPDFfile && typeof cleanPreviousPolicy.ClaimStatementPDFfile === 'object') {
+  //       delete cleanPreviousPolicy.ClaimStatementPDFfile;
+  //       delete cleanPreviousPolicy.ClaimStatementPDFfileName;
+  //     }
 
-      const payload = {
-        ...formState.formData,
-        runningPolicy: cleanRunningPolicy,
-        previousPolicy: cleanPreviousPolicy,
-        familyMembers: formState.familyMembers,
-        employees: formState.employees,
-        ProductName: productType,
-        CompanyName: companyType,
-        customDocuments: customDocuments.map(doc => ({ name: doc.name })),
-        removedDocuments: removedDocuments, // Include list of documents to remove
-      };
+  //     const shouldIncludePreviousPolicy = hasMeaningfulPreviousPolicyPayload(cleanPreviousPolicy);
 
-      console.log('🔍 [SUBMIT] Payload prepared:', payload);
-      console.log('🔍 [SUBMIT] Documents to remove:', removedDocuments);
+  //     const payload = {
+  //       ...formState.formData,
+  //       runningPolicy: cleanRunningPolicy,
+  //       previousPolicy: shouldIncludePreviousPolicy ? cleanPreviousPolicy : null,
+  //       familyMembers: formState.familyMembers,
+  //       employees: formState.employees,
+  //       ProductName: productType,
+  //       CompanyName: companyType,
+  //       customDocuments: customDocuments.map(doc => ({ name: doc.name })),
+  //       removedDocuments: removedDocuments, // Include list of documents to remove
+  //     };
 
-      let response;
-      if (initialData && initialData.id) {
-        payload.user_id = initialData.user_id;
-        payload.id = initialData.id;
-        formDataPDF.append("data", JSON.stringify(payload));
-        console.log('🔍 [SUBMIT] Updating existing mediclaim with ID:', payload.id);
-        response = await updateMediclaimUser(formDataPDF, payload.id, addToast);
-      } else {
-        formDataPDF.append("data", JSON.stringify(payload));
-        console.log('🔍 [SUBMIT] Creating new mediclaim');
-        response = await addMediclaimUser(formDataPDF, addToast);
-      }
+  //     console.log('🔍 [SUBMIT] Payload prepared:', payload);
+  //     console.log('🔍 [SUBMIT] Documents to remove:', removedDocuments);
 
-      console.log('🔍 [SUBMIT] API response:', response);
+  //     let response;
+  //     if (initialData && initialData.id) {
+  //       payload.user_id = initialData.user_id;
+  //       payload.id = initialData.id;
+  //       formDataPDF.append("data", JSON.stringify(payload));
+  //       console.log('🔍 [SUBMIT] Updating existing mediclaim with ID:', payload.id);
+  //       response = await updateMediclaimUser(formDataPDF, payload.id, addToast);
+  //     } else {
+  //       formDataPDF.append("data", JSON.stringify(payload));
+  //       console.log('🔍 [SUBMIT] Creating new mediclaim');
+  //       response = await addMediclaimUser(formDataPDF, addToast);
+  //     }
 
-      if (response.status) {
-        console.log('🔍 [SUBMIT] Success! Closing modal and refreshing data');
-        fetchApi();
-        onClose();
-      } else {
-        console.log('🔍 [SUBMIT] API returned error status');
-      }
-    } catch (error) {
-      console.error('🔍 [SUBMIT] Error during submission:', error);
-    } finally {
-      console.log('🔍 [SUBMIT] Setting isSubmitting to false');
-      setIsSubmitting(false);
+  //     console.log('🔍 [SUBMIT] API response:', response);
+
+  //     if (response.status) {
+  //       console.log('🔍 [SUBMIT] Success! Closing modal and refreshing data');
+  //       fetchApi();
+  //       onClose();
+  //     } else {
+  //       console.log('🔍 [SUBMIT] API returned error status');
+  //     }
+  //   } catch (error) {
+  //     console.error('🔍 [SUBMIT] Error during submission:', error);
+  //   } finally {
+  //     console.log('🔍 [SUBMIT] Setting isSubmitting to false');
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+
+
+
+  // Update the handleSubmit function to properly handle previous policy product
+// Replace your existing handleSubmit function
+
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+//   console.log('🔍 [SUBMIT] Form submission triggered, current step:', currentStep);
+  
+//   if (isSubmitting) {
+//     console.log('🔍 [SUBMIT] Already submitting, returning');
+//     return;
+//   }
+
+//   if (currentStep !== 6) {
+//     console.log('🔍 [SUBMIT] Not on final step, returning');
+//     return;
+//   }
+
+//   console.log('🔍 [SUBMIT] Starting submission process...');
+//   setIsSubmitting(true);
+  
+//   try {
+//     const formDataPDF = new FormData();
+//     if (formState?.formData?.runningPolicy?.CurrentPolicyFile) {
+//       formDataPDF.append('CurrentPolicyFile', formState?.formData?.runningPolicy?.CurrentPolicyFile);
+//     }
+//     if (formState?.formData?.previousPolicy?.ClaimStatementPDFfile && formState?.formData?.previousPolicy?.ClaimExpireInPolicy === 'Yes') {
+//       formDataPDF.append('ClaimStatementPDFfile', formState?.formData?.previousPolicy?.ClaimStatementPDFfile);
+//     }
+//     if (formState?.formData?.previousPolicy?.PdfFile) {
+//       formDataPDF.append('PdfFile', formState?.formData?.previousPolicy?.PdfFile);
+//     }
+    
+//     // Add document files
+//     if (documentFiles.aadhar) {
+//       formDataPDF.append('aadhar', documentFiles.aadhar);
+//     }
+//     if (documentFiles.pan) {
+//       formDataPDF.append('pan', documentFiles.pan);
+//     }
+//     if (documentFiles.gst) {
+//       formDataPDF.append('gst', documentFiles.gst);
+//     }
+    
+//     // Add custom documents
+//     customDocuments.forEach((doc, idx) => {
+//       if (doc.file) {
+//         formDataPDF.append(`customDocument_${idx}`, doc.file);
+//       }
+//     });
+
+//     // Create a clean payload without File objects (they're sent separately in FormData)
+//     const cleanRunningPolicy = { ...formState.formData.runningPolicy };
+//     const cleanPreviousPolicy = { ...formState.formData.previousPolicy };
+    
+//     // Remove File objects from running policy (keep only strings for existing files)
+//     if (cleanRunningPolicy.CurrentPolicyFile && typeof cleanRunningPolicy.CurrentPolicyFile === 'object') {
+//       delete cleanRunningPolicy.CurrentPolicyFile;
+//       delete cleanRunningPolicy.CurrentPolicyFileName;
+//     }
+    
+//     // Remove File objects from previous policy (keep only strings for existing files)
+//     if (cleanPreviousPolicy.PdfFile && typeof cleanPreviousPolicy.PdfFile === 'object') {
+//       delete cleanPreviousPolicy.PdfFile;
+//       delete cleanPreviousPolicy.PdfFileName;
+//     }
+//     if (cleanPreviousPolicy.ClaimStatementPDFfile && typeof cleanPreviousPolicy.ClaimStatementPDFfile === 'object') {
+//       delete cleanPreviousPolicy.ClaimStatementPDFfile;
+//       delete cleanPreviousPolicy.ClaimStatementPDFfileName;
+//     }
+
+//     const shouldIncludePreviousPolicy = hasMeaningfulPreviousPolicyPayload(cleanPreviousPolicy);
+
+//     // ✅ Determine which product to use based on policy type
+//     let productToSubmit = productType;
+    
+//     // For Fresh policy: use running policy product (productType)
+//     // For Renewal/Portability: use previous policy product if available
+//     if ((formState.formData.policyRadio === 'Renewal' || formState.formData.policyRadio === 'Portability') 
+//         && cleanPreviousPolicy.mediclaim_product_id) {
+//       productToSubmit = cleanPreviousPolicy.mediclaim_product_id;
+//       console.log('🔍 [SUBMIT] Using previous policy product:', productToSubmit);
+//     }
+
+//     const payload = {
+//       ...formState.formData,
+//       runningPolicy: cleanRunningPolicy,
+//       previousPolicy: shouldIncludePreviousPolicy ? cleanPreviousPolicy : null,
+//       familyMembers: formState.familyMembers,
+//       employees: formState.employees,
+//       ProductName: productToSubmit, // ✅ Use the correct product based on policy type
+//       CompanyName: companyType,
+//       customDocuments: customDocuments.map(doc => ({ name: doc.name })),
+//       removedDocuments: removedDocuments,
+//     };
+
+//     console.log('🔍 [SUBMIT] Payload prepared:', payload);
+//     console.log('🔍 [SUBMIT] Product being submitted:', productToSubmit);
+//     console.log('🔍 [SUBMIT] Documents to remove:', removedDocuments);
+
+//     let response;
+//     if (initialData && initialData.id) {
+//       payload.user_id = initialData.user_id;
+//       payload.id = initialData.id;
+//       formDataPDF.append("data", JSON.stringify(payload));
+//       console.log('🔍 [SUBMIT] Updating existing mediclaim with ID:', payload.id);
+//       response = await updateMediclaimUser(formDataPDF, payload.id, addToast);
+//     } else {
+//       formDataPDF.append("data", JSON.stringify(payload));
+//       console.log('🔍 [SUBMIT] Creating new mediclaim');
+//       response = await addMediclaimUser(formDataPDF, addToast);
+//     }
+
+//     console.log('🔍 [SUBMIT] API response:', response);
+
+//     if (response.status) {
+//       console.log('🔍 [SUBMIT] Success! Closing modal and refreshing data');
+//       fetchApi();
+//       onClose();
+//     } else {
+//       console.log('🔍 [SUBMIT] API returned error status');
+//     }
+//   } catch (error) {
+//     console.error('🔍 [SUBMIT] Error during submission:', error);
+//   } finally {
+//     console.log('🔍 [SUBMIT] Setting isSubmitting to false');
+//     setIsSubmitting(false);
+//   }
+// };
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log('🔍 [SUBMIT] Form submission triggered, current step:', currentStep);
+  
+  if (isSubmitting) {
+    console.log('🔍 [SUBMIT] Already submitting, returning');
+    return;
+  }
+
+  if (currentStep !== 6) {
+    console.log('🔍 [SUBMIT] Not on final step, returning');
+    return;
+  }
+
+  console.log('🔍 [SUBMIT] Starting submission process...');
+  setIsSubmitting(true);
+  
+  try {
+    const formDataPDF = new FormData();
+    if (formState?.formData?.runningPolicy?.CurrentPolicyFile) {
+      formDataPDF.append('CurrentPolicyFile', formState?.formData?.runningPolicy?.CurrentPolicyFile);
     }
-  };
+    if (formState?.formData?.previousPolicy?.ClaimStatementPDFfile && formState?.formData?.previousPolicy?.ClaimExpireInPolicy === 'Yes') {
+      formDataPDF.append('ClaimStatementPDFfile', formState?.formData?.previousPolicy?.ClaimStatementPDFfile);
+    }
+    if (formState?.formData?.previousPolicy?.PdfFile) {
+      formDataPDF.append('PdfFile', formState?.formData?.previousPolicy?.PdfFile);
+    }
+    
+    // Add document files
+    if (documentFiles.aadhar) {
+      formDataPDF.append('aadhar', documentFiles.aadhar);
+    }
+    if (documentFiles.pan) {
+      formDataPDF.append('pan', documentFiles.pan);
+    }
+    if (documentFiles.gst) {
+      formDataPDF.append('gst', documentFiles.gst);
+    }
+    
+    // Add custom documents
+    customDocuments.forEach((doc, idx) => {
+      if (doc.file) {
+        formDataPDF.append(`customDocument_${idx}`, doc.file);
+      }
+    });
 
+    // Create a clean payload without File objects (they're sent separately in FormData)
+    const cleanRunningPolicy = { ...formState.formData.runningPolicy };
+    const cleanPreviousPolicy = { ...formState.formData.previousPolicy };
+    
+    // Remove File objects from running policy (keep only strings for existing files)
+    if (cleanRunningPolicy.CurrentPolicyFile && typeof cleanRunningPolicy.CurrentPolicyFile === 'object') {
+      delete cleanRunningPolicy.CurrentPolicyFile;
+      delete cleanRunningPolicy.CurrentPolicyFileName;
+    }
+    
+    // Remove File objects from previous policy (keep only strings for existing files)
+    if (cleanPreviousPolicy.PdfFile && typeof cleanPreviousPolicy.PdfFile === 'object') {
+      delete cleanPreviousPolicy.PdfFile;
+      delete cleanPreviousPolicy.PdfFileName;
+    }
+    if (cleanPreviousPolicy.ClaimStatementPDFfile && typeof cleanPreviousPolicy.ClaimStatementPDFfile === 'object') {
+      delete cleanPreviousPolicy.ClaimStatementPDFfile;
+      delete cleanPreviousPolicy.ClaimStatementPDFfileName;
+    }
+
+    const shouldIncludePreviousPolicy = hasMeaningfulPreviousPolicyPayload(cleanPreviousPolicy);
+
+    // ✅ FIX: Determine which product to use based on policy type
+    let productToSubmit;
+    
+    if (formState.formData.policyRadio === 'Fresh') {
+      // For Fresh policy: use the product selected in running policy (Step 4)
+      productToSubmit = formState.formData.ProductName;
+      console.log('🔍 [SUBMIT] Fresh policy - using running policy product:', productToSubmit);
+    } else if ((formState.formData.policyRadio === 'Renewal' || formState.formData.policyRadio === 'Portability') 
+        && cleanPreviousPolicy.mediclaim_product_id) {
+      // For Renewal/Portability: use previous policy product
+      productToSubmit = cleanPreviousPolicy.mediclaim_product_id;
+      console.log('🔍 [SUBMIT] Renewal/Portability - using previous policy product:', productToSubmit);
+    } else {
+      // Fallback to productType state or ProductName
+      productToSubmit = formState.formData.ProductName || productType;
+      console.log('🔍 [SUBMIT] Fallback - using product:', productToSubmit);
+    }
+
+    const payload = {
+      ...formState.formData,
+      runningPolicy: cleanRunningPolicy,
+      previousPolicy: shouldIncludePreviousPolicy ? cleanPreviousPolicy : null,
+      familyMembers: formState.familyMembers,
+      employees: formState.employees,
+      ProductName: productToSubmit, // ✅ Use the correctly determined product
+      CompanyName: companyType,
+      customDocuments: customDocuments.map(doc => ({ name: doc.name })),
+      removedDocuments: removedDocuments,
+    };
+
+    console.log('🔍 [SUBMIT] Payload prepared:', payload);
+    console.log('🔍 [SUBMIT] Product being submitted:', productToSubmit);
+    console.log('🔍 [SUBMIT] Documents to remove:', removedDocuments);
+
+    let response;
+    if (initialData && initialData.id) {
+      payload.user_id = initialData.user_id;
+      payload.id = initialData.id;
+      formDataPDF.append("data", JSON.stringify(payload));
+      console.log('🔍 [SUBMIT] Updating existing mediclaim with ID:', payload.id);
+      response = await updateMediclaimUser(formDataPDF, payload.id, addToast);
+    } else {
+      formDataPDF.append("data", JSON.stringify(payload));
+      console.log('🔍 [SUBMIT] Creating new mediclaim');
+      response = await addMediclaimUser(formDataPDF, addToast);
+    }
+
+    console.log('🔍 [SUBMIT] API response:', response);
+
+    if (response.status) {
+      console.log('🔍 [SUBMIT] Success! Closing modal and refreshing data');
+      fetchApi();
+      onClose();
+    } else {
+      console.log('🔍 [SUBMIT] API returned error status');
+    }
+  } catch (error) {
+    console.error('🔍 [SUBMIT] Error during submission:', error);
+  } finally {
+    console.log('🔍 [SUBMIT] Setting isSubmitting to false');
+    setIsSubmitting(false);
+  }
+};
   const calculateAge = (dob) => {
     if (!dob) return '';
     
@@ -929,6 +1508,7 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
           PolicyNumber: '',
           PolicyTenure: '',
           PremiumAmount: '',
+          ClaimExpireInPolicy: '',
           AddOnCover: '',
           NomineeName: '',
           NomineeRelation: '',
@@ -1612,7 +2192,24 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
                 />
               </div>
             </div>
-
+            {(formState.formData.policyRadio === 'Fresh' || formState.formData.policyRadio === 'Renewal') && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Claim Expire in Policy</label>
+                  <select
+                    value={formState.formData.runningPolicy.ClaimExpireInPolicy || ""}
+                    onChange={(e) => handleRunningPolicyChange('ClaimExpireInPolicy', e.target.value)}
+                    className="form-select"
+                    disabled={view}
+                  >
+                    <option value="" disabled>Select</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+              </div>
+            )}
+{/* 
             {formState.formData.policyRadio === 'Fresh' && (
               <div className="form-row">
                 <div className="form-group">
@@ -1628,7 +2225,27 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
                   </select>
                 </div>
               </div>
-            )}
+            )} */}
+{formState.formData.policyRadio === "Fresh" && (
+  <div className="form-row">
+    <div className="form-group">
+      <label>Select Product</label>
+      <select
+        value={formState.formData.ProductName || ""}
+        onChange={(e) => handleInputChange('ProductName', e.target.value)}
+        className="form-select"
+        disabled={view}
+      >
+        <option value="" disabled hidden>Select Product</option>
+        {productData && productData.map((item) => (
+          <option key={item.mediclaim_product_id} value={item.mediclaim_product_id}>
+            {item.mediclaim_product_name}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+)}
 
             <div className="form-row">
               <div className="form-group">
@@ -1871,7 +2488,7 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
                   placeholder="Enter previous policy number"
                 />
               </div>
-              <div className="form-group">
+              {/* <div className="form-group">
                 <label>Company Name</label>
                 <Input
                   type="text"
@@ -1879,7 +2496,37 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
                   onChange={(e) => handlePreviousPolicyChange('CompanyName', e.target.value)}
                   placeholder="Enter company name"
                 />
+                
+              
+              </div> */}
+           
+           <div className="form-row">
+              <div className="form-group">
+                <label>Company Name</label>
+                <Select
+                  options={companyData && companyData.map((item) => ({
+                    value: item.mediclaim_company_id,
+                    label: item.mediclaim_company_name
+                  }))}
+                  value={companyData && companyData.find(item => item.mediclaim_company_id === formState.formData.previousPolicy.CompanyName) ? 
+                    { value: formState.formData.previousPolicy.CompanyName, label: companyData.find(item => item.mediclaim_company_id === formState.formData.previousPolicy.CompanyName).mediclaim_company_name } : null}
+                  onChange={(option) => {
+                    const companyId = option ? option.value : '';
+                    handlePreviousPolicyChange('CompanyName', companyId);
+                    if (companyId) {
+                      getProductData(companyId);
+                    } else {
+                      setProductData([]);
+                    }
+                  }}
+                  placeholder="Select Company"
+                  isClearable
+                  isDisabled={view}
+                />
               </div>
+            </div>
+
+
             </div>
 
             <div className="form-row">
@@ -1922,7 +2569,7 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
               </div>
             </div>
 
-            <div className="form-row">
+            {/* <div className="form-row">
               <div className="form-group">
                 <label>Select Product</label>
                 <select
@@ -1938,8 +2585,29 @@ const MediclaimModal = ({ isOpen, onClose, fetchApi, initialData, view }) => {
                   ))}
                 </select>
               </div>
-            </div>
-
+            </div> */}
+<div className="form-row">
+  <div className="form-group">
+    <label>Select Product</label>
+    <select
+      value={formState.formData.previousPolicy.mediclaim_product_id || productType || ""}
+      onChange={(e) => {
+        const selectedProduct = e.target.value;
+        setProductType(selectedProduct);
+        handlePreviousPolicyChange('mediclaim_product_id', selectedProduct);
+      }}
+      className="form-select"
+      disabled={view}
+    >
+      <option value="" disabled hidden>Select Product</option>
+      {productData && productData.map((item) => (
+        <option key={item.mediclaim_product_id} value={item.mediclaim_product_id}>
+          {item.mediclaim_product_name}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
             <div className="form-row">
               <div className="form-group">
                 <label>Upload Previous Policy PDF</label>

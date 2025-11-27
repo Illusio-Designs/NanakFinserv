@@ -6,6 +6,60 @@ const fs = require("fs").promises;
 const fsSync = require("fs");
 const { v4: uuidv4 } = require('uuid');
 
+const hasMeaningfulPreviousPolicyData = (policy) => {
+    if (!policy || typeof policy !== 'object') {
+        return false;
+    }
+
+    const fieldsToCheck = [
+        'PolicyNumber',
+        'PolicyFrom',
+        'PolicyTo',
+        'PolicyIssuedDate',
+        'CompanyName',
+        'SumInsured',
+        'PremiumAmount',
+        'NoClaimBonus',
+        'RenewDate',
+        'PdfFile',
+        'PdfFileName',
+        'ClaimStatementPDFfile',
+        'ClaimStatementPDFfileName',
+        'PreviousPolicyNumber',
+        'NomineeName',
+        'NomineeRelation',
+        'NomineeDob',
+        'NomineeAge',
+        'AddOnCover',
+        'ClaimExpireInPolicy',
+        'PreviousAgentName',
+        'PreviousAgentCode',
+        'PreviousAgentContactNumber'
+    ];
+
+    return fieldsToCheck.some((field) => {
+        const value = policy[field];
+
+        if (value === null || value === undefined) {
+            return false;
+        }
+
+        if (typeof value === 'string') {
+            return value.trim() !== '';
+        }
+
+        if (typeof value === 'number') {
+            return !isNaN(value);
+        }
+
+        if (typeof value === 'boolean') {
+            return true;
+        }
+
+        return !!value;
+    });
+};
+
 // Helper function to create notifications
 const createNotification = async (notificationData) => {
     try {
@@ -6182,8 +6236,8 @@ exports.addMediclaimUserData = async (req, res) => {
             await RunningPolicies.create(cleanedRunningPolicy);
         }
 
-        // Create previous policy if provided
-        if (previousPolicy) {
+        // Create previous policy if provided and has real data
+        if (hasMeaningfulPreviousPolicyData(previousPolicy)) {
             // Clean the previousPolicy data to prevent validation errors
             const cleanedPreviousPolicy = {
                 ...previousPolicy,
@@ -6208,6 +6262,7 @@ exports.addMediclaimUserData = async (req, res) => {
                 PreviousAgentName: previousPolicy.PreviousAgentName || null,
                 PreviousAgentCode: previousPolicy.PreviousAgentCode || null,
                 PreviousAgentContactNumber: previousPolicy.PreviousAgentContactNumber || null
+                
             };
             
             console.log('🔍 [PREVIOUS POLICY] Cleaned data:', cleanedPreviousPolicy);
@@ -6218,6 +6273,8 @@ exports.addMediclaimUserData = async (req, res) => {
             });
             
             await PreviousPolicies.create(cleanedPreviousPolicy);
+        } else {
+            console.log('ℹ️ [PREVIOUS POLICY] No meaningful previous policy data provided - skipping creation.');
         }
 
         // Save family members if any
@@ -6691,7 +6748,7 @@ exports.updateMediclaimUserData = async (req, res) => {
         }
 
         // Update previous policy data if provided (for Portability or manual previous policy updates)
-        if (previousPolicy && typeof previousPolicy === 'object' && policyRadio !== "Renew") {
+        if (policyRadio !== "Renew" && hasMeaningfulPreviousPolicyData(previousPolicy)) {
             try {
                 // Check if previous policy exists for this mediclaim
                 const existingPreviousPolicy = await db.previousPolicyMediclaim.findOne({
@@ -6767,6 +6824,8 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const cleanedPreviousPolicy = {
                     ...previousPolicy,
                     mediclaim_id: id,
+                    CompanyName: CompanyName || null,
+
                     // Ensure SumInsured and NoClaimBonus are properly formatted
                     SumInsured: previousPolicy.SumInsured ? parseFloat(previousPolicy.SumInsured) : null,
                     NoClaimBonus: previousPolicy.NoClaimBonus || null,
@@ -6797,6 +6856,8 @@ exports.updateMediclaimUserData = async (req, res) => {
                 console.error('Error updating previous policy:', previousPolicyError);
                 // Continue with other updates even if previous policy fails
             }
+        } else if (policyRadio !== "Renew") {
+            console.log('ℹ️ [UPDATE MEDICLAIM] No meaningful previous policy data provided - skipping previous policy update.');
         }
 
         // Delete existing family members and employees
@@ -6887,13 +6948,14 @@ exports.geteMediclaimUserData = async (req, res) => {
                     const employeeList = employees.filter((member) => member.mediclaim_id === mediclaim.id);
                     const running = runningPolicies.filter((member) => member.mediclaim_id === mediclaim.id);
                     const previous = previousPolicies.filter((member) => member.mediclaim_id === mediclaim.id);
+                    const filteredPrevious = previous.filter(hasMeaningfulPreviousPolicyData);
                     return {
                         ...mediclaim.get({ plain: true }), // Convert Sequelize instance to plain JSON
                         familymembers: family,
                         employees: employeeList,
                         runningPolicy: running.length ? running[0] : {},
-                        previousPolicy: previous.length ? previous[0] : {},
-                        previousPolicies: previous // Return all previous policies as array
+                        previousPolicy: filteredPrevious.length ? filteredPrevious[0] : {},
+                        previousPolicies: filteredPrevious // Return previous policies with real data
                     };
                 });
                 console.log('API response for mediclaim user data:', JSON.stringify(mediclaimWithFamily, null, 2));
@@ -6962,13 +7024,14 @@ exports.geteMediclaimUserData = async (req, res) => {
                     const employeeList = employees.filter((member) => member.mediclaim_id === mediclaim.id);
                     const running = runningPolicies.filter((member) => member.mediclaim_id === mediclaim.id);
                     const previous = previousPolicies.filter((member) => member.mediclaim_id === mediclaim.id);
+                    const filteredPrevious = previous.filter(hasMeaningfulPreviousPolicyData);
                     return {
                         ...mediclaim.get({ plain: true }), // Convert Sequelize instance to plain JSON
                         familymembers: family,
                         employees: employeeList,
                         runningPolicy: running.length ? running[0] : {},
-                        previousPolicy: previous.length ? previous[0] : {},
-                        previousPolicies: previous // Return all previous policies as array
+                        previousPolicy: filteredPrevious.length ? filteredPrevious[0] : {},
+                        previousPolicies: filteredPrevious // Return previous policies with real data
                     };
                 });
                 console.log('API response for mediclaim user data:', JSON.stringify(mediclaimWithFamily, null, 2));
@@ -7484,6 +7547,7 @@ exports.addVehicleUserData = async (req, res) => {
                 Data.previousPolicy = {};
             }
         }
+        console.log("📌 Previous Policy RAW DATA:", Data.previousPolicy);
         if (Data.documentsData && typeof Data.documentsData === 'string') {
             try {
                 Data.documentsData = JSON.parse(Data.documentsData);
@@ -7943,37 +8007,71 @@ AgentContactNumber: _AgentContactNumber
                     previousPolicy.PolicyNumber
                 );
 
-            if (_policyRadio !== "Fresh" && hasMeaningfulPreviousPolicy) {
-                // Resolve previous policy company id (if company name provided)
-                let resolvedPreviousCompanyId = previousPolicy.CompanyId || null;
-                if (!resolvedPreviousCompanyId && previousPolicy.CompanyName) {
-                    console.log('🔍 [CREATE] Resolving previous policy company name to ID:', previousPolicy.CompanyName);
-                    const previousCompanyRecord = await companyType.findOne({
-                        where: { company_name: previousPolicy.CompanyName }
-                    });
-                    if (previousCompanyRecord) {
-                        resolvedPreviousCompanyId = previousCompanyRecord.company_id;
-                        console.log('✅ [CREATE] Resolved previous policy company name to ID:', resolvedPreviousCompanyId);
-                    } else {
-                        console.log('⚠️ [CREATE] Previous policy company not found for name:', previousPolicy.CompanyName);
+                if (_policyRadio !== "Fresh" && hasMeaningfulPreviousPolicy) {
+                    // Resolve previous policy company id (if company name provided)
+                    let resolvedPreviousCompanyId = previousPolicy.CompanyId || null;
+                    if (!resolvedPreviousCompanyId && previousPolicy.CompanyName) {
+                        console.log('🔍 [CREATE] Resolving previous policy company name to ID:', previousPolicy.CompanyName);
+                        const previousCompanyRecord = await companyType.findOne({
+                            where: { company_name: previousPolicy.CompanyName }
+                        });
+                        if (previousCompanyRecord) {
+                            resolvedPreviousCompanyId = previousCompanyRecord.company_id;
+                            console.log('✅ [CREATE] Resolved previous policy company name to ID:', resolvedPreviousCompanyId);
+                        } else {
+                            console.log('⚠️ [CREATE] Previous policy company not found for name:', previousPolicy.CompanyName);
+                        }
                     }
-                }
-
-                // Build history data
-                const historyData = {
-                    vehicle_user_id: vehicle.vehicle_user_id,
-                    ...previousPolicy,
-                    policy_type_id: previousPolicy.PolicyTypeId || null,
-                    company_id: resolvedPreviousCompanyId,
-                    policy_plan_id: previousPolicy.PolicyPlanTypeId || null,
-                    PolicyNumber: previousPolicy.PolicyNumber || null,
-                    issue_date: previousPolicy.issue_date || null,
-                    expiry_date: previousPolicy.expiry_date || null,
-                    status: "active",
-                    agentName: previousPolicy.agentName || _AgentName || '',
-                    agentCode: previousPolicy.agentCode || _AgentCode || '',
-                    agentContactNumber: previousPolicy.agentContactNumber || _AgentContactNumber || '',
-                };
+    
+                    // Resolve previous policy type id (if policy type name provided)
+                    let resolvedPreviousPolicyTypeId = previousPolicy.PolicyTypeId || null;
+                    if (!resolvedPreviousPolicyTypeId && previousPolicy.PolicyType) {
+                        console.log('🔍 [CREATE] Resolving previous policy type name to ID:', previousPolicy.PolicyType);
+                        const previousPolicyTypeRecord = await db.policyType.findOne({
+                            where: { policy_type_name: previousPolicy.PolicyType }
+                        });
+                        if (previousPolicyTypeRecord) {
+                            resolvedPreviousPolicyTypeId = previousPolicyTypeRecord.policy_type_id;
+                            console.log('✅ [CREATE] Resolved previous policy type name to ID:', resolvedPreviousPolicyTypeId);
+                        } else {
+                            console.log('⚠️ [CREATE] Previous policy type not found for name:', previousPolicy.PolicyType);
+                        }
+                    }
+    
+                    // Resolve previous policy plan id (if policy plan name provided)
+                    let resolvedPreviousPolicyPlanId = previousPolicy.PolicyPlanTypeId || null;
+                    if (!resolvedPreviousPolicyPlanId && previousPolicy.PolicyPlanType) {
+                        console.log('🔍 [CREATE] Resolving previous policy plan name to ID:', previousPolicy.PolicyPlanType);
+                        const previousPolicyPlanRecord = await db.policyPlan.findOne({
+                            where: { policy_name: previousPolicy.PolicyPlanType }
+                        });
+                        if (previousPolicyPlanRecord) {
+                            resolvedPreviousPolicyPlanId = previousPolicyPlanRecord.policy_plan_id;
+                            console.log('✅ [CREATE] Resolved previous policy plan name to ID:', resolvedPreviousPolicyPlanId);
+                        } else {
+                            console.log('⚠️ [CREATE] Previous policy plan not found for name:', previousPolicy.PolicyPlanType);
+                        }
+                    }
+    
+                    // Build history data
+                    
+                    const historyData = {
+                        vehicle_user_id: vehicle.vehicle_user_id,
+                        ...previousPolicy,
+                        policy_type_id: resolvedPreviousPolicyTypeId,
+                        company_id: resolvedPreviousCompanyId,
+                        policy_plan_id: resolvedPreviousPolicyPlanId,
+                        PolicyNumber: previousPolicy.PolicyNumber || null,
+                        issue_date: previousPolicy.issue_date || null,
+                        expiry_date: previousPolicy.expiry_date || null,
+                        status: "active",
+                        agentName: previousPolicy.agentName || _AgentName || '',
+                        agentCode: previousPolicy.agentCode || _AgentCode || '',
+                        agentContactNumber: previousPolicy.agentContactNumber || _AgentContactNumber || '',
+                        Vendor: previousPolicy.Vendor || null,
+                        PolicyIssuedDate: previousPolicy.PolicyIssuedDate || null,
+                       
+                    };
 
                 // Check DB to avoid duplicate insertion:
                 // look for an existing previous policy for this vehicle_user_id that matches at least one identifying field
@@ -9783,6 +9881,21 @@ exports.getVehicleUserRenewalData = async (req, res) => {
           raw: true,
         });
   
+        // Check category presence
+        const hasMediclaim = crList.some(
+          (m) => m["category.category_name"] === "Mediclaim"
+        );
+        const hasVehicle = crList.some(
+          (m) => m["category.category_name"] === "Vehicle Insurance"
+        );
+  
+        // ❌ Remove ONLY if Mediclaim exists AND Vehicle DOES NOT exist
+        if (hasMediclaim && !hasVehicle) {
+          console.log("Skipping Mediclaim-only user:", user.username);
+          continue;
+        }
+  
+        // ✔ Only vehicle category records
         const vehicleOnly = crList.filter(
           (m) => m["category.category_name"] === "Vehicle Insurance"
         );
@@ -10009,6 +10122,7 @@ exports.getVehicleUserRenewalData = async (req, res) => {
       });
     }
   };
+  
   
 
 exports.updateVehicleUserRemarkData = async (req, res) => {
@@ -11838,53 +11952,124 @@ exports.removeBuildingManager = async (req, res) => {
 };
 
 // Get notifications for admin dashboard
+// exports.getNotifications = async (req, res) => {
+//     try {
+//         const { page = 1, limit = 10, type, is_read } = req.query;
+//         const offset = (page - 1) * limit;
+
+//         let whereClause = {};
+        
+//         // Filter by type if provided
+//         if (type) {
+//             whereClause.type = type;
+//         }
+        
+//         // Filter by read status if provided
+//         if (is_read !== undefined) {
+//             whereClause.is_read = is_read === 'true';
+//         }
+
+//         const notifications = await db.notification.findAndCountAll({
+//             where: whereClause,
+//             order: [['created_at', 'DESC']],
+//             limit: parseInt(limit),
+//             offset: parseInt(offset)
+//         });
+
+//         res.status(200).json({
+//             message: 'Notifications retrieved successfully',
+//             status: true,
+//             data: {
+//                 notifications: notifications.rows,
+//                 pagination: {
+//                     currentPage: parseInt(page),
+//                     totalPages: Math.ceil(notifications.count / limit),
+//                     totalItems: notifications.count,
+//                     itemsPerPage: parseInt(limit)
+//                 }
+//             }
+//         });
+//     } catch (error) {
+//         console.error('Error fetching notifications:', error);
+//         res.status(500).json({
+//             message: 'Error fetching notifications',
+//             status: false,
+//             error: error.message
+//         });
+//     }
+// };
 exports.getNotifications = async (req, res) => {
     try {
-        const { page = 1, limit = 10, type, is_read } = req.query;
-        const offset = (page - 1) * limit;
-
-        let whereClause = {};
-        
-        // Filter by type if provided
-        if (type) {
-            whereClause.type = type;
+      const { page = 1, limit = 10, type, is_read } = req.query;
+      const offset = (page - 1) * limit;
+  
+      let whereClause = {};
+  
+      if (type) {
+        whereClause.type = type;
+      }
+  
+      if (is_read !== undefined) {
+        whereClause.is_read = is_read === "true";
+      }
+  
+      const notifications = await db.notification.findAndCountAll({
+        where: whereClause,
+        order: [["created_at", "DESC"]],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+      });
+  
+      // Map your category IDs to proper names
+      const categoryMap = {
+        4: "Mediclaim",
+        6: "Vehicle Insurance",
+        3: "Loan Insurance",
+        8: "Builder",
+      };
+  
+      const formattedNotifications = notifications.rows.map((n) => {
+        let categoryName = null;
+  
+        try {
+          const meta = JSON.parse(n.metadata || "{}");
+  
+          if (meta.categories && meta.categories.length > 0) {
+            const categoryId = meta.categories[0].category_id;
+            categoryName = categoryMap[categoryId] || null;
+          }
+        } catch (err) {
+          console.log("Metadata parse error:", err);
         }
-        
-        // Filter by read status if provided
-        if (is_read !== undefined) {
-            whereClause.is_read = is_read === 'true';
-        }
-
-        const notifications = await db.notification.findAndCountAll({
-            where: whereClause,
-            order: [['created_at', 'DESC']],
-            limit: parseInt(limit),
-            offset: parseInt(offset)
-        });
-
-        res.status(200).json({
-            message: 'Notifications retrieved successfully',
-            status: true,
-            data: {
-                notifications: notifications.rows,
-                pagination: {
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(notifications.count / limit),
-                    totalItems: notifications.count,
-                    itemsPerPage: parseInt(limit)
-                }
-            }
-        });
+  
+        return {
+          ...n.dataValues,
+          category_name: categoryName,
+        };
+      });
+  
+      res.status(200).json({
+        message: "Notifications retrieved successfully",
+        status: true,
+        data: {
+          notifications: formattedNotifications,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(notifications.count / limit),
+            totalItems: notifications.count,
+            itemsPerPage: parseInt(limit),
+          },
+        },
+      });
     } catch (error) {
-        console.error('Error fetching notifications:', error);
-        res.status(500).json({
-            message: 'Error fetching notifications',
-            status: false,
-            error: error.message
-        });
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({
+        message: "Error fetching notifications",
+        status: false,
+        error: error.message,
+      });
     }
-};
-
+  };
 // Mark notification as read
 exports.markNotificationAsRead = async (req, res) => {
     try {

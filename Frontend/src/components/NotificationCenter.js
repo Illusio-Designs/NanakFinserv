@@ -3,6 +3,8 @@ import { FiBell, FiX, FiCheck, FiCheckCircle } from 'react-icons/fi';
 import './NotificationCenter.css';
 
 const NotificationCenter = () => {
+    console.log("API URL →", process.env.REACT_APP_API_URL);
+
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -238,13 +240,16 @@ const NotificationCenter = () => {
     return `${diffInDays}d ago`;
   };
 
-  // ✅ Render
+ 
+  
   return (
     <>
       <div className="notification-center">
-        <button className="action-btn" onClick={() => setIsOpen(!isOpen)}>
+      {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+        <button className="action-btn mt-2" onClick={() => setIsOpen(!isOpen)}>
+      
           <FiBell size={20} />
-          {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+          
         </button>
 
         {isOpen && (
@@ -303,7 +308,9 @@ const NotificationCenter = () => {
                         <span className="notification-time">
                           {formatDate(notification.created_at)}
                         </span>
-                        <span className="notification-type">{notification.type}</span>
+                        <span className="notification-type">
+  { notification.category_name||  notification.type}
+</span>
                       </div>
                     </div>
                     {!notification.is_read && (
