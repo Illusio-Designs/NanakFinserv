@@ -3143,4 +3143,32 @@ export const getAllPolicyRecords = async () => {
   }
 };
 
+// Get Consumer Dashboard Data (vehicles, mediclaim, loans)
+export const getConsumerDashboardData = async () => {
+  const headers = {
+    headers: {
+      'token': Cookies.get('token'),
+    }
+  }
+  try {
+    console.log('🔍 [CONSUMER DASHBOARD] Fetching consumer dashboard data...');
+    const response = await axios.get(`${API_URL}/user/consumer/dashboard`, headers);
+
+    if (!response.data) {
+      throw new Error('Invalid response');
+    } else {
+      if (response.data && response.data?.status) {
+        console.log('🔍 [CONSUMER DASHBOARD] Data received:', response.data);
+        return response.data;
+      } else {
+        return { data: null, status: false };
+      }
+    }
+  } catch (error) {
+    console.error('🔍 [CONSUMER DASHBOARD] Error fetching dashboard data:', error);
+    errorHandel(error);
+    return { data: null, status: false };
+  }
+};
+
 

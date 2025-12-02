@@ -226,6 +226,45 @@ const Loani = () => {
     getAllLoanConsumerData();
   };
 
+  // Handler for status change from table dropdown
+  const handleStatusChangeFromTable = async (userData, newStatus) => {
+    // If status is "interested", just save the status without opening form
+    if (newStatus === 'interested') {
+      try {
+        const updateData = {
+          user_consumer_id: userData.user_consumer_id || userData.details?.user_consumer_id,
+          status: newStatus,
+          laon_id: userData.details?.laon_id || userData.laon_id
+        };
+
+        if (!updateData.user_consumer_id) {
+          addToast('Missing user ID. Cannot update status.', 'error');
+          return;
+        }
+
+        const response = await updateLoanStatus(updateData);
+        if (response && response.status) {
+          addToast(`Status updated to ${newStatus} successfully`, 'success');
+          // Refresh data after successful update
+          await getAllLoanConsumerData();
+        } else {
+          addToast('Failed to update status', 'error');
+        }
+      } catch (error) {
+        console.error('Error updating status:', error);
+        addToast('Error updating status', 'error');
+      }
+    } else {
+      // For other statuses, open edit modal
+      const updatedRow = {
+        ...userData,
+        status: newStatus,
+        details: { ...userData.details, status: newStatus }
+      };
+      handleEdit(updatedRow);
+    }
+  };
+
   const getAllLoanConsumerData = async () => {
     setLoading(true);
     const consumerData = await getAllLoanInterestedConsumer({ startDate, endDate });
@@ -234,6 +273,20 @@ const Loani = () => {
     if (consumerData?.data && consumerData?.data?.length) {
       console.log('🔍 [LOAN INTERESTED] Processing data:', consumerData.data.length, 'records');
       console.log('🔍 [LOAN INTERESTED] All statuses in raw data:', consumerData.data.map(u => u.status));
+      
+      // Status options for dropdown
+      const statusOptions = [
+        { value: "interested", label: "Interested" },
+        { value: "documentselected", label: "Document Selected" },
+        { value: "pickup", label: "Pickup" },
+        { value: "login", label: "Login" },
+        { value: "query", label: "Query" },
+        { value: "cancel", label: "Cancel" },
+        { value: "sanction", label: "Sanction" },
+        { value: "partPayment", label: "Part Payment" },
+        { value: "disbursement", label: "Disbursement" },
+        { value: "completed", label: "Completed" }
+      ];
       
       // Process data to add serial numbers and flatten nested properties for table
       const processedData = consumerData.data.map((user, index) => {
@@ -342,6 +395,36 @@ const Loani = () => {
           status: user.details?.status || 'interested'
         };
         
+        // Replace status text with dropdown component
+        const currentStatus = processedUser.status;
+        
+        processedUser.status = (
+          <select
+            value={currentStatus}
+            onChange={(e) => {
+              const newStatus = e.target.value;
+              handleStatusChangeFromTable(processedUser, newStatus);
+            }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '4px',
+              border: '1px solid #ddd',
+              fontSize: '14px',
+              cursor: 'pointer',
+              width: '100%',
+              minWidth: '150px',
+              backgroundColor: 'white'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {statusOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+        
         console.log(`🔍 [LOAN INTERESTED] Processed User ${index + 1}:`, {
           name: processedUser.userName,
           status: processedUser.status,
@@ -369,8 +452,9 @@ const Loani = () => {
       
         // Filter out cancelled records and sort by creation date in ascending order (oldest first)
         const nonCancelledData = processedData.filter(user => {
-          const status = user.status?.toLowerCase();
-          return status !== 'cancelled' && status !== 'cancel';
+          // Use originalStatus if available, otherwise check details.status
+          const statusValue = (user.originalStatus || user.details?.status || '').toLowerCase();
+          return statusValue !== 'cancelled' && statusValue !== 'cancel';
         });
         const sortedData = nonCancelledData.sort((a, b) => {
           const dateA = new Date(a.details?.createdAt || a.details?.updatedAt || 0);
@@ -380,7 +464,11 @@ const Loani = () => {
       
       setData(sortedData);
       const byDate = (startDate && endDate) ? sortedData.filter((row) => isWithinDateRange(row, startDate, endDate)) : sortedData;
-      const byDateAndStatus = status ? byDate.filter(row => row.details?.status === status) : byDate;
+      const byDateAndStatus = status ? byDate.filter(row => {
+        // Use originalStatus if available, otherwise check details.status
+        const rowStatus = row.originalStatus || row.details?.status;
+        return rowStatus === status;
+      }) : byDate;
       setFilteredData(byDateAndStatus);
     } else {
       console.log('🔍 [LOAN INTERESTED] No data received from API');
@@ -404,7 +492,9 @@ const Loani = () => {
   const getLoanConsumerDetail = async (laon_id) => {
     const consumerData = await getAllLoanConsumerDetail({ laon_id }); // Send laon_id to get loan details
     if (consumerData?.data) {
-      setViewData(consumerData?.data); // Set the detailed data to state
+      // Handle both array and object responses
+      const data = Array.isArray(consumerData.data) ? consumerData.data[0] : consumerData.data;
+      setViewData(data); // Set the detailed data to state
     }
   };
 
@@ -417,7 +507,7 @@ const Loani = () => {
       ReferenceName: userData['userConsumers.referenceName'] || ''
     });
     
-    if (userData?.details?.status && ['documentselected', 'query', 'sanction', 'login', 'disbursement', 'pickup', 'partPayment', 'cancel', 'interested'].includes(userData?.details?.status)) {
+    if (userData?.details?.status && ['documentselected', 'query', 'sanction', 'login', 'disbursement', 'pickup', 'partPayment', 'cancel', 'interested', 'completed'].includes(userData?.details?.status)) {
       if (userData?.details?.status && userData?.details?.status != "interested") {
         setStatus(userData?.details?.status);
       }
@@ -429,6 +519,7 @@ const Loani = () => {
         ...(details.cancel_details || {}),
         ...({ ['radio-loanType']: details?.document_details?.loan_type, ['loan-Type']: details?.document_details?.loan_type_name, remarks_docs: details?.document_details?.remarks_docs } || {}),
         ...(details.disbursement_details || {}),
+        ...(details.completed_details || {}),
         parts: details.part_details?.parts || [{ part_amount: "", part_date: "" }],
       });
       if (!(userData?.details?.builder_consumer_details && userData?.details?.builder_consumer_details?.builderuser && userData?.details?.builder_consumer_details?.floor)) {
@@ -588,6 +679,20 @@ const Loani = () => {
     
     const consumerData = await getAllLoanInterestedConsumer({ startDate, endDate });
     if (consumerData?.data && consumerData?.data?.length) {
+      // Status options for dropdown
+      const statusOptions = [
+        { value: "interested", label: "Interested" },
+        { value: "documentselected", label: "Document Selected" },
+        { value: "pickup", label: "Pickup" },
+        { value: "login", label: "Login" },
+        { value: "query", label: "Query" },
+        { value: "cancel", label: "Cancel" },
+        { value: "sanction", label: "Sanction" },
+        { value: "partPayment", label: "Part Payment" },
+        { value: "disbursement", label: "Disbursement" },
+        { value: "completed", label: "Completed" }
+      ];
+      
       // Process data same as in getAllLoanConsumerData to ensure consistency
       const processedData = consumerData.data.map((user, index) => {
         const processedUser = {
@@ -693,16 +798,49 @@ const Loani = () => {
             return account || '';
           })(),
           
-          status: user.details?.status || 'interested'
+          status: user.details?.status || 'interested',
+          // Store original status for filtering
+          originalStatus: user.details?.status || 'interested'
         };
+        
+        // Replace status text with dropdown component
+        const currentStatus = processedUser.status;
+        
+        processedUser.status = (
+          <select
+            value={currentStatus}
+            onChange={(e) => {
+              const newStatus = e.target.value;
+              handleStatusChangeFromTable(processedUser, newStatus);
+            }}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '4px',
+              border: '1px solid #ddd',
+              fontSize: '14px',
+              cursor: 'pointer',
+              width: '100%',
+              minWidth: '150px',
+              backgroundColor: 'white'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {statusOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
         
         return processedUser;
       });
       
         // Filter out cancelled records and sort by creation date in ascending order (oldest first)
         const nonCancelledData = processedData.filter(user => {
-          const status = user.status?.toLowerCase();
-          return status !== 'cancelled' && status !== 'cancel';
+          // Use originalStatus if available, otherwise check details.status
+          const statusValue = (user.originalStatus || user.details?.status || '').toLowerCase();
+          return statusValue !== 'cancelled' && statusValue !== 'cancel';
         });
         const sortedData = nonCancelledData.sort((a, b) => {
           const dateA = new Date(a.details?.createdAt || a.details?.updatedAt || 0);
@@ -712,7 +850,11 @@ const Loani = () => {
       
       setData(sortedData);
       const byDate = (startDate && endDate) ? sortedData.filter((row) => isWithinDateRange(row, startDate, endDate)) : sortedData;
-      const byDateAndStatus = status ? byDate.filter(row => row.details?.status === status) : byDate;
+      const byDateAndStatus = status ? byDate.filter(row => {
+        // Use originalStatus if available, otherwise check details.status
+        const rowStatus = row.originalStatus || row.details?.status;
+        return rowStatus === status;
+      }) : byDate;
       setFilteredData(byDateAndStatus);
     } else {
       setData([]);
@@ -1671,6 +1813,32 @@ const Loani = () => {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {status === "completed" && (
+                  <div className="form-section">
+                    <h5>Completed Details</h5>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Completion Date *</label>
+                        <Input
+                          type="date"
+                          value={inputValue.completionDate || ""}
+                          onChange={(e) => setInputValue(prev => ({ ...prev, completionDate: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Completion Remarks</label>
+                        <Input
+                          type="text"
+                          value={inputValue.completionRemarks || ""}
+                          onChange={(e) => setInputValue(prev => ({ ...prev, completionRemarks: e.target.value }))}
+                          placeholder="Enter completion remarks"
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

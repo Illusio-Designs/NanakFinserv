@@ -132,11 +132,22 @@ const Building = () => {
     const handleEdit = (userData) => {
         setEditData(userData);
         
+        // Debug: Log the userData to see what we're receiving
+        console.log('Edit Building - userData:', userData);
+        console.log('Building Manager Data:', {
+            name: userData.building_manager_name,
+            email: userData.building_manager_email,
+            mobile: userData.building_manager_mobile
+        });
+        
         // Set form data
         setFormData({
             unit_name: userData.unit_name || '',
             address: userData.address || '',
-            builder_id: userData.builder_id || userData['builderuser.builder_id'] || ''
+            builder_id: userData.builder_id || userData['builderuser.builder_id'] || '',
+            building_manager_name: userData.building_manager_name || '',
+            building_manager_email: userData.building_manager_email || '',
+            building_manager_mobile: userData.building_manager_mobile || ''
         });
 
         setCheckboxes({

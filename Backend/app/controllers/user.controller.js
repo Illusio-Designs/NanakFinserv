@@ -254,144 +254,306 @@ exports.verifyUserLogin = async (req, res) => {
         });
 };
 
-exports.getAllUsers = async (req, res) => {
-    whereObj = {};
-    if (req?.user.Role == 2) {
-        whereObj.builder_user = req.user.id;
-    }
-    whereObj.role_id = [3, 5]; // Consumer and builder consumer roles (exclude Building Manager role 7)
+// exports.getAllUsers = async (req, res) => {
+//     whereObj = {};
+//     if (req?.user.Role == 2) {
+//         whereObj.builder_user = req.user.id;
+//     }
+//     whereObj.role_id = [3, 5]; // Consumer and builder consumer roles (exclude Building Manager role 7)
 
-    if (req.user.Role != 1) {
-        User.findAll({
-            order: [["username", "asc"]],
-            where: whereObj,
-            attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'role_id', 'builder_user', 'created_by', 'updated_by', 'is_from_builder_user', 'createdAt', 'updatedAt'],
-            include: [
-                {
-                    model: db.role,
-                    attributes: ['role_name'],
-                    as: 'role'
+//     if (req.user.Role != 1) {
+//         User.findAll({
+//             order: [["username", "asc"]],
+//             where: whereObj,
+//             attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'role_id', 'builder_user', 'created_by', 'updated_by', 'is_from_builder_user', 'createdAt', 'updatedAt'],
+//             include: [
+//                 {
+//                     model: db.role,
+//                     attributes: ['role_name'],
+//                     as: 'role'
+//                 }
+//             ]
+//         })
+//             .then(async (articles) => {
+//                 const updatedArticles = await Promise.all(
+//                     articles.map(async (item) => {
+//                         const crList = await consumerRoleMapping.findAll({
+//                             where: {
+//                                 user_consumer_id: item.user_id,
+//                             },
+//                             include: [
+//                                 {
+//                                     model: User,
+//                                     as: "userRoles",
+//                                     attributes: ["username", "email"],
+//                                 },
+//                                 {
+//                                     model: db.category,
+//                                     attributes: ["category_name"],
+//                                     as: "category"
+//                                 }
+//                             ],
+//                             raw: true,
+//                         });
+                        
+//                         // Format the role display for multiple categories
+//                         let roleDisplay = 'N/A';
+//                         if (crList && crList.length > 0) {
+//                             const roleDisplays = crList.map(mapping => {
+//                                 const categoryName = mapping['category.category_name'] || 'N/A';
+//                                 const roleUserName = mapping['userRoles.username'] || 'N/A';
+//                                 return `(Vertical = ${categoryName} : Role User : ${roleUserName})`;
+//                             });
+//                             roleDisplay = roleDisplays.join(' | ');
+//                         }
+                        
+//                         item.category = crList;
+//                         item.roleDisplay = roleDisplay;
+//                         return item;
+//                     })
+//                 );
+                
+//                 // Filter out Building Managers from consumer list
+//                 const filteredArticles = updatedArticles.filter(item => {
+//                     return item.role_id !== 7; // Exclude Building Manager role ID 7
+//                 });
+                
+//                 res.status(200).send({
+//                     message: "consumer get success",
+//                     data: filteredArticles,
+//                     status: true,
+//                 });
+//             })
+//             .catch((e) => console.log(e));
+//     } else {
+//         await User.findAll({
+//             order: [["username", "asc"]],
+//             where: whereObj,
+//             attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'role_id', 'builder_user', 'created_by', 'updated_by', 'is_from_builder_user', 'createdAt', 'updatedAt'],
+//             include: [
+//                 {
+//                     model: db.role,
+//                     attributes: ['role_name'],
+//                     as: 'role'
+//                 }
+//             ],
+//             raw: true,
+//         })
+//             .then(async (articles) => {
+//                 const updatedArticles = await Promise.all(
+//                     articles.map(async (item) => {
+//                         const crList = await consumerRoleMapping.findAll({
+//                             where: {
+//                                 user_consumer_id: item.user_id,
+//                             },
+//                             include: [
+//                                 {
+//                                     model: User,
+//                                     as: "userRoles",
+//                                     attributes: ["username", "email"],
+//                                 },
+//                                 {
+//                                     model: db.category,
+//                                     attributes: ["category_name"],
+//                                     as: "category"
+//                                 }
+//                             ],
+//                             raw: true,
+//                         });
+                        
+//                         // Format the role display for multiple categories
+//                         let roleDisplay = 'N/A';
+//                         if (crList && crList.length > 0) {
+//                             const roleDisplays = crList.map(mapping => {
+//                                 const categoryName = mapping['category.category_name'] || 'N/A';
+//                                 const roleUserName = mapping['userRoles.username'] || 'N/A';
+//                                 return `(Vertical = ${categoryName} : Role User : ${roleUserName})`;
+//                             });
+//                             roleDisplay = roleDisplays.join(' | ');
+//                         }
+                        
+//                         item.category = crList;
+//                         item.roleDisplay = roleDisplay;
+//                         return item;
+//                     })
+//                 );
+                
+//                 // Filter out Building Managers from consumer list
+//                 const filteredArticles = updatedArticles.filter(item => {
+//                     return item.role_id !== 7; // Exclude Building Manager role ID 7
+//                 });
+                
+//                 res.status(200).send({
+//                     message: "consumer get success",
+//                     data: filteredArticles,
+//                     status: true,
+//                 });
+//             })
+//             .catch((e) => console.log(e));
+//     }
+// };
+
+
+
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        let whereObj = {};
+        
+        // If builder login → show only consumers under them
+        if (req?.user.Role == 2) {
+            whereObj.builder_user = req.user.id;
+        }
+
+        // If building manager (Role 7) login → show only consumers from their assigned buildings
+        if (req?.user.Role == 7) {
+            // Get all units assigned to this building manager
+            const buildingManagerAssignments = await BuildingManager.findAll({
+                where: { 
+                    user_id: req.user.id, 
+                    status: 'active' 
+                },
+                attributes: ['unit_id'],
+                raw: true
+            });
+            
+            if (buildingManagerAssignments.length > 0) {
+                const unitIds = buildingManagerAssignments.map(assignment => assignment.unit_id);
+                console.log('🔍 [CONSUMER API] Building Manager assigned unit IDs:', unitIds);
+                
+                // Get all consumer user IDs from these units
+                const consumersInBuildings = await builderConsumer.findAll({
+                    where: {
+                        unit_id: { [Op.in]: unitIds }
+                    },
+                    attributes: ['user_id'],
+                    raw: true
+                });
+                
+                const consumerUserIds = [...new Set(consumersInBuildings.map(c => c.user_id).filter(id => id !== null))];
+                console.log('🔍 [CONSUMER API] Consumer user IDs in assigned buildings:', consumerUserIds);
+                
+                if (consumerUserIds.length > 0) {
+                    whereObj.user_id = { [Op.in]: consumerUserIds };
+                } else {
+                    // No consumers found in assigned buildings, return empty result
+                    return res.status(200).send({
+                        message: "consumer get success",
+                        data: [],
+                        status: true
+                    });
                 }
-            ]
-        })
-            .then(async (articles) => {
-                const updatedArticles = await Promise.all(
-                    articles.map(async (item) => {
-                        const crList = await consumerRoleMapping.findAll({
-                            where: {
-                                user_consumer_id: item.user_id,
-                            },
-                            include: [
-                                {
-                                    model: User,
-                                    as: "userRoles",
-                                    attributes: ["username", "email"],
-                                },
-                                {
-                                    model: db.category,
-                                    attributes: ["category_name"],
-                                    as: "category"
-                                }
-                            ],
-                            raw: true,
-                        });
-                        
-                        // Format the role display for multiple categories
-                        let roleDisplay = 'N/A';
-                        if (crList && crList.length > 0) {
-                            const roleDisplays = crList.map(mapping => {
-                                const categoryName = mapping['category.category_name'] || 'N/A';
-                                const roleUserName = mapping['userRoles.username'] || 'N/A';
-                                return `(Vertical = ${categoryName} : Role User : ${roleUserName})`;
-                            });
-                            roleDisplay = roleDisplays.join(' | ');
-                        }
-                        
-                        item.category = crList;
-                        item.roleDisplay = roleDisplay;
-                        return item;
-                    })
-                );
-                
-                // Filter out Building Managers from consumer list
-                const filteredArticles = updatedArticles.filter(item => {
-                    return item.role_id !== 7; // Exclude Building Manager role ID 7
-                });
-                
-                res.status(200).send({
+            } else {
+                // No buildings assigned, return empty result
+                return res.status(200).send({
                     message: "consumer get success",
-                    data: filteredArticles,
-                    status: true,
+                    data: [],
+                    status: true
                 });
-            })
-            .catch((e) => console.log(e));
-    } else {
-        await User.findAll({
+            }
+        }
+
+        whereObj.role_id = [3, 5]; // only consumer + builder consumer
+
+        // ✨ Single Fetch for Admin + Builder (NO raw:true anywhere)
+        const users = await User.findAll({
             order: [["username", "asc"]],
             where: whereObj,
-            attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'role_id', 'builder_user', 'created_by', 'updated_by', 'is_from_builder_user', 'createdAt', 'updatedAt'],
+            attributes: [
+                'user_id','username','email','mobileNumber','referenceName',
+                'role_id','builder_user','created_by','updated_by',
+                'is_from_builder_user','createdAt','updatedAt'
+            ],
             include: [
-                {
-                    model: db.role,
-                    attributes: ['role_name'],
-                    as: 'role'
+                { model: db.role, attributes: ['role_name'], as: 'role' },
+                { 
+                    model: User, 
+                    as: 'builder_user_fk', 
+                    attributes: ['user_id'],
+                    required: false,
+                    include: [
+                        {
+                            model: db.builderUser,
+                            attributes: ['company_name'],
+                            required: false
+                        }
+                    ]
                 }
             ],
+            raw: false,
+            nest: true
+        });
+
+        // Get all user_ids that have loan status "interested" or "notInterested" to exclude them
+        const excludedLoanUsers = await loanUser.findAll({
+            where: {
+                status: {
+                    [Op.in]: ["interested", "notInterested"],
+                },
+            },
+            attributes: ["user_id"],
             raw: true,
-        })
-            .then(async (articles) => {
-                const updatedArticles = await Promise.all(
-                    articles.map(async (item) => {
-                        const crList = await consumerRoleMapping.findAll({
-                            where: {
-                                user_consumer_id: item.user_id,
-                            },
-                            include: [
-                                {
-                                    model: User,
-                                    as: "userRoles",
-                                    attributes: ["username", "email"],
-                                },
-                                {
-                                    model: db.category,
-                                    attributes: ["category_name"],
-                                    as: "category"
-                                }
-                            ],
-                            raw: true,
-                        });
-                        
-                        // Format the role display for multiple categories
-                        let roleDisplay = 'N/A';
-                        if (crList && crList.length > 0) {
-                            const roleDisplays = crList.map(mapping => {
-                                const categoryName = mapping['category.category_name'] || 'N/A';
-                                const roleUserName = mapping['userRoles.username'] || 'N/A';
-                                return `(Vertical = ${categoryName} : Role User : ${roleUserName})`;
-                            });
-                            roleDisplay = roleDisplays.join(' | ');
-                        }
-                        
-                        item.category = crList;
-                        item.roleDisplay = roleDisplay;
-                        return item;
-                    })
-                );
-                
-                // Filter out Building Managers from consumer list
-                const filteredArticles = updatedArticles.filter(item => {
-                    return item.role_id !== 7; // Exclude Building Manager role ID 7
+        });
+        const excludedUserIds = [...new Set(excludedLoanUsers.map(u => u.user_id).filter(id => id !== null))];
+        console.log('🔍 [CONSUMER API] Excluding user_ids with loan status interested/notInterested:', excludedUserIds);
+
+        // ⚡ Add category mapping for ALL users
+        const finalData = await Promise.all(
+            users.map(async (item) => {
+                const crList = await consumerRoleMapping.findAll({
+                    where: { user_consumer_id: item.user_id },
+                    include: [
+                        { model: User, as: "userRoles", attributes:["username","email"] },
+                        { model: db.category, as: "category", attributes:["category_name"] }
+                    ],
+                    raw:true
                 });
+
+                item.dataValues.category = crList;
+                item.dataValues.roleDisplay = crList.length
+                    ? crList.map(m => `(Vertical = ${m["category.category_name"]} : Role User : ${m["userRoles.username"]})`).join(" | ")
+                    : "N/A";
                 
-                res.status(200).send({
-                    message: "consumer get success",
-                    data: filteredArticles,
-                    status: true,
-                });
+                // Add builder company name to the response
+                // Access BuilderUser through the builder_user_fk relationship
+                let builderCompanyName = null;
+                if (item.builder_user_fk) {
+                    // With nest: true, Sequelize uses the model name
+                    const builderUserData = item.builder_user_fk.get ? item.builder_user_fk.get() : item.builder_user_fk;
+                    // BuilderUser is included as a nested object
+                    if (builderUserData && builderUserData.builderuser) {
+                        builderCompanyName = builderUserData.builderuser.company_name;
+                    } else if (builderUserData && builderUserData.builderUser) {
+                        builderCompanyName = builderUserData.builderUser.company_name;
+                    }
+                }
+                item.dataValues.builder_company_name = builderCompanyName;
+                
+                return item;
             })
-            .catch((e) => console.log(e));
+        );
+
+        // Filter out building managers and consumers with loan status interested/notInterested
+        const filteredData = finalData.filter(x => {
+            // Exclude building managers
+            if (x.role_id === 7) return false;
+            // Exclude consumers with loan status interested/notInterested
+            if (excludedUserIds.includes(x.user_id)) return false;
+            return true;
+        });
+
+        return res.status(200).send({
+            message:"consumer get success",
+            data: filteredData,
+            status:true
+        });
+
+    } catch (err) {
+        console.log("❌ getAllUsers Failed:", err);
+        return res.status(500).send({status:false,message:err.message});
     }
 };
+
 
 exports.getUserCounts = async (req, res) => {
     try {
@@ -429,6 +591,32 @@ exports.getUserCounts = async (req, res) => {
         const allTimeDisbursedFilter = {};
         const allTimeLoanedFilter = {};
         const allTimePartPaymentFilter = {};
+
+        // Get all building manager user IDs to exclude them from loan counts
+        const buildingManagerUsers = await User.findAll({
+            where: { role_id: 7 },
+            attributes: ['user_id'],
+            raw: true
+        });
+        const buildingManagerUserIds = buildingManagerUsers.map(bm => bm.user_id);
+        console.log('🔍 [USER COUNTS] Building manager user IDs to exclude:', buildingManagerUserIds);
+
+        // Exclude building managers from all loan user where objects
+        if (buildingManagerUserIds.length > 0) {
+            loanUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanInterstedUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanNotInterstedUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanNotAssignUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanDocumentSelectedUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanPickupUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanQueryUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanLoginUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanSensonUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanDisburseUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanPartUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanCancelUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+            loanCompletedUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
+        }
 
         if (req.user.Role === 4) {
             loanUserWhereObj.role_id = req.user.id;
@@ -504,7 +692,15 @@ exports.getUserCounts = async (req, res) => {
             ] = await Promise.all([
                 User.count({ where: consumerWhereObj }),
                 User.count({ where: builderWhereObj }),
-                consumerRoleMapping.count({ where: { category_id: 2 } }), // Count loan consumers from role mapping
+                // Count loan consumers from role mapping, excluding building managers
+                consumerRoleMapping.count({ 
+                    where: { 
+                        category_id: 2,
+                        ...(buildingManagerUserIds.length > 0 && {
+                            user_consumer_id: { [Op.notIn]: buildingManagerUserIds }
+                        })
+                    } 
+                }),
                 loanUser.count({ where: loanInterstedUserWhereObj }),
                 loanUser.count({ where: loanNotInterstedUserWhereObj }),
                 loanUser.count({ where: loanNotAssignUserWhereObj }),
@@ -667,8 +863,14 @@ exports.getUserCounts = async (req, res) => {
                 const categoryName = cat["category.category_name"];
                 let count = 0;
                 if (categoryId == 2) { // Loan
+                    // Exclude building managers from loan count (reuse buildingManagerUserIds from top of function)
                     count = await consumerRoleMapping.count({
-                        where: { category_id: 2 }, // Show total count, not just assigned
+                        where: { 
+                            category_id: 2,
+                            ...(buildingManagerUserIds.length > 0 && {
+                                user_consumer_id: { [Op.notIn]: buildingManagerUserIds }
+                            })
+                        },
                     });
                 } else if (categoryId == 4) { // Mediclaim
                     count = await consumerRoleMapping.count({
@@ -1495,9 +1697,10 @@ exports.addConsumerData = async (req, res) => {
                     console.log('🔍 [ADD CONSUMER] Category check:', req.body?.category && req.body.category.length);
                     
                     if (
-                        (req.user.Role == 1 || req.user.Role == 4) &&
-                        req.body?.category &&
-                        req.body.category.length
+                        // (req.user.Role == 1 || req.user.Role == 4) &&
+                        // req.body?.category &&
+                        // req.body.category.length
+                        (req.body?.category && req.body.category.length) 
                     ) {
                         console.log('🔍 [ADD CONSUMER] Vertical assignment conditions met!');
                         let array = [];
@@ -2226,7 +2429,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     throw sanctionError; // Re-throw to be caught by outer try-catch
                 }
             } 
-            // Handle login details - store in remarks field as JSON
+            // Handle login details - store in remarks field as JSON and save to loginloan table
             else if (req.body.status === "login") {
                 const loginDetails = {
                     loanAmount: req.body.login_details?.loanAmount,
@@ -2266,6 +2469,45 @@ exports.updateLoanConsumerData = async (req, res) => {
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
                 console.log('🔍 Login details stored in remarks field successfully');
+                
+                // Save to loginloan table
+                try {
+                    // Check if login record already exists for this loan
+                    const existingLogin = await LoginLoan.findOne({
+                        where: { laon_id: req.body.laon_id }
+                    });
+                    
+                    const loginLoanData = {
+                        laon_id: req.body.laon_id,
+                        loanAmount: req.body.login_details?.loanAmount || null,
+                        loanDate: req.body.login_details?.loanDate || null,
+                        loanAccountNumber: req.body.login_details?.loanAccountNumber || null,
+                        bankName: req.body.login_details?.bankName || null,
+                        product: req.body.login_details?.product || null,
+                        smName: req.body.login_details?.smName || null,
+                        amName: req.body.login_details?.amName || null,
+                        remarks_loan: req.body.login_details?.remarks_loan || null,
+                        bankCode: req.body.login_details?.bankCode || null,
+                        dateOfBirth: req.body.login_details?.dateOfBirth || null,
+                        code_id: req.body.login_details?.code_id || null,
+                        updated_by: req.user.id
+                    };
+                    
+                    if (existingLogin) {
+                        // Update existing record
+                        await LoginLoan.update(loginLoanData, {
+                            where: { laon_id: req.body.laon_id }
+                        });
+                        console.log('🔍 Login details updated in loginloan table successfully');
+                    } else {
+                        // Create new record
+                        await LoginLoan.create(loginLoanData);
+                        console.log('🔍 Login details saved to loginloan table successfully');
+                    }
+                } catch (error) {
+                    console.error('🔍 Error saving to loginloan table:', error);
+                    // Don't throw error, just log it so the main update can continue
+                }
             }
             // Handle pickup details - store in remarks field as JSON
             else if (req.body.status === "pickup") {
@@ -2749,12 +2991,58 @@ exports.getUnitsByBuilder = async (req, res) => {
                         })
                     );
 
+                    // Fetch building manager data for this unit
+                    let buildingManagerData = {
+                        building_manager_name: '',
+                        building_manager_email: '',
+                        building_manager_mobile: ''
+                    };
+                    
+                    try {
+                        const buildingManager = await BuildingManager.findOne({
+                            where: { 
+                                unit_id: element.unit_id,
+                                status: 'active'
+                            },
+                            include: [{
+                                model: User,
+                                as: 'user',
+                                attributes: ['username', 'email', 'mobileNumber']
+                            }],
+                            raw: false // Keep as Sequelize instance to access associations
+                        });
+
+                        if (buildingManager) {
+                            // Convert to plain object to access nested data
+                            const bmPlain = buildingManager.get ? buildingManager.get({ plain: true }) : buildingManager;
+                            
+                            console.log('Building Manager found for unit_id:', element.unit_id, bmPlain);
+                            
+                            if (bmPlain && bmPlain.user) {
+                                buildingManagerData = {
+                                    building_manager_name: bmPlain.user.username || '',
+                                    building_manager_email: bmPlain.user.email || '',
+                                    building_manager_mobile: bmPlain.user.mobileNumber || ''
+                                };
+                                console.log('Building Manager Data set:', buildingManagerData);
+                            } else {
+                                console.log('No user data found in building manager for unit_id:', element.unit_id);
+                            }
+                        } else {
+                            console.log('No building manager found for unit_id:', element.unit_id);
+                        }
+                    } catch (bmError) {
+                        console.error('Error fetching building manager for unit_id:', element.unit_id, bmError);
+                        // Continue with empty building manager data
+                    }
+
                     return {
                         ...element,
                         Showroom: categoryResponse.Showroom,
                         Flat: categoryResponse.Flat,
                         Office: categoryResponse.Office,
                         House: categoryResponse.House,
+                        ...buildingManagerData
                     };
                 })
             );
@@ -3643,6 +3931,25 @@ exports.getAllLoanUser = async (req, res) => {
     // Remove status filter to show all loan consumers
     // whereObjLoan.status = "notAssign";
     
+    // Get all building manager user IDs to exclude them
+    const buildingManagerUsers = await User.findAll({
+        where: { role_id: 7 },
+        attributes: ['user_id'],
+        raw: true
+    });
+    const buildingManagerUserIds = buildingManagerUsers.map(bm => bm.user_id);
+    console.log('🔍 [LOAN API] Building manager user IDs to exclude:', buildingManagerUserIds);
+    
+    // Exclude building managers from loan users
+    if (buildingManagerUserIds.length > 0) {
+        whereObjLoan.user_id = {
+            [Op.notIn]: buildingManagerUserIds
+        };
+    }
+    
+    // Only show loan users with status "notAssign"
+    whereObjLoan.status = "notAssign";
+    
     console.log('🔍 [LOAN API] Final whereObj:', whereObj);
     console.log('🔍 [LOAN API] Final whereObjLoan:', whereObjLoan);
     
@@ -3685,16 +3992,73 @@ exports.getAllLoanUser = async (req, res) => {
                     model: User,
                     as: "userConsumers",
                     required: false,
-                    attributes: ["username", "email", "mobileNumber", "referenceName"],
+                    attributes: ["username", "email", "mobileNumber", "referenceName", "role_id"],
                 },
             ],
             raw: true,
         })
-        .then((articles) => {
-            console.log(articles);
+        .then(async (articles) => {
+            // Filter out building managers (role_id = 7) from the results
+            const filteredArticles = articles.filter(article => {
+                // Exclude if consumer user is a building manager
+                const consumerRoleId = article['userConsumers.role_id'];
+                if (consumerRoleId === 7) {
+                    console.log('🔍 [LOAN API] Filtering out building manager consumer:', article.user_consumer_id);
+                    return false;
+                }
+                return true;
+            });
+
+            // Fetch loan user property information for each consumer
+            const enrichedArticles = await Promise.all(
+                filteredArticles.map(async (article) => {
+                    // Find loan user record for this consumer
+                    const loanUserData = await loanUser.findOne({
+                        where: {
+                            user_id: article.user_consumer_id,
+                            role_id: article.user_role_id,
+                            status: "notAssign" // Only include notAssign status
+                        },
+                        attributes: [
+                            "non_builder_name",
+                            "non_builder_property_name",
+                            "sq_ft",
+                            "deed_amount",
+                            "address",
+                            "laon_id",
+                            "status"
+                        ],
+                        raw: true
+                    });
+
+                    // Skip if loan user does not have notAssign status (additional safety check)
+                    if (loanUserData && loanUserData.status !== 'notAssign') {
+                        return null;
+                    }
+
+                    // Merge property information into the article
+                    return {
+                        ...article,
+                        non_builder_name: loanUserData?.non_builder_name || null,
+                        non_builder_property_name: loanUserData?.non_builder_property_name || null,
+                        sq_ft: loanUserData?.sq_ft || null,
+                        deed_amount: loanUserData?.deed_amount || null,
+                        address: loanUserData?.address || null,
+                        laon_id: loanUserData?.laon_id || null,
+                        loan_status: loanUserData?.status || null
+                    };
+                })
+            );
+
+            // Filter out any null entries and only include records with notAssign status
+            const finalArticles = enrichedArticles.filter(article => 
+                article !== null && article.loan_status === 'notAssign'
+            );
+
+            console.log('🔍 [LOAN API] Enriched articles with property info (building managers and notInterested excluded):', finalArticles);
             res.status(200).send({
                 message: "catergory unit get success",
-                data: articles,
+                data: finalArticles,
                 status: true,
             });
         })
@@ -9888,7 +10252,10 @@ exports.getVehicleUserRenewalData = async (req, res) => {
         const hasVehicle = crList.some(
           (m) => m["category.category_name"] === "Vehicle Insurance"
         );
-  
+        if (!hasVehicle) {
+            console.log("Skipping Non-Vehicle User:", user.username);
+            continue;
+          }
         // ❌ Remove ONLY if Mediclaim exists AND Vehicle DOES NOT exist
         if (hasMediclaim && !hasVehicle) {
           console.log("Skipping Mediclaim-only user:", user.username);
@@ -11582,36 +11949,108 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
             });
         }
 
-        // Convert dates to proper format
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999); // Include end of day
+        // Convert dates to proper format for DATEONLY field (YYYY-MM-DD strings)
+        const startDateStr = new Date(startDate).toISOString().split('T')[0]; // YYYY-MM-DD
+        const endDateStr = new Date(endDate).toISOString().split('T')[0]; // YYYY-MM-DD
         
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Date range:', { start, end });
+        console.log('🔍 [LIFE INSURANCE RENEWAL] Date range strings:', { startDateStr, endDateStr });
 
-        // First, let's try a simple query to see if the model works
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Testing simple query...');
-        const testQuery = await LifeInsurance.findAll({
-            limit: 5,
+        // Build base where clause for user filtering first
+        let whereObj = {};
+
+        // Apply user filtering based on role (similar to getAllLifeInsurance)
+        if (req.user.Role !== 1 && !req.user.categoryIds?.includes(5)) {
+            // USER ROLE WITHOUT LIFE INSURANCE CATEGORY ACCESS - Fetch life insurance data for assigned consumers only
+            const findUserList = await consumerRoleMapping.findAll({
+                where: {
+                    user_role_id: req.user.id,
+                    category_id: 5 // Life insurance category
+                },
+                raw: true,
+                attributes: ["user_consumer_id"],
+            });
+
+            const userList = findUserList.map((item) => item.user_consumer_id);
+
+            if (userList.length > 0) {
+                whereObj.user_id = {
+                    [Op.in]: userList,
+                };
+            } else {
+                // If no consumers assigned, return empty result
+                return res.status(200).json({
+                    status: true,
+                    data: [],
+                    message: 'No life insurance renewal data found for the selected date range'
+                });
+            }
+        }
+        
+        // Debug: Check total records
+        const totalRecords = await LifeInsurance.count({ where: whereObj });
+        console.log('🔍 [LIFE INSURANCE RENEWAL] Total records (after user filter):', totalRecords);
+        
+        // Fetch all records (with user filtering) and filter by date in memory
+        // This allows us to handle NULL due_date_of_premium and use RCD as fallback
+        const allLifeInsuranceData = await LifeInsurance.findAll({
+            where: whereObj,
             order: [['id', 'DESC']]
         });
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Test query result:', testQuery.length, 'records found');
         
-        // Try a simpler query first
-        const lifeInsuranceData = await LifeInsurance.findAll({
-            order: [['id', 'DESC']]
+        console.log('🔍 [LIFE INSURANCE RENEWAL] Total records fetched:', allLifeInsuranceData.length);
+        
+        // Filter by date range - use due_date_of_premium, or RCD as fallback
+        let lifeInsuranceData = allLifeInsuranceData.filter((policy) => {
+            const dueDate = policy.due_date_of_premium;
+            const rcd = policy.rcd;
+            
+            // If due_date_of_premium exists and is in range, include it
+            if (dueDate) {
+                const dueDateStr = new Date(dueDate).toISOString().split('T')[0];
+                if (dueDateStr >= startDateStr && dueDateStr <= endDateStr) {
+                    return true;
+                }
+            }
+            
+            // If no due_date_of_premium but RCD exists and is in range, include it as fallback
+            if (!dueDate && rcd) {
+                const rcdStr = new Date(rcd).toISOString().split('T')[0];
+                if (rcdStr >= startDateStr && rcdStr <= endDateStr) {
+                    return true;
+                }
+            }
+            
+            // Exclude records with neither date in range
+            return false;
         });
         
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Query executed, found records:', lifeInsuranceData.length);
+        console.log('🔍 [LIFE INSURANCE RENEWAL] Records after date filtering:', lifeInsuranceData.length);
+        
+        // If no records match the date range, show all records as fallback
+        // This helps users see what data exists even if dates don't match
+        let showAllRecords = false;
+        if (lifeInsuranceData.length === 0 && allLifeInsuranceData.length > 0) {
+            console.log('⚠️ [LIFE INSURANCE RENEWAL] No records match date range, showing all records as fallback');
+            lifeInsuranceData = allLifeInsuranceData;
+            showAllRecords = true;
+            
+            // Log sample dates for debugging
+            const sampleRecords = allLifeInsuranceData.slice(0, 5).map(r => ({
+                id: r.id,
+                due_date_of_premium: r.due_date_of_premium,
+                rcd: r.rcd,
+                proposer_name: r.proposer_name
+            }));
+            console.log('🔍 [LIFE INSURANCE RENEWAL] Sample records (first 5):', sampleRecords);
+            console.log('🔍 [LIFE INSURANCE RENEWAL] Date range searched:', { startDateStr, endDateStr });
+        }
 
         // Format data for renewal sheet
         const formattedData = lifeInsuranceData.map((policy, index) => ({
             sr_no: index + 1,
             due_date: policy.due_date_of_premium ? new Date(policy.due_date_of_premium).toISOString().split('T')[0] : 'Not Set',
             proposer_name: policy.proposer_name || '',
-            mobile_number: policy.proposer_mobile_numbers && policy.proposer_mobile_numbers.length > 0 
-                ? policy.proposer_mobile_numbers[0] 
-                : '',
+            mobile_number: policy.proposer_mobile_numbers || '',
             email: policy.proposer_email || '',
             policy_numbers: policy.policy_numbers || policy.policy_number || '',
             rcd: policy.rcd ? new Date(policy.rcd).toISOString().split('T')[0] : 'Not Set',
@@ -11627,10 +12066,25 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
             originalData: policy
         }));
 
+        // Prepare response message
+        let message = 'Life insurance renewal data fetched successfully';
+        if (formattedData.length === 0) {
+            if (allLifeInsuranceData.length === 0) {
+                message = 'No life insurance records found. Please check user permissions or create life insurance policies.';
+            } else {
+                message = `No life insurance records found with due dates or RCD between ${startDateStr} and ${endDateStr}. Found ${allLifeInsuranceData.length} total record(s) but none match the date range.`;
+            }
+        } else if (showAllRecords) {
+            message = `No records match the date range (${startDateStr} to ${endDateStr}). Showing all ${formattedData.length} record(s) instead.`;
+        }
+        
         res.status(200).json({
             status: true,
             data: formattedData,
-            message: 'Life insurance renewal data fetched successfully'
+            message: message,
+            totalRecords: allLifeInsuranceData.length,
+            filteredRecords: formattedData.length,
+            showAllRecords: showAllRecords || false
         });
     } catch (error) {
         console.error('❌ [LIFE INSURANCE RENEWAL] Error fetching renewal data:', error);
@@ -12022,9 +12476,10 @@ exports.getNotifications = async (req, res) => {
   
       // Map your category IDs to proper names
       const categoryMap = {
+        2: "Loan",
         4: "Mediclaim",
+        5: "Life Insurance",
         6: "Vehicle Insurance",
-        3: "Loan Insurance",
         8: "Builder",
       };
   
@@ -12462,6 +12917,180 @@ exports.renewVehiclePolicy = async (req, res) => {
   }
 };
 
+// Get all consumer data (vehicles, mediclaim, loans) for logged-in consumer
+exports.getConsumerDashboardData = async (req, res) => {
+    try {
+        const userId = req.user.id; // Get user_id from authenticated user (from JWT)
+        console.log('🔍 [CONSUMER DASHBOARD] Fetching data for user_id:', userId);
+        console.log('🔍 [CONSUMER DASHBOARD] User Role from JWT:', req.user.Role);
+
+        // Check if user is a consumer (role_id 3) - check both JWT and database
+        if (req.user.Role !== 3) {
+            return res.status(403).json({
+                message: "Access denied. This endpoint is only for consumers.",
+                status: false
+            });
+        }
+
+        // Verify user exists in database
+        const user = await User.findOne({
+            where: { user_id: userId },
+            attributes: ['user_id', 'username', 'email', 'mobileNumber', 'role_id'],
+            raw: true
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found",
+                status: false
+            });
+        }
+
+        // Double-check role from database
+        if (user.role_id !== 3) {
+            return res.status(403).json({
+                message: "Access denied. This endpoint is only for consumers.",
+                status: false
+            });
+        }
+
+        // Fetch vehicles associated with this consumer
+        const vehicles = await vehicleUser.findAll({
+            where: { user_id: userId },
+            attributes: [
+                'vehicle_user_id',
+                'vehicle_number',
+                'make',
+                'model',
+                'manufacturing_year',
+                'vehicle_policy_type',
+                'company_name',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ],
+            include: [
+                {
+                    model: vehcileRunningPolicy,
+                    as: 'runningPolicy',
+                    required: false
+                },
+                {
+                    model: vehiclePreviousPolicy,
+                    as: 'previousPolicies',
+                    required: false
+                }
+            ],
+            raw: false
+        });
+
+        // Fetch mediclaim associated with this consumer
+        const mediclaim = await Mediclaim.findAll({
+            where: { user_id: userId },
+            attributes: [
+                'id',
+                'medicliam_type',
+                'medicliam_policy_type',
+                'sumInsured',
+                'noClaimBonus',
+                'agentName',
+                'agentCode',
+                'createdAt',
+                'updatedAt'
+            ],
+            include: [
+                {
+                    model: MediclaimCompany,
+                    attributes: ['mediclaim_company_name']
+                },
+                {
+                    model: RunningPolicies,
+                    required: false
+                },
+                {
+                    model: PreviousPolicies,
+                    required: false
+                },
+                {
+                    model: FamilyMember,
+                    as: 'familymembers',
+                    required: false
+                },
+                {
+                    model: EmployeeMediclaim,
+                    as: 'employees',
+                    required: false
+                }
+            ],
+            raw: false
+        });
+
+        // Fetch loans associated with this consumer
+        const loans = await loanUser.findAll({
+            where: { user_id: userId },
+            attributes: [
+                'laon_id',
+                'user_id',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ],
+            include: [
+                {
+                    model: LoginLoan,
+                    required: false
+                },
+                {
+                    model: property,
+                    required: false
+                },
+                {
+                    model: SanctionLoan,
+                    required: false
+                },
+                {
+                    model: DisbursementLoan,
+                    required: false
+                }
+            ],
+            raw: false
+        });
+
+        // Convert Sequelize instances to plain objects
+        const vehiclesData = vehicles.map(v => v.get({ plain: true }));
+        const mediclaimData = mediclaim.map(m => m.get({ plain: true }));
+        const loansData = loans.map(l => l.get({ plain: true }));
+
+        return res.status(200).json({
+            message: "Consumer dashboard data retrieved successfully",
+            status: true,
+            data: {
+                user: {
+                    user_id: user.user_id,
+                    username: user.username,
+                    email: user.email,
+                    mobileNumber: user.mobileNumber
+                },
+                vehicles: vehiclesData,
+                mediclaim: mediclaimData,
+                loans: loansData,
+                summary: {
+                    totalVehicles: vehiclesData.length,
+                    totalMediclaim: mediclaimData.length,
+                    totalLoans: loansData.length
+                }
+            }
+        });
+    } catch (error) {
+        console.error('❌ [CONSUMER DASHBOARD] Error:', error);
+        return res.status(500).json({
+            message: "Error fetching consumer dashboard data",
+            status: false,
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     userChek: exports.userChek,
     verifyUser: exports.verifyUser,
@@ -12558,6 +13187,7 @@ module.exports = {
     getAllLifeInsurance: exports.getAllLifeInsurance,
     getLifeInsuranceById: exports.getLifeInsuranceById,
     updateLifeInsurance: exports.updateLifeInsurance,
+    getConsumerDashboardData: exports.getConsumerDashboardData,
     deleteLifeInsurance: exports.deleteLifeInsurance,
     uploadLifeInsuranceDocument: exports.uploadLifeInsuranceDocument,
     getLifeInsuranceDocuments: exports.getLifeInsuranceDocuments,

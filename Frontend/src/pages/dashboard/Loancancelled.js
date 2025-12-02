@@ -179,7 +179,9 @@ const Loancancelled = () => {
     try {
       const consumerData = await getAllLoanConsumerDetail({ laon_id });
       if (consumerData?.data) {
-        setViewData(consumerData.data);
+        // Handle both array and object responses
+        const data = Array.isArray(consumerData.data) ? consumerData.data[0] : consumerData.data;
+        setViewData(data);
       } else {
         setViewData(null);
       }
@@ -194,7 +196,12 @@ const Loancancelled = () => {
     if (laonId) {
       try {
         const consumerData = await getAllLoanConsumerDetail({ laon_id: laonId });
+        // Handle both array and object responses
         let merged = consumerData?.data || {};
+        if (Array.isArray(consumerData.data) && consumerData.data.length > 0) {
+          merged = consumerData.data[0];
+        }
+        
         // If inline table remark exists, use it as a fallback so popup shows the same
         if (row?.remark) {
           merged = {
@@ -205,6 +212,7 @@ const Loancancelled = () => {
             }
           };
         }
+        console.log('🔍 [CANCELLED LOAN] View data set:', merged);
         setViewData(merged);
       } catch (e) {
         console.error('Error fetching loan consumer detail:', e);
