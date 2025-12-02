@@ -309,8 +309,8 @@ const NotificationCenter = () => {
                           {formatDate(notification.created_at)}
                         </span>
                         <span className="notification-type">
-  { notification.category_name||  notification.type}
-</span>
+                          {notification.category_name || notification.type}
+                        </span>
                       </div>
                     </div>
                     {!notification.is_read && (

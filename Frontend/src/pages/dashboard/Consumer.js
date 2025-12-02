@@ -47,7 +47,8 @@ const Consumer = () => {
     unassignedConsumers: 0
   });
   
-  const user = Cookies.get('user') && JSON.parse(Cookies.get('user')) || '';
+  const userCookie = Cookies.get('user');
+  const user = userCookie ? JSON.parse(userCookie) : null;
 
   // Helper function to format category display
   const formatCategoryDisplay = (categories) => {
@@ -227,14 +228,58 @@ const Consumer = () => {
           const roleName = item.roleDisplay || item.role?.role_name || item.role_id || '';
           return roleName.toLowerCase() !== 'building manager';
         })
-        .map(item => ({
-          ...item,
-          referenceName: item.referenceName || '-',
-          role: item.roleDisplay || item.role?.role_name || item.role_id || 'N/A',
-          builderUser: item.builder_user ? `Yes - ${item.builder_user}` : 'No',
-          categories: item.category || [],
-          categoryDisplay: formatCategoryDisplay(item.category || [])
-        }));
+        // .map(item => ({
+        //   ...item,
+        //   referenceName: item.referenceName || '-',
+        //   role: item.roleDisplay || item.role?.role_name || item.role_id || 'N/A',
+        //   builderUser: item.builder_user ? `Yes - ${item.builder_user}` : 'No',
+        //   categories: item.category || [],
+        //   categoryDisplay: formatCategoryDisplay(item.category || [])
+        // }));
+        .map(item => {
+          // Use builder_company_name from API response if available, otherwise fall back to lookup
+          let builderUserDisplay = 'No Builder';
+          
+          if (item.builder_company_name) {
+            // Use the builder company name directly from API response
+            builderUserDisplay = item.builder_company_name;
+          } else if (item.builder_user) {
+            // Fallback: Try to find builder by matching user_id (for backward compatibility)
+            const builder = builderData.find(b => {
+              const builderUserId = b.user_id || b.id;
+              const consumerBuilderUserId = item.builder_user;
+              // Compare both as strings and numbers to handle type mismatches
+              return builderUserId == consumerBuilderUserId || 
+                     String(builderUserId) === String(consumerBuilderUserId);
+            });
+            
+            if (builder) {
+              // Use username if available, otherwise try other fields
+              builderUserDisplay = builder.username || builder.name || builder['builderuser.company_name'] || 'Unknown';
+            } else {
+              // Builder not found in builderData - might not be loaded yet
+              console.warn('Builder not found for builder_user:', item.builder_user, 'Available builders:', builderData.map(b => ({ id: b.user_id || b.id, name: b.username })));
+              builderUserDisplay = 'Unknown';
+            }
+          }
+
+          return {
+            ...item,
+            referenceName: item.referenceName || '-',
+            role: item.roleDisplay || item.role?.role_name || item.role_id || 'N/A',
+            builderUser: builderUserDisplay,
+      
+            // FINAL WORKING CATEGORY OUTPUT
+            categories: item.category || [],
+            categoryDisplay: formatCategoryDisplay(
+              (item.category || []).map(c => ({
+                category_id: c.category_id,
+                user_role_id: c.user_role_id
+              }))
+            )
+          };
+        });
+        
       setData(mappedData);
       setFilteredData(mappedData);
     } else {
@@ -242,16 +287,72 @@ const Consumer = () => {
       setFilteredData([]);
     }
     
-      setHeading([
-        { key: 'username', head: 'Name' },
-        { key: 'email', head: 'Email' },
-        { key: 'mobileNumber', head: 'Mobile' },
-        { key: 'categoryDisplay', head: 'Services' },
-        { key: 'referenceName', head: 'Reference' },
-        { key: 'builderUser', head: 'Builder User' }
-      ]);
+    // Set table columns
+    let tableColumns = [
+      { key: 'username', head: 'Name' },
+      { key: 'email', head: 'Email' },
+      { key: 'mobileNumber', head: 'Mobile' },
+      { key: 'categoryDisplay', head: 'Services' },
+      { key: 'referenceName', head: 'Reference' }
+    ];
+    
+    // Only show builder column if NOT building manager
+    if (user?.role_id !== 7) {
+      tableColumns.push({ key: 'builderUser', head: 'Builder User' });
+    }
+    
+    setHeading(tableColumns);
     setLoading(false);
   };
+
+  // Re-process consumer data when builderData becomes available
+  useEffect(() => {
+    if (data.length > 0 && builderData.length > 0) {
+      // Re-map data to update builder user names now that builderData is available
+      const remappedData = data.map(item => {
+        // Use builder_company_name from API response if available, otherwise fall back to lookup
+        let builderUserDisplay = 'No Builder';
+        
+        if (item.builder_company_name) {
+          // Use the builder company name directly from API response
+          builderUserDisplay = item.builder_company_name;
+        } else if (item.builder_user) {
+          // Fallback: Try to find builder by matching user_id (for backward compatibility)
+          const builder = builderData.find(b => {
+            const builderUserId = b.user_id || b.id;
+            const consumerBuilderUserId = item.builder_user;
+            // Compare both as strings and numbers to handle type mismatches
+            return builderUserId == consumerBuilderUserId || 
+                   String(builderUserId) === String(consumerBuilderUserId);
+          });
+          
+          if (builder) {
+            // Use username if available, otherwise try other fields
+            builderUserDisplay = builder.username || builder.name || builder['builderuser.company_name'] || 'Unknown';
+          } else {
+            builderUserDisplay = 'Unknown';
+          }
+        }
+
+        return {
+          ...item,
+          builderUser: builderUserDisplay
+        };
+      });
+
+      // Only update if builder user display actually changed
+      const hasChanges = remappedData.some((item, index) => 
+        item.builderUser !== data[index]?.builderUser
+      );
+
+      if (hasChanges) {
+        setData(remappedData);
+        setFilteredData(remappedData);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [builderData]);
+  
 
   const getAllVerticleData = async () => {
     const verticleData = await getAllVerticle();
@@ -645,16 +746,18 @@ const handleSubmit = async (e) => {
       <div className="consumer-container">
         <div className="consumer-header">
           <h1>Consumer Management</h1>
-          <Button 
-            className="add-consumer-btn" 
-            onClick={toggleModal}
-          >
-            + Add Consumer
-          </Button>
+          {user && user.role_id !== 7 && (
+            <Button 
+              className="add-consumer-btn" 
+              onClick={toggleModal}
+            >
+              + Add Consumer
+            </Button>
+          )}
       </div>
 
         {/* Statistics Cards Section */}
-        <div className="stat-cards-container">
+        {/* <div className="stat-cards-container">
           <div 
             className={`stat-card ${activeFilter === 'all' ? 'active' : ''}`}
             onClick={() => handleCardClick('all')}
@@ -714,7 +817,71 @@ const handleSubmit = async (e) => {
             <div className="stat-title">❓ Unassigned</div>
             <div className="stat-description">No category assigned</div>
           </div>
-        </div>
+        </div> */}
+{/* Show stats only if NOT building manager */}
+{user?.role_id !== 7 && (
+  <div className="stat-cards-container">
+    <div 
+      className={`stat-card ${activeFilter === 'all' ? 'active' : ''}`}
+      onClick={() => handleCardClick('all')}
+      style={{ '--card-color': '#2196F3' }}
+    >
+      <div className="stat-number">{statsData.totalConsumers}</div>
+      <div className="stat-title">Total Consumers</div>
+      <div className="stat-description">All registered consumers</div>
+    </div>
+    
+    <div 
+      className={`stat-card ${activeFilter === 'loan' ? 'active' : ''}`}
+      onClick={() => handleCardClick('loan')}
+      style={{ '--card-color': '#FF9800' }}
+    >
+      <div className="stat-number">{statsData.loanConsumers}</div>
+      <div className="stat-title">💰 Loan</div>
+      <div className="stat-description">Loan category users</div>
+    </div>
+
+    <div 
+      className={`stat-card ${activeFilter === 'mediclaim' ? 'active' : ''}`}
+      onClick={() => handleCardClick('mediclaim')}
+      style={{ '--card-color': '#00BCD4' }}
+    >
+      <div className="stat-number">{statsData.mediclaimConsumers}</div>
+      <div className="stat-title">🏥 Mediclaim</div>
+      <div className="stat-description">Mediclaim users</div>
+    </div>
+
+    <div 
+      className={`stat-card ${activeFilter === 'vehicle' ? 'active' : ''}`}
+      onClick={() => handleCardClick('vehicle')}
+      style={{ '--card-color': '#4CAF50' }}
+    >
+      <div className="stat-number">{statsData.vehicleConsumers}</div>
+      <div className="stat-title">🚗 Vehicle</div>
+      <div className="stat-description">Vehicle insurance users</div>
+    </div>
+
+    <div 
+      className={`stat-card ${activeFilter === 'life' ? 'active' : ''}`}
+      onClick={() => handleCardClick('life')}
+      style={{ '--card-color': '#9C27B0' }}
+    >
+      <div className="stat-number">{statsData.lifeConsumers}</div>
+      <div className="stat-title">🛡️ Life Insurance</div>
+      <div className="stat-description">Life insurance users</div>
+    </div>
+
+    <div 
+      className={`stat-card ${activeFilter === 'unassigned' ? 'active' : ''}`}
+      onClick={() => handleCardClick('unassigned')}
+      style={{ '--card-color': '#F44336' }}
+    >
+      <div className="stat-number">{statsData.unassignedConsumers}</div>
+      <div className="stat-title">❓ Unassigned</div>
+      <div className="stat-description">No category assigned</div>
+    </div>
+  </div>
+)}
 
         <div className="consumer-table-container">
         <Table

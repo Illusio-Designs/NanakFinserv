@@ -142,4 +142,7 @@ router.get("/user/building-manager/stats", [verifyToken], userController.getBuil
 router.put("/user/building-manager/update/:id", [verifyToken], userController.updateBuildingManager);
 router.put("/user/building-manager/remove/:id", [verifyToken], userController.removeBuildingManager);
 
+// Consumer Dashboard Route
+router.get("/user/consumer/dashboard", [verifyToken], userController.getConsumerDashboardData);
+
 module.exports = router;

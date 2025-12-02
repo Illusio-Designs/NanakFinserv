@@ -12,6 +12,7 @@ const Login = () => {
   const [otp, setOtp] = useState(Array.from({ length: 6 }).map(() => ''));
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   
   // Initialize MSG91 provider once without identifier; expose methods for later use
   useEffect(() => {
@@ -33,20 +34,46 @@ const Login = () => {
   }, []);
 
   // Function to handle sending OTP
-  const handleSendOtp = useCallback(async () => {
+  const handleSendOtp = useCallback(async (isResend = false) => {
     const regex = /^\d{10}$/;
     if (!regex.test(mobileNumber)) {
       alert('Mobile number invalid');
       return;
     }
 
+    if (isResend) {
+      setIsResending(true);
+      // Clear OTP fields when resending
+      setOtp(Array.from({ length: 6 }).map(() => ''));
+    }
+
     const identifier = `91${mobileNumber}`;
     const successCb = (data) => {
       console.log('[Login][SendOTP] success', { data, identifier });
       setOtpSent(true);
+      setIsResending(false);
+      if (isResend) {
+        toast.success('OTP resent successfully!', {
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        });
+      }
     };
     const failureCb = (error) => {
       console.error('[Login][SendOTP] failure', { error, identifier });
+      setIsResending(false);
+      if (isResend) {
+        toast.error('Failed to resend OTP. Please try again.', {
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        });
+      }
     };
 
     if (window.sendOtp) {
@@ -81,6 +108,7 @@ const Login = () => {
       });
     } else {
       console.error('OTP provider not available');
+      setIsResending(false);
     }
   }, [mobileNumber]);
 
@@ -189,6 +217,15 @@ const Login = () => {
                             className="btn btn-white mt-4" onClick={handleVerifyOtp} disabled={!otp.every(digit => digit)} >
                             Verify OTP
                           </button>
+                          <div className="resend-otp-container mt-3">
+                            <button
+                              className="btn-resend-otp"
+                              onClick={() => handleSendOtp(true)}
+                              disabled={isResending}
+                            >
+                              {isResending ? 'Sending...' : 'Resend OTP'}
+                            </button>
+                          </div>
                         </div>
                       )}
                       {otpVerified && (

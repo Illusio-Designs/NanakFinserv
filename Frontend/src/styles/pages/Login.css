@@ -217,6 +217,35 @@
   color: #333333;
 }
 
+/* Resend OTP Container */
+.resend-otp-container {
+  text-align: center;
+}
+
+.btn-resend-otp {
+  background: transparent;
+  border: 1px solid #1E3A8A;
+  color: #1E3A8A;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.btn-resend-otp:hover:not(:disabled) {
+  background: #1E3A8A;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+}
+
+.btn-resend-otp:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Main Login Container */
 .main-login {
   display: flex;

@@ -4,7 +4,7 @@ import Modal from '../../components/common/Modal';
 import Table from '../../components/common/Table';
 import Button from '../../components/common/Button';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getAllLoanDisburseConsumer } from '../../serviceAPI/userAPI';
+import { getAllLoanDisburseConsumer, getAllLoanConsumerDetail } from '../../serviceAPI/userAPI';
 import * as XLSX from 'xlsx';
 
 const Loandisbuss = () => {
@@ -103,10 +103,76 @@ const Loandisbuss = () => {
   };
 
   const getLoanConsumerDetail = async (laon_id) => {
-    // Find the loan details from the filtered data (current view)
-    const loanDetails = filteredData.find(item => item.laon_id === laon_id);
-    if (loanDetails) {
-      setDetail(loanDetails); // Set the detailed data to state
+    try {
+      // Fetch full loan details from API
+      const consumerData = await getAllLoanConsumerDetail({ laon_id });
+      console.log('🔍 [COMPLETED LOAN] Raw API response:', consumerData);
+      if (consumerData?.data) {
+        // Handle both array and object responses
+        let loanDetails = consumerData.data;
+        if (Array.isArray(consumerData.data) && consumerData.data.length > 0) {
+          loanDetails = consumerData.data[0];
+        }
+        console.log('🔍 [COMPLETED LOAN] Processed loanDetails:', loanDetails);
+        console.log('🔍 [COMPLETED LOAN] login_details:', loanDetails?.details?.login_details);
+        console.log('🔍 [COMPLETED LOAN] disbursement_details:', loanDetails?.details?.disbursement_details);
+        
+        // Map the API response to the format expected by the modal
+        // Extract all nested data properly
+        const loginDetails = loanDetails?.details?.login_details || {};
+        const disbursementDetails = loanDetails?.details?.disbursement_details || {};
+        
+        const mappedDetail = {
+          // Consumer Information
+          userName: loanDetails['userConsumers.username'] || loanDetails?.userConsumers?.username || loanDetails?.details?.username || '',
+          mobileNumber: loanDetails['userConsumers.mobileNumber'] || loanDetails?.userConsumers?.mobileNumber || loanDetails?.details?.mobileNumber || '',
+          email: loanDetails['userConsumers.email'] || loanDetails?.userConsumers?.email || loanDetails?.details?.email || '',
+          referenceName: loanDetails['userConsumers.referenceName'] || loanDetails?.userConsumers?.referenceName || loanDetails?.details?.referenceName || '',
+          
+          // Loan Manager Information (preserve original keys)
+          'userRoles.username': loanDetails['userRoles.username'] || loanDetails?.userRoles?.username || '',
+          'userRoles.email': loanDetails['userRoles.email'] || loanDetails?.userRoles?.email || '',
+          'userRoles.mobileNumber': loanDetails['userRoles.mobileNumber'] || loanDetails?.userRoles?.mobileNumber || '',
+          'userRoles.referenceName': loanDetails['userRoles.referenceName'] || loanDetails?.userRoles?.referenceName || '',
+          
+          // Loan Information from login_details
+          loanAmount: loginDetails.loanAmount || loanDetails?.loanAmount || '',
+          bankName: loginDetails.bankName || loanDetails?.bankName || '',
+          product: loginDetails.product || loanDetails?.product || '',
+          loanAccountNumber: loginDetails.loanAccountNumber || loanDetails?.loanAccountNumber || '',
+          loanDate: loginDetails.loanDate || loanDetails?.loanDate || '',
+          
+          // Disbursement Information
+          disbursementDate: disbursementDetails.disbursementDate || loginDetails.loanDate || loanDetails?.disbursementDate || '',
+          disbursementAmount: disbursementDetails.disbursementAmount || '',
+          disbursementRate: disbursementDetails.disbursementRate || '',
+          
+          // Status and other fields
+          status: loanDetails?.details?.status || loanDetails?.status || '',
+          pdfname: loanDetails?.pdfname || '',
+          laon_id: loanDetails?.details?.laon_id || loanDetails?.laon_id || laon_id,
+          
+          // Include full details object and original structure
+          details: loanDetails?.details || {},
+          ...loanDetails
+        };
+        
+        console.log('🔍 [COMPLETED LOAN] View data set:', mappedDetail);
+        setDetail(mappedDetail);
+      } else {
+        // Fallback to filtered data if API fails
+        const loanDetails = filteredData.find(item => item.laon_id === laon_id);
+        if (loanDetails) {
+          setDetail(loanDetails);
+        }
+      }
+    } catch (e) {
+      console.error('Error fetching loan consumer detail:', e);
+      // Fallback to filtered data on error
+      const loanDetails = filteredData.find(item => item.laon_id === laon_id);
+      if (loanDetails) {
+        setDetail(loanDetails);
+      }
     }
   };
 
@@ -461,57 +527,139 @@ const Loandisbuss = () => {
           >
             {viewIndex !== null && detail ? (
               <div className="loan-details-modal">
+                {/* Consumer Information Section */}
+                <div className="info-section">
+                  <h3>Consumer Information</h3>
+                  <div className="form-section">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Name:</label>
+                        <p className="detail-value">{detail['userConsumers.username'] || detail.userName || 'N/A'}</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Email:</label>
+                        <p className="detail-value">{detail['userConsumers.email'] || detail.email || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Mobile Number:</label>
+                        <p className="detail-value">{detail['userConsumers.mobileNumber'] || detail.mobileNumber || 'N/A'}</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Reference Name:</label>
+                        <p className="detail-value">{detail['userConsumers.referenceName'] || detail.referenceName || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Loan Manager Information Section */}
+                <div className="info-section">
+                  <h3>Loan Manager Information</h3>
+                  <div className="form-section">
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Manager Name:</label>
+                        <p className="detail-value">{detail['userRoles.username'] || 'N/A'}</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Manager Email:</label>
+                        <p className="detail-value">{detail['userRoles.email'] || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Manager Mobile:</label>
+                        <p className="detail-value">{detail['userRoles.mobileNumber'] || 'N/A'}</p>
+                      </div>
+                      <div className="form-group">
+                        <label>Manager Reference:</label>
+                        <p className="detail-value">{detail['userRoles.referenceName'] || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Loan Information Section */}
                 <div className="info-section">
                   <h3>Loan Information</h3>
                   <div className="form-section">
                     <div className="form-row">
                       <div className="form-group">
-                        <label>Name:</label>
-                        <p className="detail-value">{detail.userName || 'N/A'}</p>
-                      </div>
-                      <div className="form-group">
-                        <label>Mobile Number:</label>
-                        <p className="detail-value">{detail.mobileNumber || 'N/A'}</p>
-                      </div>
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
                         <label>Loan Amount:</label>
-                        <p className="detail-value">{detail.loanAmount || 'N/A'}</p>
+                        <p className="detail-value">
+                          {(() => {
+                            const amount = detail.loanAmount || detail?.details?.login_details?.loanAmount;
+                            if (amount) {
+                              return typeof amount === 'string' && amount.includes('₹') ? amount : `₹${amount}`;
+                            }
+                            return 'N/A';
+                          })()}
+                        </p>
                       </div>
                       <div className="form-group">
                         <label>Bank Name:</label>
-                        <p className="detail-value">{detail.bankName || 'N/A'}</p>
+                        <p className="detail-value">
+                          {detail.bankName || 
+                           detail?.details?.login_details?.bankName || 
+                           'N/A'}
+                        </p>
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group">
                         <label>Product:</label>
-                        <p className="detail-value">{detail.product || 'N/A'}</p>
+                        <p className="detail-value">
+                          {detail.product || 
+                           detail?.details?.login_details?.product || 
+                           'N/A'}
+                        </p>
                       </div>
                       <div className="form-group">
                         <label>Loan Account Number:</label>
-                        <p className="detail-value">{detail.loanAccountNumber || 'N/A'}</p>
+                        <p className="detail-value">
+                          {detail.loanAccountNumber || 
+                           detail?.details?.login_details?.loanAccountNumber || 
+                           'N/A'}
+                        </p>
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group">
                         <label>Loan Date:</label>
-                        <p className="detail-value">{detail.loanDate || 'N/A'}</p>
+                        <p className="detail-value">
+                          {detail.loanDate || 
+                           detail?.details?.login_details?.loanDate || 
+                           'N/A'}
+                        </p>
                       </div>
                       <div className="form-group">
                         <label>Disbursement Date:</label>
-                        <p className="detail-value">{detail.disbursementDate || 'N/A'}</p>
+                        <p className="detail-value">
+                          {detail.disbursementDate || 
+                           detail?.details?.disbursement_details?.disbursementDate || 
+                           detail?.details?.login_details?.loanDate ||
+                           'N/A'}
+                        </p>
                       </div>
                     </div>
                     <div className="form-row">
                       <div className="form-group">
                         <label>Status:</label>
-                        <p className="detail-value">{detail.status || 'N/A'}</p>
+                        <p className="detail-value">
+                          {detail.status || 
+                           detail?.details?.status || 
+                           'N/A'}
+                        </p>
                       </div>
                       <div className="form-group">
                         <label>PDF File:</label>
-                        <p className="detail-value">{detail.pdfname || 'No file available'}</p>
+                        <p className="detail-value">
+                          {detail.pdfname || 
+                           detail?.details?.pdfname ||
+                           'No file available'}
+                        </p>
                       </div>
                     </div>
                   </div>

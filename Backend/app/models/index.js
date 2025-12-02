@@ -288,7 +288,7 @@ db.lifeInsurance.belongsTo(db.user, { foreignKey: 'user_id', as: 'policyHolder' 
 
 // Building Manager relationships
 db.user.hasMany(db.buildingManager, { foreignKey: 'user_id' });
-db.buildingManager.belongsTo(db.user, { foreignKey: 'user_id' });
+db.buildingManager.belongsTo(db.user, { foreignKey: 'user_id', as: 'user' });
 
 db.unit.hasMany(db.buildingManager, { foreignKey: 'unit_id' });
 db.buildingManager.belongsTo(db.unit, { foreignKey: 'unit_id' });

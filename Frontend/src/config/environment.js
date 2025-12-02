@@ -31,6 +31,17 @@ const config = {
   IS_DEVELOPMENT: (process.env.NODE_ENV || 'development') === 'development',
 };
 
+// const config = {
+//   API_URL: process.env.REACT_APP_API_URL || 'https://api.nanakfinserv.com/api',
+//   DOWNLOAD_URL: process.env.REACT_APP_DOWNLOAD_URL || 'https://api.nanakfinserv.com/api/user/download/',
+//   BASE_URL: process.env.REACT_APP_BASE_URL || 'https://api.nanakfinserv.com',
+//   NODE_ENV: process.env.NODE_ENV || 'production',
+//   IS_PRODUCTION: (process.env.NODE_ENV || 'production') === 'production',
+//   IS_DEVELOPMENT: (process.env.NODE_ENV || 'development') === 'development',
+// };
+
+
+
 // Debug logging
 console.log('🔧 Environment Configuration Loaded:');
 console.log('API_URL:', config.API_URL);

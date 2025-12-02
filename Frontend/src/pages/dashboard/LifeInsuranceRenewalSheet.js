@@ -55,17 +55,36 @@ const LifeInsuranceRenewalSheet = () => {
         
         setIsLoading(true);
         try {
+            console.log('🔍 [FRONTEND] Fetching life insurance renewal data with dates:', { startDate, endDate });
             const response = await getLifeInsuranceRenewalData(startDate, endDate);
+            console.log('🔍 [FRONTEND] Response received:', response);
+            
             if (response && response.status) {
-                setData(response.data || []);
-                setFilteredData(response.data || []);
+                const dataArray = response.data || [];
+                console.log('🔍 [FRONTEND] Data received, count:', dataArray.length);
+                console.log('🔍 [FRONTEND] Response message:', response.message);
+                console.log('🔍 [FRONTEND] Total records:', response.totalRecords);
+                console.log('🔍 [FRONTEND] Filtered records:', response.filteredRecords);
+                
+                setData(dataArray);
+                setFilteredData(dataArray);
                 hasLoadedData.current = true;
+                
+                if (dataArray.length === 0) {
+                    console.warn('⚠️ [FRONTEND] No data returned for the selected date range');
+                    if (response.message) {
+                        console.warn('⚠️ [FRONTEND] Message:', response.message);
+                        // You could show a toast notification here if needed
+                        // toast.warning(response.message);
+                    }
+                }
             } else {
+                console.warn('⚠️ [FRONTEND] Response status is false:', response);
                 setData([]);
                 setFilteredData([]);
             }
         } catch (error) {
-            console.error('Error fetching life insurance renewal data:', error);
+            console.error('❌ [FRONTEND] Error fetching life insurance renewal data:', error);
             setData([]);
             setFilteredData([]);
         } finally {
@@ -73,7 +92,7 @@ const LifeInsuranceRenewalSheet = () => {
         }
     };
 
-    // Initialize dates from localStorage only if they exist
+    // Initialize dates from localStorage or set to current month
     useEffect(() => {
         const savedStartDate = localStorage.getItem('lifeInsuranceRenewalStartDate');
         const savedEndDate = localStorage.getItem('lifeInsuranceRenewalEndDate');
@@ -81,8 +100,16 @@ const LifeInsuranceRenewalSheet = () => {
         if (savedStartDate && savedEndDate) {
             setStartDate(savedStartDate);
             setEndDate(savedEndDate);
+        } else {
+            // Initialize with current month if no saved dates
+            const defaultStartDate = getStartOfMonth();
+            const defaultEndDate = getEndOfMonth();
+            setStartDate(defaultStartDate);
+            setEndDate(defaultEndDate);
+            // Save to localStorage
+            localStorage.setItem('lifeInsuranceRenewalStartDate', defaultStartDate);
+            localStorage.setItem('lifeInsuranceRenewalEndDate', defaultEndDate);
         }
-        // If no saved dates, keep them blank (empty strings)
     }, []);
 
     // Initial load - only load if dates are selected
