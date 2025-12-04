@@ -168,7 +168,8 @@ const Unit = () => {
               (c) =>
                 c.office_no === String(unitNumber) &&
                 c.wing_id === floor.wingId &&
-                c.floor_id === floor.floor_id
+                c.floor_id === floor.floor_id &&
+                c.category_id === category.id
             );
 
             return (

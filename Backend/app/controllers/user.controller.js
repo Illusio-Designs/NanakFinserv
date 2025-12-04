@@ -12343,6 +12343,142 @@ exports.getBuildingManagerStats = async (req, res) => {
     }
 };
 
+exports.getBuildingManagerDashboardStats = async (req, res) => {
+    try {
+        // Check if user is a building manager (Role 7)
+        if (req.user.Role !== 7) {
+            return res.status(403).json({
+                status: false,
+                message: 'Access denied. Only building managers can access this endpoint.'
+            });
+        }
+
+        // Get all units assigned to this building manager
+        const buildingManagerAssignments = await BuildingManager.findAll({
+            where: { 
+                user_id: req.user.id, 
+                status: 'active' 
+            },
+            attributes: ['unit_id'],
+            raw: true
+        });
+
+        if (buildingManagerAssignments.length === 0) {
+            return res.status(200).json({
+                status: true,
+                message: 'No buildings assigned to this building manager',
+                data: {
+                    disbursement: 0,
+                    cancel: 0,
+                    onProcess: 0,
+                    completed: 0,
+                    notInterested: 0,
+                    total: 0
+                }
+            });
+        }
+
+        const unitIds = buildingManagerAssignments.map(assignment => assignment.unit_id);
+        console.log('🔍 [BUILDING MANAGER DASHBOARD] Assigned unit IDs:', unitIds);
+
+        // Get all consumer user IDs from these units
+        const consumersInBuildings = await builderConsumer.findAll({
+            where: {
+                unit_id: { [Op.in]: unitIds }
+            },
+            attributes: ['user_id'],
+            raw: true
+        });
+
+        const consumerUserIds = [...new Set(consumersInBuildings.map(c => c.user_id).filter(id => id !== null))];
+        console.log('🔍 [BUILDING MANAGER DASHBOARD] Consumer user IDs in assigned buildings:', consumerUserIds);
+
+        if (consumerUserIds.length === 0) {
+            return res.status(200).json({
+                status: true,
+                message: 'No consumers found in assigned buildings',
+                data: {
+                    disbursement: 0,
+                    cancel: 0,
+                    onProcess: 0,
+                    completed: 0,
+                    notInterested: 0,
+                    total: 0
+                }
+            });
+        }
+
+        // Count loans by status for these consumers
+        // Statuses for "onProcess": pickup, login, query, sanction, documentselected, interested, partPayment
+        const onProcessStatuses = ['pickup', 'login', 'query', 'sanction', 'documentselected', 'interested', 'partPayment'];
+
+        const disbursementCount = await loanUser.count({
+            where: {
+                user_id: { [Op.in]: consumerUserIds },
+                status: 'disbursement'
+            }
+        });
+
+        const cancelCount = await loanUser.count({
+            where: {
+                user_id: { [Op.in]: consumerUserIds },
+                status: 'cancel'
+            }
+        });
+
+        const onProcessCount = await loanUser.count({
+            where: {
+                user_id: { [Op.in]: consumerUserIds },
+                status: { [Op.in]: onProcessStatuses }
+            }
+        });
+
+        const completedCount = await loanUser.count({
+            where: {
+                user_id: { [Op.in]: consumerUserIds },
+                status: 'completed'
+            }
+        });
+
+        const notInterestedCount = await loanUser.count({
+            where: {
+                user_id: { [Op.in]: consumerUserIds },
+                status: 'notInterested'
+            }
+        });
+
+        const totalCount = await loanUser.count({
+            where: {
+                user_id: { [Op.in]: consumerUserIds }
+            }
+        });
+
+        const stats = {
+            disbursement: disbursementCount,
+            cancel: cancelCount,
+            onProcess: onProcessCount,
+            completed: completedCount,
+            notInterested: notInterestedCount,
+            total: totalCount
+        };
+
+        console.log('🔍 [BUILDING MANAGER DASHBOARD] Stats:', stats);
+
+        res.status(200).json({
+            status: true,
+            message: 'Building manager dashboard statistics retrieved successfully',
+            data: stats
+        });
+    } catch (error) {
+        console.error('Error fetching building manager dashboard stats:', error);
+        res.status(500).json({
+            status: false,
+            message: 'Error fetching building manager dashboard statistics',
+            error: error.message
+        });
+    }
+};
+
 exports.updateBuildingManager = async (req, res) => {
     try {
         const { building_manager_id } = req.params;
@@ -13206,6 +13342,7 @@ module.exports = {
     assignBuildingManager: exports.assignBuildingManager,
     getAllBuildingManagers: exports.getAllBuildingManagers,
     getBuildingManagerStats: exports.getBuildingManagerStats,
+    getBuildingManagerDashboardStats: exports.getBuildingManagerDashboardStats,
     updateBuildingManager: exports.updateBuildingManager,
     removeBuildingManager: exports.removeBuildingManager,
 };

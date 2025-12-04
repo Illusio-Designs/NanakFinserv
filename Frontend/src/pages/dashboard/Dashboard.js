@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import '../../styles/pages/dashboard/Dashboard.css';
-import { getConsumerDashboardData } from "../../serviceAPI/userAPI";
+import { getConsumerDashboardData, getBuildingManagerDashboardStats } from "../../serviceAPI/userAPI";
 import Cookies from 'js-cookie';
 
 const Dashboard = () => {
   const [consumerData, setConsumerData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isConsumer, setIsConsumer] = useState(false);
+  const [isBuildingManager, setIsBuildingManager] = useState(false);
+  const [buildingManagerStats, setBuildingManagerStats] = useState(null);
 
   useEffect(() => {
     // Check if user is a consumer (role_id === 3)
@@ -17,6 +19,10 @@ const Dashboard = () => {
     if (user && user.role_id === 3) {
       setIsConsumer(true);
       fetchConsumerData();
+    } else if (user && user.role_id === 7) {
+      // Check if user is a building manager (role_id === 7)
+      setIsBuildingManager(true);
+      fetchBuildingManagerStats();
     } else {
       setLoading(false);
     }
@@ -31,6 +37,20 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching consumer dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBuildingManagerStats = async () => {
+    try {
+      setLoading(true);
+      const response = await getBuildingManagerDashboardStats();
+      if (response && response.status && response.data) {
+        setBuildingManagerStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching building manager dashboard stats:', error);
     } finally {
       setLoading(false);
     }
@@ -232,6 +252,83 @@ const Dashboard = () => {
                     <p>You don't have any vehicles, mediclaim policies, or loans associated with your account yet.</p>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Building Manager Dashboard
+  if (isBuildingManager && buildingManagerStats) {
+    const user = Cookies.get('user') ? JSON.parse(Cookies.get('user')) : null;
+    return (
+      <DashboardLayout>
+        <div className="dashboard-container">
+          <div className="row">
+            <div className="col-12">
+              <div className="py-4">
+                <h1 className="mb-4">Welcome, {user?.username || 'Building Manager'}!</h1>
+                <p className="lead mb-4">Here's an overview of loan applications in your assigned buildings.</p>
+                
+                {/* Summary Cards */}
+                <div className="row mb-4">
+                  <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card dashboard-card disbursement-card">
+                      <div className="card-body">
+                        <h5 className="card-title">Disbursement</h5>
+                        <h2 className="text-primary">{buildingManagerStats.disbursement || 0}</h2>
+                        <p className="card-text text-muted">Total disbursed loans</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card dashboard-card cancel-card">
+                      <div className="card-body">
+                        <h5 className="card-title">Cancel</h5>
+                        <h2 className="text-danger">{buildingManagerStats.cancel || 0}</h2>
+                        <p className="card-text text-muted">Cancelled loans</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card dashboard-card onprocess-card">
+                      <div className="card-body">
+                        <h5 className="card-title">On Process</h5>
+                        <h2 className="text-warning">{buildingManagerStats.onProcess || 0}</h2>
+                        <p className="card-text text-muted">Loans in process (pickup, login, query, etc.)</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card dashboard-card completed-card">
+                      <div className="card-body">
+                        <h5 className="card-title">Completed</h5>
+                        <h2 className="text-success">{buildingManagerStats.completed || 0}</h2>
+                        <p className="card-text text-muted">Completed loans</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card dashboard-card notinterested-card">
+                      <div className="card-body">
+                        <h5 className="card-title">Not Interested</h5>
+                        <h2 className="text-secondary">{buildingManagerStats.notInterested || 0}</h2>
+                        <p className="card-text text-muted">Not interested loans</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-lg-2 col-md-4 col-sm-6 mb-3">
+                    <div className="card dashboard-card total-card">
+                      <div className="card-body">
+                        <h5 className="card-title">Total</h5>
+                        <h2 className="text-info">{buildingManagerStats.total || 0}</h2>
+                        <p className="card-text text-muted">Total loans</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

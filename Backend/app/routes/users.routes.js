@@ -139,6 +139,7 @@ router.post("/user/building-manager/create", [verifyToken], userController.creat
 router.post("/user/building-manager/assign", [verifyToken], userController.assignBuildingManager);
 router.get("/user/building-manager/list", [verifyToken], userController.getAllBuildingManagers);
 router.get("/user/building-manager/stats", [verifyToken], userController.getBuildingManagerStats);
+router.get("/user/building-manager/dashboard-stats", [verifyToken], userController.getBuildingManagerDashboardStats);
 router.put("/user/building-manager/update/:id", [verifyToken], userController.updateBuildingManager);
 router.put("/user/building-manager/remove/:id", [verifyToken], userController.removeBuildingManager);
 

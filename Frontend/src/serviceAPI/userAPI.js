@@ -1271,6 +1271,22 @@ export const getBuildingManagerStats = async () => {
   }
 };
 
+export const getBuildingManagerDashboardStats = async () => {
+  const headers = {
+    headers: {
+      'token': Cookies.get('token'),
+    }
+  }
+  try {
+    const response = await axios.get(`${API_URL}/user/building-manager/dashboard-stats`, headers);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching building manager dashboard stats:', error);
+    errorHandel(error);
+    return false;
+  }
+};
+
 export const updateBuildingManager = async (id, data) => {
   const headers = {
     headers: {
