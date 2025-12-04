@@ -254,3 +254,114 @@
   margin: 0;
 }
 
+/* Building Manager Dashboard Cards */
+.dashboard-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  background: #fff;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card .card-body {
+  padding: 18px 20px;
+  text-align: center;
+}
+
+.dashboard-card .card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 8px 0;
+  font-family: 'Nunito', sans-serif;
+  line-height: 1.2;
+}
+
+.dashboard-card .card-text {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+/* Card Color Variants */
+.disbursement-card {
+  border-left: 4px solid #007bff;
+}
+
+.disbursement-card .text-primary {
+  color: #007bff !important;
+}
+
+.cancel-card {
+  border-left: 4px solid #dc3545;
+}
+
+.cancel-card .text-danger {
+  color: #dc3545 !important;
+}
+
+.onprocess-card {
+  border-left: 4px solid #ffc107;
+}
+
+.onprocess-card .text-warning {
+  color: #ffc107 !important;
+}
+
+.completed-card {
+  border-left: 4px solid #28a745;
+}
+
+.completed-card .text-success {
+  color: #28a745 !important;
+}
+
+.notinterested-card {
+  border-left: 4px solid #6c757d;
+}
+
+.notinterested-card .text-secondary {
+  color: #6c757d !important;
+}
+
+.total-card {
+  border-left: 4px solid #17a2b8;
+}
+
+.total-card .text-info {
+  color: #17a2b8 !important;
+}
+
+/* Responsive Design for Dashboard Cards */
+@media (max-width: 768px) {
+  .dashboard-card h2 {
+    font-size: 2rem;
+  }
+  
+  .dashboard-card .card-title {
+    font-size: 1rem;
+  }
+  
+  .dashboard-card .card-text {
+    font-size: 0.85rem;
+  }
+}
+
