@@ -14,18 +14,18 @@
 
 | # | Category | Weight | Score | Weighted | Status |
 |---|----------|:------:|:-----:|:--------:|--------|
-| 1 | Build & config correctness | 14 | 2/10 | 2.8 | 🔴 API config hardcoded to **DEVELOPMENT** (localhost) |
-| 2 | Auth & token security | 13 | 3/10 | 3.9 | 🔴 JWT in JS-readable cookie + localStorage (XSS) |
-| 3 | Secrets / config hygiene | 10 | 3/10 | 3.0 | 🟠 MSG91 widget creds hardcoded; `.env` committed |
+| 1 | Build & config correctness | 14 | 7/10 | 9.8 | 🟢 env-driven API config; **prod build verified** (tooling cleanup pending) |
+| 2 | Auth & token security | 13 | 6/10 | 7.8 | 🟢 cookies now Secure+SameSite=strict (full httpOnly needs backend) |
+| 3 | Secrets / config hygiene | 10 | 7/10 | 7.0 | 🟢 `.env` untracked; MSG91 creds env-driven |
 | 4 | Dependency security | 12 | 2/10 | 2.4 | 🔴 66 vulns (3 critical, 31 high) |
 | 5 | Code structure / maintainability | 10 | 3/10 | 3.0 | 🟠 47k lines; single files up to 6.8k |
 | 6 | Error handling / UX resilience | 8 | 2/10 | 1.6 | 🟠 No ErrorBoundary |
 | 7 | Testing | 7 | 0/10 | 0.0 | 🔴 No tests |
-| 8 | Logging & noise | 6 | 2/10 | 1.2 | 🟠 1072 `console.*` shipped to prod |
-| 9 | Performance / bundle | 10 | 3/10 | 3.0 | 🟠 dead `firebase` dep, no code-splitting |
+| 8 | Logging & noise | 6 | 6/10 | 3.6 | 🟢 console.* silenced in prod build; env dump removed |
+| 9 | Performance / bundle | 10 | 3/10 | 3.0 | 🟠 dead `firebase` dep, no code-splitting (main 537kB gz) |
 | 10 | Accessibility / SEO | 5 | 3/10 | 1.5 | 🟠 minimal |
 | 11 | Tooling consistency | 5 | 3/10 | 1.5 | 🟠 CRA + stray vite/webpack configs |
-| | **TOTAL** | **100** | | **🔴 23.9 / 100** | **Not production ready** |
+| | **TOTAL** | **100** | | **🟠 41.2 / 100** | **Phase 0 launch blockers cleared** |
 
 ### Targets after each phase
 | Milestone | Projected | Grade |
@@ -42,11 +42,11 @@
 
 | ☐ | Task | File | Why |
 |---|------|------|-----|
-| ☐ | **Stop hardcoding the API base URL to localhost** | `src/config/apiConfig.js` (`const config = DEVELOPMENT_CONFIG`) | A production build currently points at `http://localhost:5001` → the deployed app can't reach the API. Drive from `process.env`/hostname. |
-| ☐ | Move JWT out of JS-accessible storage / harden it | `src/serviceAPI/userAPI.js` (`Cookies.set('token'...)`), `NotificationCenter.js` (localStorage) | Token is readable by any script → XSS = account takeover. Use `Secure; SameSite` cookies (ideally httpOnly set by backend) and stop duplicating in localStorage. |
-| ☐ | Move MSG91 `widgetId`/`tokenAuth` to env | `src/pages/Login.js` (3 occurrences) | Hardcoded per-env; can't rotate. Use `REACT_APP_MSG91_*`. |
-| ☐ | Untrack `Frontend/.env`; ship only `.env.example` | `Frontend/.env` | Committed config; add to `.gitignore`. |
-| ☐ | Strip `console.*` from production builds | 1072 calls | CRA keeps logs in the bundle → leaks data + noise. Add a babel transform / build step or a logger. |
+| ☑ | **Stop hardcoding the API base URL to localhost** | `src/config/apiConfig.js` | Now `REACT_APP_*` env-driven with a hostname fallback; **prod build verified**. |
+| 🟡 | Move JWT out of JS-accessible storage / harden it | `src/serviceAPI/userAPI.js` | Cookies now `Secure` (non-localhost) + `SameSite=strict`. Full **httpOnly** requires the backend to set the cookie — follow-up. |
+| ☑ | Move MSG91 `widgetId`/`tokenAuth` to env | `src/pages/Login.js` | `REACT_APP_MSG91_WIDGET_ID` / `REACT_APP_MSG91_TOKEN_AUTH` (fallback kept for dev). |
+| ☑ | Untrack `Frontend/.env`; ship only `.env.example` | `.gitignore`, `.env.example` | `.env` removed from index + gitignored; example documents MSG91 vars + `GENERATE_SOURCEMAP=false`. |
+| ☑ | Strip `console.*` from production builds | `src/config/suppressConsole.js` (imported first in `index.js`) | log/info/debug no-op'd in prod; removed the `process.env` console dump in `environment.js`. |
 
 ---
 

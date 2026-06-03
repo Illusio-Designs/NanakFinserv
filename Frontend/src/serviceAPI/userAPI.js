@@ -2632,26 +2632,29 @@ export const getAllPolicyTypes = async () => {
 };
 
 // Utility functions
+
+// Cookie options: HTTPS-only + SameSite to reduce token theft / CSRF surface.
+// (Truly httpOnly cookies must be set by the backend; js-cookie cannot.)
+const isLocalhost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const COOKIE_OPTS = { expires: 7, sameSite: 'strict', secure: !isLocalhost };
+
 const setToken = (token) => {
-  // Set token in cookies
-  Cookies.set('token', token, { expires: 7 }); // token expires in 7 days
+  Cookies.set('token', token, COOKIE_OPTS);
 };
 
 const setUser = (user) => {
-  // Set token in cookies
-  Cookies.set('user', JSON.stringify(user), { expires: 7 }); // token expires in 7 days
+  Cookies.set('user', JSON.stringify(user), COOKIE_OPTS);
 };
 
 const setCategory = (category) => {
-  // Set token in cookies
   if (category && category.length) {
     let categoryData = category.map((item) => item['category.category_id'])
-    Cookies.set('category', categoryData, { expires: 7 }); // token expires in 7 days
+    Cookies.set('category', categoryData, COOKIE_OPTS);
   } else {
-    Cookies.set('category', [], { expires: 7 }); // token expires in 7 days
+    Cookies.set('category', [], COOKIE_OPTS);
   }
-  console.log(category)
-
 };
 
 const errorHandel = (error) => {

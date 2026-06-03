@@ -1,3 +1,4 @@
+import './config/suppressConsole'; // must be first: silences console.* in prod
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
