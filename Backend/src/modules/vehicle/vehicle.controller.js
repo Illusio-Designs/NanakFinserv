@@ -151,78 +151,12 @@ exports.addVehicleUserData = async (req, res) => {
         return res.status(401).json({ error: 'Unauthorized: req.user is not defined. Check your token and authentication.' });
     }
 
-    let Data;
-    if (req.body.data) {
-        // JSON request - data is nested under 'data' property
-        Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
-        logger.debug('[addVehicleUserData] Processing JSON request');
-    } else if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
-        // FormData request - data is directly in req.body
-        Data = req.body;
-        logger.debug('[addVehicleUserData] Processing FormData request');
-        logger.debug('🔍 [ADD] req.files object:', req.files);
-        logger.debug('🔍 [ADD] req.files keys:', Object.keys(req.files || {}));
-
-        // Parse JSON strings in FormData
-        if (Data.runningPolicy && typeof Data.runningPolicy === 'string') {
-            try {
-                Data.runningPolicy = JSON.parse(Data.runningPolicy);
-            } catch (e) {
-                logger.debug('🔍 [ADD] Error parsing runningPolicy:', e.message);
-                Data.runningPolicy = {};
-            }
-        }
-        if (Data.previousPolicy && typeof Data.previousPolicy === 'string') {
-            try {
-                Data.previousPolicy = JSON.parse(Data.previousPolicy);
-            } catch (e) {
-                logger.debug('🔍 [ADD] Error parsing previousPolicy:', e.message);
-                Data.previousPolicy = {};
-            }
-        }
-        logger.debug("📌 Previous Policy RAW DATA:", Data.previousPolicy);
-        if (Data.documentsData && typeof Data.documentsData === 'string') {
-            try {
-                Data.documentsData = JSON.parse(Data.documentsData);
-            } catch (e) {
-                logger.debug('🔍 [ADD] Error parsing documentsData:', e.message);
-                Data.documentsData = [];
-            }
-        }
-    } else {
-        logger.warn('[addVehicleUserData] No data found in request body');
-        return res.status(400).json({ error: 'Data not found in request body' });
+    // Parse + normalize the request payload (JSON or multipart) in the service.
+    const parsed = vehicleService.normalizePayload(req.body, req.headers['content-type']);
+    if (parsed.error) {
+        return res.status(400).json({ error: parsed.error });
     }
-    logger.debug('Parsed Data:', Data);
-    logger.debug('🔧 [addVehicleUserData] Policy fields received:', {
-        policyRadio: Data.policyRadio,
-        policy_type: Data.policy_type,
-        vehicle_policy_type: Data.vehicle_policy_type,
-        Type: Data.Type,
-        nominee_type: Data.nominee_type,
-        type: Data.type
-    });
-    logger.debug('🔧 [addVehicleUserData] Engine and Chassis fields:', {
-        engine_number: Data.engine_number,
-        chassis_number: Data.chassis_number,
-        EngineNumber: Data.EngineNumber,
-        ChassisNumber: Data.ChassisNumber
-    });
-
-    let documentsData = Data.documentsData || (typeof req.body.documentsData === "string" ? JSON.parse(req.body.documentsData || "[]") : req.body.documentsData);
-
-    // Defensive check for runningPolicy
-    let runningPolicy = Data.runningPolicy;
-    if (!runningPolicy || typeof runningPolicy !== 'object') {
-        runningPolicy = { PolicyTypeId: null, CompanyId: null, PolicyPlanTypeId: null };
-        Data.runningPolicy = runningPolicy;
-    }
-    // Defensive check for previousPolicy
-    let previousPolicy = Data.previousPolicy;
-    if (!previousPolicy || typeof previousPolicy !== 'object') {
-        previousPolicy = { PolicyTypeId: null, CompanyId: null, PolicyPlanTypeId: null };
-        Data.previousPolicy = previousPolicy;
-    }
+    let { Data, documentsData, runningPolicy, previousPolicy } = parsed;
 
     // Accept both PascalCase and camelCase for all fields
     const {

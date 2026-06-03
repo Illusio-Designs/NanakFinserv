@@ -606,80 +606,22 @@ exports.addConsumer = async (req, res) => {
             });
         }
 
-        let builderConsumerData;
+        // User find/create + builder-consumer creation live in the service.
+        const result = await consumerService.createBuilderConsumer(req.body, req.user.id);
+        if (result.userCreateFailed) {
+            return res.status(400).json({ message: "User creation failed", status: false });
+        }
+        const { builderConsumerData } = result;
 
-        // Process based on the status
-        if (status === "interested") {
-            // Check if user with this mobile number already exists
-            let user = await User.findOne({
-                where: { mobileNumber }
-            });
-
-            if (user) {
-                logger.debug('🔍 [ADD BUILDER CONSUMER] User found with mobile number:', mobileNumber, 'User ID:', user.user_id);
-                
-                // User exists, update builder_user if needed
-                if (builder_user_id && user.builder_user !== builder_user_id) {
-                    await User.update(
-                        {
-                            builder_user: builder_user_id,
-                            is_from_builder_user: 1,
-                            updated_by: req.user.id,
-                        },
-                        { where: { user_id: user.user_id } }
-                    );
-                }
-            } else {
-                logger.debug('🔍 [ADD BUILDER CONSUMER] User not found, creating new user');
-                
-                // Create new user
-                user = await User.create({
-                username,
-                email,
-                mobileNumber,
-                role_id: 5, // Builder consumers
-                otp: "",
-                token: "",
-                created_by: req.user.id,
-                updated_by: req.user.id,
-                builder_user: builder_user_id,
-                is_from_builder_user: 1,
-                referenceName,
-            });
-
-            if (!user?.user_id) {
-                return res.status(400).json({
-                    message: "User creation failed",
-                    status: false,
-                });
-                }
-            }
-
-            // Create builderConsumer with the user_id (either existing or newly created)
-            builderConsumerData = await db.builderConsumer.create({
-                role_id,
-                unit_id,
-                status,
-                sqFeet,
-                srNo,
-                floor_id,
-                wing_id,
-                remarks,
-                builder_id,
-                office_no,
-                category_id,
-                user_id: user.user_id,
-                referenceName,
-            });
-
-            // Create notification for admin when builder creates a consumer
+        // Notify admins when a builder adds an "interested" consumer.
+        if (result.isInterested) {
             await createNotification({
                 title: "New Builder Consumer Added",
                 message: username,
                 type: 'builder',
                 category: 'user_added',
                 user_id: req.user.id, // The builder who added the consumer
-                target_user_id: user.user_id, // The consumer who was added
+                target_user_id: result.user.user_id, // The consumer who was added
                 record_id: builderConsumerData.builder_consumer_id,
                 is_important: true,
                 metadata: {
@@ -690,20 +632,6 @@ exports.addConsumer = async (req, res) => {
                     builder_id: builder_id,
                     office_no: office_no
                 }
-            });
-        } else {
-            // Create builderConsumer without user association
-            builderConsumerData = await db.builderConsumer.create({
-                unit_id,
-                status,
-                sqFeet,
-                srNo,
-                floor_id,
-                wing_id,
-                builder_id,
-                office_no,
-                category_id,
-                referenceName,
             });
         }
 

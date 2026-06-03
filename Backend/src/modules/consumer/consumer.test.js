@@ -7,7 +7,8 @@ jest.mock("../../../app/models", () => ({
   role: { findByPk: jest.fn() },
   unit: { findByPk: jest.fn() },
   unit_category_list: { findByPk: jest.fn() },
-  builderConsumer: { findOne: jest.fn() },
+  builderConsumer: { findOne: jest.fn(), create: jest.fn() },
+  user: { findOne: jest.fn(), create: jest.fn(), update: jest.fn() },
 }));
 
 const express = require("express");
@@ -50,5 +51,58 @@ describe("POST add consumer (validator)", () => {
     const res = await request(buildApp()).post(ADD_URL).send(validBody);
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/Foreign Key Error/);
+  });
+});
+
+describe("service.createBuilderConsumer", () => {
+  const service = require("./consumer.service");
+
+  it("creates a standalone builder-consumer when not interested", async () => {
+    db.builderConsumer.create.mockResolvedValue({ builder_consumer_id: 1 });
+    const result = await service.createBuilderConsumer(
+      { status: "pending", unit_id: 1 },
+      9
+    );
+    expect(result.isInterested).toBe(false);
+    expect(db.user.create).not.toHaveBeenCalled();
+    expect(db.builderConsumer.create).toHaveBeenCalled();
+  });
+
+  it("reuses an existing user when interested", async () => {
+    db.user.findOne.mockResolvedValue({ user_id: 5, builder_user: null });
+    db.builderConsumer.create.mockResolvedValue({ builder_consumer_id: 2 });
+    const result = await service.createBuilderConsumer(
+      { status: "interested", mobileNumber: "9876543210", builder_user_id: 3 },
+      9
+    );
+    expect(result.isInterested).toBe(true);
+    expect(result.user.user_id).toBe(5);
+    expect(db.user.update).toHaveBeenCalled(); // links builder_user
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a new user when interested and none exists", async () => {
+    db.user.findOne.mockResolvedValue(null);
+    db.user.create.mockResolvedValue({ user_id: 8 });
+    db.builderConsumer.create.mockResolvedValue({ builder_consumer_id: 3 });
+    const result = await service.createBuilderConsumer(
+      { status: "interested", mobileNumber: "9876543210", username: "Jo" },
+      9
+    );
+    expect(result.user.user_id).toBe(8);
+    expect(db.builderConsumer.create).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 8 })
+    );
+  });
+
+  it("signals userCreateFailed when the user has no id", async () => {
+    db.user.findOne.mockResolvedValue(null);
+    db.user.create.mockResolvedValue({});
+    const result = await service.createBuilderConsumer(
+      { status: "interested", mobileNumber: "9876543210" },
+      9
+    );
+    expect(result.userCreateFailed).toBe(true);
+    expect(db.builderConsumer.create).not.toHaveBeenCalled();
   });
 });
