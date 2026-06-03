@@ -160,6 +160,11 @@ app.get("/api", (req, res) => {
 // aggregated in src/routes/index.js (replaces the legacy users.routes.js).
 app.use("/api", apiRoutes);
 
+// Unmatched routes -> JSON 404 (instead of Express' default HTML page).
+app.use((req, res) => {
+  res.status(404).json({ message: "Not found", status: false });
+});
+
 // ── Error handlers (must be registered AFTER all routes) ──────────────────
 // Invalid JSON payloads from body-parser.
 app.use((err, req, res, next) => {
