@@ -16,15 +16,15 @@
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
 | 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
 | 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
-| 5 | Input validation | 8 | 6 / 10 | 4.8 | 🟡 auth + user + loan + mediclaim + vehicle validated; rest pending |
+| 5 | Input validation | 8 | 8 / 10 | 6.4 | 🟢 validators across all 13 domains (mutating endpoints) |
 | 6 | Dependency security | 8 | 6 / 10 | 4.8 | 🟢 Bogus deps removed, axios/jwt upgraded, vulns 41→20 (majors pending) |
 | 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
 | 8 | Logging & monitoring | 7 | 5 / 10 | 3.5 | 🟢 pino logger (redacts secrets); JWTAuth PII logging removed; bulk sweep pending |
-| 9 | Code structure / maintainability | 7 | 7 / 10 | 4.9 | 🟢 14 modules; 5 with service+validator+tests (auth/user/loan/mediclaim/vehicle) |
-| 10 | Testing | 5 | 6 / 10 | 3.0 | 🟡 auth + shared + user + loan + mediclaim + vehicle (38 tests) |
+| 9 | Code structure / maintainability | 7 | 8 / 10 | 5.6 | 🟢 14 modules, all with service + validator + tests |
+| 10 | Testing | 5 | 8 / 10 | 4.0 | 🟢 all 14 modules covered (61 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 52.8 / 100** | **Not production ready (Phase 0–2 + 5 modules deepened)** |
+| | **TOTAL** | **100** | | **🟠 56.1 / 100** | **Not production ready (Phase 0–2 + all 14 modules deepened)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -158,14 +158,14 @@ routes (111 total) load and register. **Remaining per module: extract a `service
 | ☑ | ☑ | 🟡 | ☑ | ☑ | `vehicle` — service (remark update) + validator + 4 tests | 11 |
 | ☑ | ☑ | 🟡 | ☑ | ☑ | `loan` — service (status update) + validators + 7 tests | 10 |
 | ☑ | ☑ | 🟡 | ☑ | ☑ | `mediclaim` — service (company ops) + validators + 8 tests | 13 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `lifeInsurance` | 12 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `builder` | 9 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `consumer` | 5 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `buildingManager` | 7 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `blog` | 5 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `notification` | 4 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `inquiry` | 2 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `dashboard` | 3 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `lifeInsurance` — service (delete) + validator + 3 tests | 12 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `builder` — service (unit-category add) + validator + 4 tests | 9 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `consumer` — service (FK/dup checks) + validators + 2 tests | 5 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `buildingManager` — service (remove) + validators + 3 tests | 7 |
+| ☑ | ☑ | ☑ | ☑ | ☑ | `blog` — service (CRUD reads/delete) + validator + 3 tests | 5 |
+| ☑ | ☑ | ☑ | — | ☑ | `notification` — service (read/count) + 3 tests (param-only routes) | 4 |
+| ☑ | ☑ | ☑ | ☑ | ☑ | `inquiry` — service (create/list) + validator + 3 tests | 2 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `dashboard` — service (loan-amount sums) + validator + 2 tests | 3 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `shared` (code/company-type/policy/downloads) | 15 |
 
 > `src/modules/shared/context.js` holds the common model handles + helpers

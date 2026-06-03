@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const builderService = require("./builder.service");
+const logger = require("../../config/logger");
 
 exports.addBuilderData = async (req, res) => {
     try {
@@ -1134,57 +1136,28 @@ exports.updateBuilderUnit = async (req, res) => {
 
 
 
-exports.addBuilderUnitCategory = (req, res) => {
-    console.log(req.body);
+exports.addBuilderUnitCategory = async (req, res) => {
+    try {
+        const { unit_id, unit_category_id, count } = req.body;
+        const result = await builderService.addUnitCategory({ unit_id, unit_category_id, count });
 
-    if (!req.body?.unit_id) {
-        return res.status(400).send({
-            message: "unit id not provide name not provided",
-            status: false,
-        });
+        if (result.noUnit) {
+            return res.status(400).send({ message: "unit id not exist", status: false });
+        }
+        if (result.conflict) {
+            return res.status(400).send({ message: "Unit category already in use", status: false });
+        }
+        return res.send(
+            JSON.stringify({
+                response: "builder unit successfully added!",
+                status: true,
+                userData: result.created,
+            })
+        );
+    } catch (e) {
+        logger.error({ err: e }, "addBuilderUnitCategory failed");
+        return res.status(500).send({ message: "error", status: false });
     }
-    Unit.findOne({
-        where: {
-            [Op.or]: [{ unit_id: req.body.unit_id }],
-        },
-    })
-        .then(async (user) => {
-            if (user) {
-                let unit = await UnitCategoryDetail.findOne({
-                    where: {
-                        unit_category_id: req.body.unit_category_id,
-                        unit_id: req.body.unit_id,
-                    },
-                });
-                if (unit) {
-                    return res
-                        .status(400)
-                        .send({ message: "Unit category already in use", status: false });
-                }
-                UnitCategoryDetail.create({
-                    unit_category_id: req.body.unit_category_id,
-                    unit_id: req.body.unit_id,
-                    count: req.body.count,
-                })
-                    .then(async (articles) => {
-                        res.send(
-                            JSON.stringify({
-                                response: "builder unit successfully added!",
-                                status: true,
-                                userData: articles,
-                            })
-                        );
-                    })
-                    .catch((e) => console.log(e));
-            } else
-                return res
-                    .status(400)
-                    .send({ message: "unit id not exist", status: false });
-        })
-        .catch((e) => {
-            res.send({ message: e?.message });
-            console.log(e);
-        });
 };
 
 

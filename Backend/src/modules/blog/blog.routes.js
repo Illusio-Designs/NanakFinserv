@@ -4,10 +4,11 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const controller = require("./blog.controller");
+const v = require("./blog.validator");
 
 const router = express.Router();
 
-router.post("/user/blog/add", verifyToken, controller.addBlog);
+router.post("/user/blog/add", verifyToken, v.validateAddBlog, controller.addBlog);
 router.put("/user/blog/update/:id", verifyToken, controller.updateBlog);
 router.delete("/user/blog/delete/:id", verifyToken, controller.deleteBlog);
 router.get("/user/blog/list", verifyToken, controller.getAllBlogs);

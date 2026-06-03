@@ -68,40 +68,31 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const inquiryService = require("./inquiry.service");
+const logger = require("../../config/logger");
 
-exports.addInquieryUser = (req, res) => {
-    console.log(req.body);
-    Inqueryuser.create({
-        user_name: req.body.username,
-        email: req.body.email,
-        mobile_no: req.body.phone_number,
-        services: req.body.service,
-    })
-        .then(async (articles) => {
-            return res.status(200).send({
-                message: "user successfully added!.",
-                status: true,
-                userData: articles,
-            });
-        })
-        .catch((e) =>
-            res.status(400).send({ message: "error.", status: false })
-        );
+exports.addInquieryUser = async (req, res) => {
+    try {
+        const userData = await inquiryService.create(req.body || {});
+        return res.status(200).send({
+            message: "user successfully added!.",
+            status: true,
+            userData,
+        });
+    } catch (e) {
+        logger.error({ err: e }, "addInquieryUser failed");
+        return res.status(400).send({ message: "error.", status: false });
+    }
 };
 
 
 exports.getAllInqueryUser = async (req, res) => {
-    Inqueryuser.findAll({
-        raw: true,
-    })
-        .then((articles) => {
-            res
-                .status(200)
-                .send({ message: "inquery user get success", data: articles, status: true });
-        })
-        .catch((e) => {
-            res.status(400).send({ message: "inquery user error", status: false });
-            console.log(e);
-        });
+    try {
+        const data = await inquiryService.getAll();
+        res.status(200).send({ message: "inquery user get success", data, status: true });
+    } catch (e) {
+        logger.error({ err: e }, "getAllInqueryUser failed");
+        res.status(400).send({ message: "inquery user error", status: false });
+    }
 };
 

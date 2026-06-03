@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const blogService = require("./blog.service");
+const logger = require("../../config/logger");
 
 exports.addBlog = async (req, res) => {
     try {
@@ -223,17 +225,13 @@ exports.updateBlog = async (req, res) => {
 
 exports.deleteBlog = async (req, res) => {
     try {
-        const { id } = req.params;
-        const blog = await Blog.findByPk(id);
-        
-        if (!blog) {
+        const deleted = await blogService.deleteById(req.params.id);
+        if (!deleted) {
             return res.status(404).json({ message: 'Blog not found' });
         }
-
-        await blog.destroy();
         return res.status(200).json({ message: 'Blog deleted successfully' });
     } catch (error) {
-        console.error('Error deleting blog:', error);
+        logger.error({ err: error }, "deleteBlog failed");
         return res.status(500).json({ message: 'Error deleting blog' });
     }
 };

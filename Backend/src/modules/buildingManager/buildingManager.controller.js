@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const buildingManagerService = require("./buildingManager.service");
+const logger = require("../../config/logger");
 
 exports.createBuildingManager = async (req, res) => {
     try {
@@ -491,29 +493,15 @@ exports.updateBuildingManager = async (req, res) => {
 
 exports.removeBuildingManager = async (req, res) => {
     try {
-        const { building_manager_id } = req.params;
-
-        const buildingManager = await BuildingManager.findByPk(building_manager_id);
-        if (!buildingManager) {
-            return res.status(404).json({
-                status: false,
-                message: 'Building manager not found'
-            });
+        // Route param is :id (previously read the wrong key and always 404'd).
+        const removed = await buildingManagerService.removeById(req.params.id);
+        if (!removed) {
+            return res.status(404).json({ status: false, message: 'Building manager not found' });
         }
-
-        await buildingManager.update({ status: 'inactive' });
-
-        res.status(200).json({
-            status: true,
-            message: 'Building manager removed successfully'
-        });
+        res.status(200).json({ status: true, message: 'Building manager removed successfully' });
     } catch (error) {
-        console.error('Error removing building manager:', error);
-        res.status(500).json({
-            status: false,
-            message: 'Error removing building manager',
-            error: error.message
-        });
+        logger.error({ err: error }, "removeBuildingManager failed");
+        res.status(500).json({ status: false, message: 'Error removing building manager' });
     }
 };
 

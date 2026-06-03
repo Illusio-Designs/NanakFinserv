@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const consumerService = require("./consumer.service");
+const logger = require("../../config/logger");
 
 exports.addConsumerData = async (req, res) => {
     console.log('🔍 [ADD CONSUMER] Starting consumer creation...');
@@ -579,13 +581,8 @@ exports.addConsumer = async (req, res) => {
 
     try {
         // Check if foreign keys exist
-        const [roleExists, unitExists, categoryExists] = await Promise.all([
-            db.role.findByPk(role_id),
-            db.unit.findByPk(unit_id),
-            db.unit_category_list.findByPk(category_id),
-        ]);
-
-        if (!roleExists || !unitExists || !categoryExists) {
+        const fkOk = await consumerService.checkForeignKeys(role_id, unit_id, category_id);
+        if (!fkOk) {
             return res.status(400).json({
                 message: "Foreign Key Error: Role, Unit, or Category does not exist",
                 status: false,
@@ -593,14 +590,12 @@ exports.addConsumer = async (req, res) => {
         }
 
         // Check for duplicate combination of unit_id, office_no, category_id, floor, and wing
-        const duplicateConsumer = await db.builderConsumer.findOne({
-            where: {
-                unit_id,
-                office_no,
-                category_id,
-                floor_id,
-                wing_id,
-            },
+        const duplicateConsumer = await consumerService.findDuplicate({
+            unit_id,
+            office_no,
+            category_id,
+            floor_id,
+            wing_id,
         });
 
         if (duplicateConsumer) {
