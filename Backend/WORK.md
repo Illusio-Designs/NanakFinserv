@@ -16,15 +16,15 @@
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
 | 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
 | 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
-| 5 | Input validation | 8 | 1 / 10 | 0.8 | 🟠 Request bodies trusted directly |
+| 5 | Input validation | 8 | 3 / 10 | 2.4 | 🟡 auth validated; per-module validators pending |
 | 6 | Dependency security | 8 | 3 / 10 | 2.4 | 🟠 Known-vulnerable versions |
-| 7 | Error handling & resilience | 8 | 3 / 10 | 2.4 | 🟠 Misordered handlers, starts w/o DB |
+| 7 | Error handling & resilience | 8 | 6 / 10 | 4.8 | 🟢 helmet + rate-limit + CORS fix + error handlers reordered (DB fail-fast pending) |
 | 8 | Logging & monitoring | 7 | 2 / 10 | 1.4 | 🟠 ~590 console.logs, leaks PII |
 | 9 | Code structure / maintainability | 7 | 6 / 10 | 4.2 | 🟢 Monolith split into 14 per-domain modules (services/validators pending) |
 | 10 | Testing | 5 | 3 / 10 | 1.5 | 🟡 Jest+supertest; auth + shared (download) covered (11 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 38.1 / 100** | **Not production ready (auth + module split + Phase 0 security landed)** |
+| | **TOTAL** | **100** | | **🟠 42.1 / 100** | **Not production ready (auth + module split + Phase 0 + helmet/rate-limit/CORS)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -58,10 +58,10 @@
 | ☐ | Task | Notes |
 |---|------|-------|
 | ☐ | Wire role-based authorization into routes | `adminAuth`/`adminUserAuth` middleware exist but are unused |
-| ☐ | Add `helmet` security headers | |
-| ☐ | Add `express-rate-limit` (esp. on login) | Brute-force protection |
-| ☐ | Add input validation (`express-validator` or `zod`) | Bodies are trusted directly today |
-| ☐ | Fix CORS | `app.options("*", cors())` opens preflight to all origins |
+| ☑ | Add `helmet` security headers | `server.js` (CORP cross-origin, CSP/COEP off for a files+JSON API) |
+| ☑ | Add `express-rate-limit` (esp. on login) | Global 1000/15min + login 20/15min → 429 (smoke-tested) |
+| 🟡 | Add input validation (`express-validator` or `zod`) | Done for `auth`; per-module validators still pending |
+| ☑ | Fix CORS | Single options object reused for preflight; wildcard removed; CORS rejections → 403 |
 | ☐ | `npm audit fix` + upgrade deps | `axios@0.21.4`, old `jsonwebtoken` |
 | ☐ | Remove bogus/duplicate deps | `fs`, `path` npm packages; drop one of `mysql`/`mysql2` |
 
@@ -71,7 +71,7 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | Reorder middleware/error handlers in `server.js` | Handlers are before routes → never fire |
+| ☑ | Reorder middleware/error handlers in `server.js` | Error handlers now registered after routes (JSON-parse, CORS→403, catch-all) |
 | ☐ | Fail fast if DB init fails | Server currently starts anyway |
 | ☐ | Fix token-save bug | Writes to misspelled `roken` col with `where:{id}` (PK is `user_id`) → silent no-op |
 | ☐ | Re-enable managed migrations | Replace disabled `sync`/date-fix hacks with Sequelize migrations |
