@@ -18,13 +18,13 @@
 | 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
 | 5 | Input validation | 8 | 3 / 10 | 2.4 | 🟡 auth validated; per-module validators pending |
 | 6 | Dependency security | 8 | 6 / 10 | 4.8 | 🟢 Bogus deps removed, axios/jwt upgraded, vulns 41→20 (majors pending) |
-| 7 | Error handling & resilience | 8 | 6 / 10 | 4.8 | 🟢 helmet + rate-limit + CORS fix + error handlers reordered (DB fail-fast pending) |
-| 8 | Logging & monitoring | 7 | 2 / 10 | 1.4 | 🟠 ~590 console.logs, leaks PII |
+| 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
+| 8 | Logging & monitoring | 7 | 5 / 10 | 3.5 | 🟢 pino logger (redacts secrets); JWTAuth PII logging removed; bulk sweep pending |
 | 9 | Code structure / maintainability | 7 | 6 / 10 | 4.2 | 🟢 Monolith split into 14 per-domain modules (services/validators pending) |
 | 10 | Testing | 5 | 3 / 10 | 1.5 | 🟡 Jest+supertest; auth + shared (download) covered (11 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 44.5 / 100** | **Not production ready (Phase 0 + most of Phase 1 done)** |
+| | **TOTAL** | **100** | | **🟠 48.2 / 100** | **Not production ready (Phase 0 + Phase 1 + logger/DB fail-fast)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -73,10 +73,10 @@
 | ☐ | Task | Notes |
 |---|------|-------|
 | ☑ | Reorder middleware/error handlers in `server.js` | Error handlers now registered after routes (JSON-parse, CORS→403, catch-all) |
-| ☐ | Fail fast if DB init fails | Server currently starts anyway |
+| ☑ | Fail fast if DB init fails | `db.sequelize.authenticate()` on boot → `logger.fatal` + `process.exit(1)` (verified). Added graceful shutdown (SIGTERM/SIGINT). |
 | ☐ | Fix token-save bug | Writes to misspelled `roken` col with `where:{id}` (PK is `user_id`) → silent no-op |
 | ☐ | Re-enable managed migrations | Replace disabled `sync`/date-fix hacks with Sequelize migrations |
-| ☐ | Replace `console.log` with leveled logger (`pino`/`winston`) | ~590 logs, some print tokens/PII |
+| 🟡 | Replace `console.log` with leveled logger (`pino`) | Logger added (`src/config/logger.js`, redacts secrets). Wired into `server.js` + JWTAuth (was logging tokens/PII). Bulk sweep of extracted controllers pending (done per module during service extraction). |
 
 ---
 
