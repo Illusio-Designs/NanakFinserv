@@ -42,7 +42,7 @@ const Login = () => {
   const handleSendOtp = useCallback(async (isResend = false) => {
     const regex = /^\d{10}$/;
     if (!regex.test(mobileNumber)) {
-      alert('Mobile number invalid');
+      toast.error('Mobile number invalid');
       return;
     }
 

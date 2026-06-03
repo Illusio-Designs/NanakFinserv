@@ -53,7 +53,7 @@ const login = async (mobileNumber, accessToken) => {
     }
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -92,7 +92,7 @@ export const loginVerfiy = async (mobileNumber) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -121,7 +121,7 @@ export const getRoles = async () => {
     const response = await axios.get(`${API_URL}/user/role/list`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -151,7 +151,7 @@ export const getAllUnitCatergory = async () => {
     const response = await axios.get(`${API_URL}/user/data/unitCategory`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -182,7 +182,7 @@ export const getAllConsumers = async () => {
     const response = await axios.get(`${API_URL}/user/list/consumer`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -214,7 +214,7 @@ export const getAllVerticle = async () => {
     const response = await axios.get(`${API_URL}/user/list/verticle`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -246,7 +246,7 @@ export const getAllCodes = async () => {
     const response = await axios.get(`${API_URL}/user/data/code`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -278,7 +278,7 @@ export const getAllInquieries = async () => {
     const response = await axios.get(`${API_URL}/user/data/inquiery`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -310,7 +310,7 @@ export const getAllVerticleUser = async (data) => {
     const response = await axios.post(`${API_URL}/user/list/verticleUser`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -342,7 +342,7 @@ export const addRoleUser = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       toast.error(response?.message || 'Something went wrong', {
         duration: 3000, // 5 seconds
         style: {
@@ -383,7 +383,7 @@ export const addInquieryUser = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      // alert('error')
+      // toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -424,7 +424,7 @@ export const addBuilderUser = async (data, addToast) => {
     const response = await axios.post(`${API_URL}/user/data/add/builder`, data, headers);
 
     if (!response.data) {
-      // alert('error')
+      // toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -465,7 +465,7 @@ export const addConsumerUser = async (data) => {
     const response = await axios.post(`${API_URL}/user/data/add/consumer`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -506,7 +506,7 @@ export const addNewCode = async (data) => {
     const response = await axios.post(`${API_URL}/user/data/code`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -547,7 +547,7 @@ export const addConsumerUnit = async (data, addToast) => {
     const response = await axios.post(`${API_URL}/user/data/consumer/add`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -588,7 +588,7 @@ export const addUnitByBuilder = async (data, addToast) => {
     const response = await axios.post(`${API_URL}/user/data/add/builderUnit`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -630,7 +630,7 @@ export const updateRoleUser = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -671,7 +671,7 @@ export const updateUnitByBuilder = async (data, addToast) => {
     const response = await axios.put(`${API_URL}/user/data/update/builderUnit`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -712,7 +712,7 @@ export const getConsumerByUnit = async (data, addToast) => {
     const response = await axios.post(`${API_URL}/user/data/builder/getunitwithconsumer`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -747,7 +747,7 @@ export const updateBuilderUser = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -789,7 +789,7 @@ export const updateMediclaimCompany = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -830,7 +830,7 @@ export const addMediclaimCompany = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -963,7 +963,7 @@ export const updateConsumerUser = async (data, addToast) => {
 
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -1005,7 +1005,7 @@ export const updateLoanConsumerUser = async (data, addToast) => {
 
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -1047,7 +1047,7 @@ export const updateConsumerUnit = async (data, addToast) => {
 
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -1088,7 +1088,7 @@ export const addMediclaimUser = async (data, addToast) => {
     const response = await axios.post(`${API_URL}/user/mediclaim/user/add`, data, headers);
 
     if (!response.data) {
-      // alert('error')
+      // toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -1123,7 +1123,7 @@ export const updateMediclaimUser = async (data, id, addToast) => {
 
 
     if (!response.data) {
-      // alert('error')
+      // toast.error('error')
       // addToast('something went wrong', 'error')
       toast.error('Something went wrong', {
         duration: 3000, // 5 seconds
@@ -1159,7 +1159,7 @@ export const getRoleUserList = async () => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1186,7 +1186,7 @@ export const getUserCountList = async () => {
     // console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1326,7 +1326,7 @@ export const getLoanAmounFilterDate = async (data) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1353,7 +1353,7 @@ export const getUnitsByBuilder = async (id) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1379,7 +1379,7 @@ export const getUnitsByBuilderCategory = async (unitId) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1405,7 +1405,7 @@ export const getCategoryById = async (user_id) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1430,7 +1430,7 @@ export const getAllBuildersList = async () => {
     const response = await axios.get(`${API_URL}/user/list/builder/list`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1460,7 +1460,7 @@ export const getAllBuilders = async () => {
     const response = await axios.get(`${API_URL}/user/list/builder`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1492,7 +1492,7 @@ export const getAllLoanConsumerDetail = async (data) => {
     const response = await axios.post(`${API_URL}/user/list/loan/detail`, data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1523,7 +1523,7 @@ export const getAllLoanConsumer = async () => {
     const response = await axios.get(`${API_URL}/user/list/loan?t=${Date.now()}`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1555,7 +1555,7 @@ export const getAllLoanInterestedConsumer = async (obj) => {
     const response = await axios.post(`${API_URL}/user/list/loanInterested`, obj, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1657,7 +1657,7 @@ export const getAllMediclaimProduct = async (data) => {
     const response = await axios.get(`${API_URL}/user/mediclaim/product/${data.mediclaim_company_id}`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1689,7 +1689,7 @@ export const getAllLoanNotInterestedConsumer = async () => {
     const response = await axios.get(`${API_URL}/user/list/loanNotInterested`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1721,7 +1721,7 @@ export const getAllConfiguration = async (obj) => {
     const response = await axios.get(`${API_URL}/user/data/loan/configuration`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1752,7 +1752,7 @@ export const getAllLoanDisburseConsumer = async (obj) => {
     const response = await axios.post(`${API_URL}/user/list/loanNotDisburse`, obj, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1805,7 +1805,7 @@ export const updateLoanWorkingStatus = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       addToast('something went wrong', 'error')
       throw new Error('Invalid credentials');
       // return false;
@@ -1833,7 +1833,7 @@ export const getAllMedicalimConsumer = async () => {
     const response = await axios.get(`${API_URL}/user/list/mediclaim?t=${Date.now()}`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1865,7 +1865,7 @@ export const getAllMedicalimConsumerData = async () => {
     const response = await axios.get(`${API_URL}/user/mediclaim/user/list?t=${Date.now()}`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1897,7 +1897,7 @@ export const getAllMedicalimConsumerRenewalData = async (data) => {
     const response = await axios.post(`${API_URL}/user/mediclaim/user/renewal/list`,data, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1929,7 +1929,7 @@ export const getAllLifeInsConsumer = async () => {
     const response = await axios.get(`${API_URL}/user/list/lifeIns?t=${Date.now()}`, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
       // return false;
 
@@ -1964,7 +1964,7 @@ export const getAllVehicleInsConsumer = async (status = null) => {
     const response = await axios.get(url, headers);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       throw new Error('Invalid credentials');
     } else {
       if (response.data && response.data?.status) {
@@ -2006,7 +2006,7 @@ export const addUpdateLoanConfiguration = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       addToast('something went wrong', 'error')
       throw new Error('Invalid credentials');
       // return false;
@@ -2033,7 +2033,7 @@ export const addUpdateLoanDisburse = async (data, addToast) => {
     console.log(response);
 
     if (!response.data) {
-      alert('error')
+      toast.error('error')
       addToast('something went wrong', 'error')
       throw new Error('Invalid credentials');
       // return false;

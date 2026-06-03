@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Footer.css';
@@ -85,7 +86,7 @@ const Footer = () => {
     if (validate()) {
       console.log('Form submitted:', formData);
       // Replace this with your API call
-      // alert('Form submitted successfully!');
+      // toast.error('Form submitted successfully!');
       const userData = {
         username:formData.name.trim(),
         phone_number: formData.phone,

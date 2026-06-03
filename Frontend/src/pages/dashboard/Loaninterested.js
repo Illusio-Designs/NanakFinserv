@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
 import Table from '../../components/common/Table';
@@ -547,7 +548,7 @@ const Loani = () => {
 
     const regex = /^\d{10}$/;
     if (!regex.test(formData.MobileNumber)) {
-      alert('Mobile number is invalid');
+      toast.error('Mobile number is invalid');
       return;
     }
 
@@ -670,7 +671,7 @@ const Loani = () => {
 
   const handleDateSearch = async () => {
     if (!startDate || !endDate) {
-      alert("Please select both start and end dates.");
+      toast.error("Please select both start and end dates.");
       return;
     }
     // Save dates to localStorage

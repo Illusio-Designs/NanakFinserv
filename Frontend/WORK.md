@@ -19,13 +19,13 @@
 | 3 | Secrets / config hygiene | 10 | 7/10 | 7.0 | 🟢 `.env` untracked; MSG91 creds env-driven |
 | 4 | Dependency security | 12 | 6/10 | 7.2 | 🟢 removed dead firebase/metismenu/gsap; `npm audit fix` → 66→31 (rest are CRA build-time transitive) |
 | 5 | Code structure / maintainability | 10 | 3/10 | 3.0 | 🟠 47k lines; single files up to 6.8k |
-| 6 | Error handling / UX resilience | 8 | 7/10 | 5.6 | 🟢 top-level ErrorBoundary (no more white-screen) + test |
-| 7 | Testing | 7 | 4/10 | 2.8 | 🟡 jest/RTL wired (`setupTests.js`) + ErrorBoundary tests |
+| 6 | Error handling / UX resilience | 8 | 8/10 | 6.4 | 🟢 ErrorBoundary + 82 blocking `alert()` → non-blocking toasts |
+| 7 | Testing | 7 | 6/10 | 4.2 | 🟡 jest/RTL wired; ErrorBoundary + apiConfig tests (4) |
 | 8 | Logging & noise | 6 | 6/10 | 3.6 | 🟢 console.* silenced in prod build; env dump removed |
 | 9 | Performance / bundle | 10 | 8/10 | 8.0 | 🟢 route-based code-splitting → main bundle **537→64kB gz** |
-| 10 | Accessibility / SEO | 5 | 3/10 | 1.5 | 🟠 minimal |
-| 11 | Tooling consistency | 5 | 7/10 | 3.5 | 🟢 stray vite/webpack configs removed (CRA only) |
-| | **TOTAL** | **100** | | **🟠 59.8 / 100** | **Phase 0–2 + perf code-splitting done** |
+| 10 | Accessibility / SEO | 5 | 4/10 | 2.0 | 🟠 non-blocking toasts replace alerts; more pending |
+| 11 | Tooling consistency | 5 | 8/10 | 4.0 | 🟢 single tool (CRA) + Prettier config |
+| | **TOTAL** | **100** | | **🟠 63.0 / 100** | **Phase 0–2 + perf + UX cleanup done** |
 
 ### Targets after each phase
 | Milestone | Projected | Grade |
@@ -67,9 +67,9 @@
 | ☐ | Task | Notes |
 |---|------|-------|
 | ☑ | Add a top-level **ErrorBoundary** | `src/components/ErrorBoundary.js` wraps the app; render errors show a fallback + reload |
-| 🟡 | Add tests (RTL + jest) | `setupTests.js` + ErrorBoundary tests (2). More component/page tests still to add |
+| 🟡 | Add tests (RTL + jest) | `setupTests.js` + ErrorBoundary + apiConfig tests (4). More component/page tests still to add |
 | ☐ | Consistent loading/error states + 401 handling | redirect to login on token expiry (partially present) |
-| ☐ | Replace `alert()` with the toast system already in use | |
+| ☑ | Replace `alert()` with the toast system already in use | 82 `alert()` → `toast.error` across 15 files |
 
 ---
 
@@ -80,7 +80,7 @@
 | ☐ | Split giant files | `VehicleInsurance.js` 6825, `MediclaimModal.js` 3474, `userAPI.js` 3186, `Mediclaim-popup.js` 2989 |
 | ☑ | Route-based code-splitting (`React.lazy`) | done — every route lazy-loaded; main bundle 537→64kB gz |
 | ☑ | Pick **one** build tool | removed stray `vite.config.js` + `webpack.config.js` (CRA is canonical) |
-| ☐ | Add ESLint + Prettier config | only the default CRA `eslintConfig` exists |
+| 🟡 | Add ESLint + Prettier config | Prettier added (`.prettierrc`); ESLint via CRA `react-app` preset |
 | ☐ | Accessibility pass | labels, alt text, focus management, color contrast |
 
 ---
