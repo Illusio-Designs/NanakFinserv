@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import Modal from './common/Modal';
 import Button from './common/Button';
@@ -509,7 +510,7 @@ const LifeInsuranceModal = ({ isOpen, onClose, fetchApi, initialData, view, isEd
           }
         }));
       } else {
-        alert('Please upload a valid PDF or image file (JPEG, JPG, PNG).');
+        toast.error('Please upload a valid PDF or image file (JPEG, JPG, PNG).');
       }
     }
   };
@@ -545,7 +546,7 @@ const LifeInsuranceModal = ({ isOpen, onClose, fetchApi, initialData, view, isEd
           }
         }));
       } else {
-        alert('Please upload a valid PDF or image file (JPEG, JPG, PNG).');
+        toast.error('Please upload a valid PDF or image file (JPEG, JPG, PNG).');
       }
     }
   };

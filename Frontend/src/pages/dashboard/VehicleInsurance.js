@@ -4686,7 +4686,7 @@ const VehicleInsurance = () => {
                                     storedMessage.textContent =
                                       "⚠️ Document stored but file missing - Please re-upload";
                                   }
-                                  alert(
+                                  toast.error(
                                     "Document not available. Please re-upload the document."
                                   );
                                 }
@@ -4704,7 +4704,7 @@ const VehicleInsurance = () => {
                                   storedMessage.textContent =
                                     "⚠️ Document stored but file missing - Please re-upload";
                                 }
-                                alert(
+                                toast.error(
                                   "Document not available. Please re-upload the document."
                                 );
                               }

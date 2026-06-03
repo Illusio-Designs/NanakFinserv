@@ -372,20 +372,20 @@ const RenewalSheet = () => {
 
             if (!consumerData) {
                 console.error("No consumer data received from API");
-                alert("No data available to export");
+                toast.error("No data available to export");
                 return;
             }
 
             if (!consumerData.data) {
                 console.error("No data property in API response");
                 console.log("API Response structure:", consumerData);
-                alert("No data available to export");
+                toast.error("No data available to export");
                 return;
             }
 
             if (!consumerData.data.length) {
                 console.error("Empty data array in API response");
-                alert("No data available to export for the selected date range");
+                toast.error("No data available to export for the selected date range");
                 return;
             }
 
@@ -449,7 +449,7 @@ const RenewalSheet = () => {
 
             if (!exportData.length) {
                 console.error("No data was mapped for export");
-                alert("No data available to export");
+                toast.error("No data available to export");
                 return;
             }
 
@@ -500,7 +500,7 @@ const RenewalSheet = () => {
         } catch (error) {
             console.error("Detailed error in export process:", error);
             console.error("Error stack:", error.stack);
-            alert("Error exporting data. Please check console for details.");
+            toast.error("Error exporting data. Please check console for details.");
         }
     };
 

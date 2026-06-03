@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 
 
 import React, { useEffect, useState } from 'react';
@@ -97,11 +98,11 @@ const MediclaimProduct = () => {
                                                             const response = await fetch(`${config.BASE_URL}${pdf.pdf_path}`);
                                                             if (!response.ok) {
                                                                 e.preventDefault();
-                                                                alert('Document not available. Please check the file.');
+                                                                toast.error('Document not available. Please check the file.');
                                                             }
                                                         } catch (error) {
                                                             e.preventDefault();
-                                                            alert('Document not available. Please check the file.');
+                                                            toast.error('Document not available. Please check the file.');
                                                         }
                                                     }}
                                                 >
