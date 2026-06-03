@@ -71,12 +71,18 @@ const {
 
 exports.downloadFile = async (req, res) => {
     try {
-        const filename = req.params.filename;
-        // const filePath = path.join(CTRL_DIR, 'public/uploads', filename);
-        const filePath = path.join(CTRL_DIR, "../../uploads", filename);
+        // Guard against path traversal: strip any directory components from the
+        // requested name, then confirm the resolved path stays inside uploads.
+        const uploadsDir = path.resolve(CTRL_DIR, "../../uploads");
+        const safeName = path.basename(req.params.filename || "");
+        const filePath = path.join(uploadsDir, safeName);
 
+        if (!safeName || !filePath.startsWith(uploadsDir + path.sep)) {
+            return res.status(400).send({ message: "Invalid filename", status: false });
+        }
+
+        const filename = safeName;
         console.log('📥 [DOWNLOAD] Request for file:', filename);
-        console.log('📥 [DOWNLOAD] Full path:', filePath);
 
         // Check if the file exists (use fsSync for synchronous check)
         if (fsSync.existsSync(filePath)) {

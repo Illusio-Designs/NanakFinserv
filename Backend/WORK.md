@@ -15,16 +15,16 @@
 | 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
 | 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
-| 4 | Data privacy / uploads | 8 | 7 / 10 | 5.6 | 🟢 Uploads untracked & gitignored (history purge pending) |
+| 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
 | 5 | Input validation | 8 | 1 / 10 | 0.8 | 🟠 Request bodies trusted directly |
 | 6 | Dependency security | 8 | 3 / 10 | 2.4 | 🟠 Known-vulnerable versions |
 | 7 | Error handling & resilience | 8 | 3 / 10 | 2.4 | 🟠 Misordered handlers, starts w/o DB |
 | 8 | Logging & monitoring | 7 | 2 / 10 | 1.4 | 🟠 ~590 console.logs, leaks PII |
 | 9 | Code structure / maintainability | 7 | 6 / 10 | 4.2 | 🟢 Monolith split into 14 per-domain modules (services/validators pending) |
-| 10 | Testing | 5 | 2 / 10 | 1.0 | 🟡 Jest+supertest set up; auth module covered |
+| 10 | Testing | 5 | 3 / 10 | 1.5 | 🟡 Jest+supertest; auth + shared (download) covered (11 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 36.8 / 100** | **Not production ready (auth + full module split landed)** |
+| | **TOTAL** | **100** | | **🟠 38.1 / 100** | **Not production ready (auth + module split + Phase 0 security landed)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -48,8 +48,8 @@
 | 🟡 | Remove committed secrets from git & **rotate** them | `.env` untracked; `config/authConfig.js`, `config/db.config.js` still hold constants | `.env` removed from index. **Rotation of JWT secret / DB password / Gmail password is still required by you** (they remain in git history). |
 | ☑ | Untrack the 208 uploaded PDFs | `Backend/uploads/*`, `app/uploads/*` | Removed from git index; now gitignored |
 | ☑ | Fix `.gitignore` (add `.env`, `uploads/`, logs) | `Backend/.gitignore` (new, lowercase) | Old `.gitIgnore` (capital I) was never honoured by git |
-| ☐ | Remove debug route | `routes/users.routes.js` → `/user/list/all-vehicle-users-debug` | Unauthenticated data exposure |
-| ☐ | Add auth + path-traversal guard to file download | `routes/users.routes.js` → `/user/download/:filename` | Unauthenticated, `../` traversal risk |
+| ☑ | Remove debug route | `src/modules/vehicle/vehicle.routes.js` | Unauthenticated `/user/list/all-vehicle-users-debug` removed |
+| 🟡 | Path-traversal guard on file download | `src/modules/shared/shared.controller.js` `downloadFile` (test: `shared.test.js`) | Traversal fixed via `basename` + containment check. **Auth on downloads still open** — `server.js` also serves `/uploads` via `express.static` with no auth; needs a broader access-control decision. |
 
 ---
 

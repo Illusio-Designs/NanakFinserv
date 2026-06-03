@@ -15,7 +15,8 @@ router.post("/user/vehicle/user/renewal/list", verifyToken, controller.getVehicl
 router.post("/user/renewVehiclePolicy", verifyToken, controller.renewVehiclePolicy);
 router.get("/user/vehicle/renewal/stats", verifyToken, controller.getVehicleRenewalStats);
 router.get("/user/list/vehicleIns", verifyToken, controller.getAllVehicleInsUser);
-router.get('/user/list/all-vehicle-users-debug', controller.listAllVehicleUsersDebug);
+// Removed: unauthenticated debug route /user/list/all-vehicle-users-debug
+// (controller.listAllVehicleUsersDebug) — it leaked all vehicle users.
 router.get("/user/vehicle/user/:vehicle_user_id", verifyToken, controller.getVehicleUserById);
 
 module.exports = router;
