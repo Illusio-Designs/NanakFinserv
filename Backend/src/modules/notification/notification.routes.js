@@ -4,7 +4,8 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const { requireRole, PORTAL } = require("../../middleware/rbac");
-const controller = require("./notification.controller");
+const { wrapController } = require("../../middleware/asyncHandler");
+const controller = wrapController(require("./notification.controller"));
 
 const router = express.Router();
 const portal = requireRole(...PORTAL);

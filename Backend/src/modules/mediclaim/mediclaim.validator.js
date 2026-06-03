@@ -32,4 +32,26 @@ const validateAddProduct = (req, res, next) => {
   return errors.length ? fail(res, errors) : next();
 };
 
-module.exports = { validateAddCompany, validateUpdateCompany, validateAddProduct };
+const validateAddMediclaimUser = (req, res, next) => {
+  if (!(req.body || {}).data) {
+    return res.status(400).send({ message: "data is required", status: false });
+  }
+  return next();
+};
+
+const validateUpdateProduct = (req, res, next) => {
+  const errors = [];
+  if (!isNonEmptyString((req.body || {}).mediclaim_product_name)) {
+    errors.push("mediclaim_product_name is required");
+  }
+  if (!isPresent((req.params || {}).id)) errors.push("company id is required");
+  return errors.length ? fail(res, errors) : next();
+};
+
+module.exports = {
+  validateAddCompany,
+  validateUpdateCompany,
+  validateAddProduct,
+  validateAddMediclaimUser,
+  validateUpdateProduct,
+};

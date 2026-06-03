@@ -3,7 +3,8 @@
  */
 const express = require("express");
 
-const controller = require("./auth.controller");
+const { wrapController } = require("../../middleware/asyncHandler");
+const controller = wrapController(require("./auth.controller"));
 const { validateLogin, validateMobileOnly } = require("./auth.validator");
 
 const router = express.Router();

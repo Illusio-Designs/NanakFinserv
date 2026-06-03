@@ -4,7 +4,8 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const { requireRole, ADMIN } = require("../../middleware/rbac");
-const controller = require("./buildingManager.controller");
+const { wrapController } = require("../../middleware/asyncHandler");
+const controller = wrapController(require("./buildingManager.controller"));
 const v = require("./buildingManager.validator");
 
 const router = express.Router();

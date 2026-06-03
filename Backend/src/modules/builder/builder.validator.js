@@ -12,4 +12,18 @@ const validateAddUnitCategory = (req, res, next) => {
   return next();
 };
 
-module.exports = { validateAddUnitCategory };
+const validateAddBuilder = (req, res, next) => {
+  if (!isPresent((req.body || {}).company_name)) {
+    return res.status(400).send({ message: "Company name not provided", status: false });
+  }
+  return next();
+};
+
+const validateAddBuilderUnit = (req, res, next) => {
+  if (!isPresent((req.body || {}).unit_id)) {
+    return res.status(400).send({ message: "Unit ID is required", status: false });
+  }
+  return next();
+};
+
+module.exports = { validateAddUnitCategory, validateAddBuilder, validateAddBuilderUnit };

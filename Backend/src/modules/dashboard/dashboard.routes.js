@@ -4,7 +4,8 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const { requireRole, ADMIN, CONSUMER_VIEW } = require("../../middleware/rbac");
-const controller = require("./dashboard.controller");
+const { wrapController } = require("../../middleware/asyncHandler");
+const controller = wrapController(require("./dashboard.controller"));
 const v = require("./dashboard.validator");
 
 const router = express.Router();
