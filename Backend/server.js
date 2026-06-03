@@ -10,6 +10,7 @@ const { sequelize } = require("./app/models/index");
 const apiRoutes = require("./src/routes");
 const fs = require("fs");
 const alterTables = require("./app/config/db.migration");
+const logger = require("./src/config/logger");
 
 let env = require("dotenv").config();
 env = dotenvParseVariables(env.parsed);
@@ -93,9 +94,9 @@ app.options("*", cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Add basic request logging
+// Request logging (debug level so it can be silenced in production via LOG_LEVEL)
 app.use((req, res, next) => {
-  console.log(`📥 [SERVER] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  logger.debug({ method: req.method, path: req.path }, "request");
   next();
 });
 
@@ -120,28 +121,22 @@ app.use("/api", apiLimiter);
 
 const db = require("./app/models/index");
 
-// Sync database and run migrations
+// Verify the DB connection and run table alterations.
+// Fail-fast: if the database is unreachable we must NOT start serving traffic.
 const initializeDatabase = async () => {
-  try {
-    // Skip date fix to avoid errors
-    console.log("Skipping date fix to avoid database errors...");
-    
-    // Sync all models - temporarily disable alter to avoid index issues
-    // await db.sequelize.sync({ alter: false });
-    console.log("Database sync temporarily disabled to avoid date issues");
+  await db.sequelize.authenticate(); // throws if the DB is unreachable
+  logger.info("Database connection established");
 
-    // Run table alterations for new fields only
-    console.log("Running table alterations for new fields...");
+  // Table alterations for new fields. A failure here is logged but not fatal
+  // (the connection itself is healthy); migrations should move to a managed
+  // migration tool — see WORK.md.
+  try {
     await alterTables();
-    console.log("Table alterations completed successfully");
+    logger.info("Table alterations completed");
   } catch (error) {
-    console.error("Error initializing database:", error);
-    // Continue with server startup even if database sync fails
-    console.log("Continuing with server startup despite database sync issues...");
+    logger.error({ err: error }, "Table alterations failed (continuing)");
   }
 };
-
-// Date fix function removed to avoid database errors
 
 // Health check route
 app.get("/health", (req, res) => {
@@ -176,25 +171,32 @@ app.use((err, req, res, next) => {
 // Catch-all: log server-side, return a safe message to the client.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error("Stack trace:", err && err.stack);
+  logger.error({ err, path: req.path }, "Unhandled error");
   res.status(500).json({ message: "Internal Server Error" });
 });
 
 const PORT = process.env.PORT;
 
-// Initialize database and start server
-initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`🔍 API endpoint: http://localhost:${PORT}/api`);
-    console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+// Initialize database, then start the server. Fail-fast on DB errors.
+initializeDatabase()
+  .then(() => {
+    const server = app.listen(PORT, () => {
+      logger.info({ port: PORT }, "Server is running");
+    });
+
+    // Graceful shutdown.
+    const shutdown = (signal) => {
+      logger.info({ signal }, "Shutting down");
+      server.close(() => {
+        db.sequelize.close().finally(() => process.exit(0));
+      });
+      // Force-exit if connections don't drain in time.
+      setTimeout(() => process.exit(1), 10000).unref();
+    };
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+  })
+  .catch((error) => {
+    logger.fatal({ err: error }, "Failed to connect to the database; exiting");
+    process.exit(1);
   });
-}).catch((error) => {
-  console.error("Failed to initialize database:", error);
-  // Start server anyway, even if database initialization fails
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT} (with database issues)`);
-    console.log(`🔍 API endpoint: http://localhost:${PORT}/api`);
-    console.log(`🔍 Health check: http://localhost:${PORT}/health`);
-  });
-});
