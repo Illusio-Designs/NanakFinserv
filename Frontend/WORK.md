@@ -17,15 +17,15 @@
 | 1 | Build & config correctness | 14 | 7/10 | 9.8 | 🟢 env-driven API config; **prod build verified** (tooling cleanup pending) |
 | 2 | Auth & token security | 13 | 6/10 | 7.8 | 🟢 cookies now Secure+SameSite=strict (full httpOnly needs backend) |
 | 3 | Secrets / config hygiene | 10 | 7/10 | 7.0 | 🟢 `.env` untracked; MSG91 creds env-driven |
-| 4 | Dependency security | 12 | 2/10 | 2.4 | 🔴 66 vulns (3 critical, 31 high) |
+| 4 | Dependency security | 12 | 6/10 | 7.2 | 🟢 removed dead firebase/metismenu/gsap; `npm audit fix` → 66→31 (rest are CRA build-time transitive) |
 | 5 | Code structure / maintainability | 10 | 3/10 | 3.0 | 🟠 47k lines; single files up to 6.8k |
 | 6 | Error handling / UX resilience | 8 | 2/10 | 1.6 | 🟠 No ErrorBoundary |
 | 7 | Testing | 7 | 0/10 | 0.0 | 🔴 No tests |
 | 8 | Logging & noise | 6 | 6/10 | 3.6 | 🟢 console.* silenced in prod build; env dump removed |
-| 9 | Performance / bundle | 10 | 3/10 | 3.0 | 🟠 dead `firebase` dep, no code-splitting (main 537kB gz) |
+| 9 | Performance / bundle | 10 | 4/10 | 4.0 | 🟠 dead deps removed; still no code-splitting (main 537kB gz) |
 | 10 | Accessibility / SEO | 5 | 3/10 | 1.5 | 🟠 minimal |
 | 11 | Tooling consistency | 5 | 3/10 | 1.5 | 🟠 CRA + stray vite/webpack configs |
-| | **TOTAL** | **100** | | **🟠 41.2 / 100** | **Phase 0 launch blockers cleared** |
+| | **TOTAL** | **100** | | **🟠 47.0 / 100** | **Phase 0 + dependency cleanup done** |
 
 ### Targets after each phase
 | Milestone | Projected | Grade |
@@ -54,8 +54,8 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | `npm audit` triage | 66 vulns (3 critical/31 high), mostly via `react-scripts@5` transitive deps |
-| ☐ | Remove dead `firebase` dependency | not imported anywhere → bundle bloat + vulns |
+| ☑ | `npm audit` triage | removed unused `firebase`/`@metismenu/react`/`metismenu`/`gsap`; `npm audit fix` → **66 → 31**. Remaining are `react-scripts@5` build-time transitive (svgo/nth-check, postcss, serialize-javascript) needing `--force`/CRA migration. |
+| ☑ | Remove dead `firebase` dependency | gone (+ other unused deps) |
 | ☐ | Add security headers via host/CDN | CSP, HSTS, X-Frame-Options (SPA served by Apache `.htaccess`) |
 | ☐ | Validate/escape any `dangerouslySetInnerHTML` (blogs) | check XSS on rendered HTML content |
 | ☐ | Centralize API base + token handling in one axios instance | currently spread across `userAPI.js` |
