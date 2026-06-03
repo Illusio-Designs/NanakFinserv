@@ -1,6 +1,6 @@
 /** Tests for the consumer module (validators + service-backed FK checks). */
 jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
-  req.user = { id: 1 };
+  req.user = { id: 1, Role: 1 };
   next();
 });
 jest.mock("../../../app/models", () => ({

@@ -3,7 +3,7 @@
  * (controller -> service -> mocked models) and validator rejections.
  */
 jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
-  req.user = { id: 1 };
+  req.user = { id: 1, Role: 1 };
   next();
 });
 jest.mock("../../../app/models", () => ({
@@ -95,5 +95,27 @@ describe("service.normalizePayload", () => {
   it("returns an error when no data is present", () => {
     const out = service.normalizePayload({}, "text/plain");
     expect(out.error).toMatch(/Data not found/);
+  });
+});
+
+describe("service.parseUpdatePayload", () => {
+  const service = require("./vehicle.service");
+
+  it("parses JSON under `data` without defaulting policies", () => {
+    const out = service.parseUpdatePayload({ data: { Name: "X" } }, "application/json");
+    expect(out.Data.Name).toBe("X");
+    expect(out.Data.runningPolicy).toBeUndefined(); // not defaulted (unlike add)
+  });
+
+  it("parses multipart policy strings", () => {
+    const out = service.parseUpdatePayload(
+      { previousPolicy: '{"CompanyId":9}' },
+      "multipart/form-data"
+    );
+    expect(out.Data.previousPolicy).toEqual({ CompanyId: 9 });
+  });
+
+  it("errors when no data present", () => {
+    expect(service.parseUpdatePayload({}, "text/plain").error).toMatch(/Data not found/);
   });
 });

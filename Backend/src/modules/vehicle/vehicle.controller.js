@@ -769,39 +769,11 @@ exports.updateVehicleUserData = async (req, res) => {
         hasFiles: !!req.files
     });
 
-    let Data;
-    if (req.body.data) {
-        // JSON request - data is nested under 'data' property
-        Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
-        logger.debug('[VehicleUserUpdate] Processing JSON request');
-    } else if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
-        // FormData request - data is directly in req.body
-        Data = req.body;
-        logger.debug('[VehicleUserUpdate] Processing FormData request');
-        logger.debug('🔍 [UPDATE] req.files object:', req.files);
-        logger.debug('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
-        
-        // Parse JSON strings in FormData
-        if (Data.runningPolicy && typeof Data.runningPolicy === 'string') {
-            try {
-                Data.runningPolicy = JSON.parse(Data.runningPolicy);
-            } catch (e) {
-                logger.debug('🔍 [UPDATE] Error parsing runningPolicy:', e.message);
-                Data.runningPolicy = {};
-            }
-        }
-        if (Data.previousPolicy && typeof Data.previousPolicy === 'string') {
-            try {
-                Data.previousPolicy = JSON.parse(Data.previousPolicy);
-            } catch (e) {
-                logger.debug('🔍 [UPDATE] Error parsing previousPolicy:', e.message);
-                Data.previousPolicy = {};
-            }
-        }
-    } else {
-        logger.warn('[VehicleUserUpdate] No data found in request body');
-        return res.status(400).json({ error: 'Data not found in request body' });
+    const parsed = vehicleService.parseUpdatePayload(req.body, req.headers['content-type']);
+    if (parsed.error) {
+        return res.status(400).json({ error: parsed.error });
     }
+    let { Data } = parsed;
     // --- Log the parsed data keys only (not full data for privacy) ---
     logger.debug('[VehicleUserUpdate] Parsed data keys:', Object.keys(Data));
     logger.debug('🔧 [updateVehicleUserData] All Policy Fields received:', {

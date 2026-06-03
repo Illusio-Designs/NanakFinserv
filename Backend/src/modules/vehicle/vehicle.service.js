@@ -65,4 +65,32 @@ async function updateRemark(vehicleUserId, remark) {
   return user;
 }
 
-module.exports = { updateRemark, normalizePayload };
+/**
+ * Parse the update-vehicle body (JSON under `data`, or multipart with
+ * JSON-string running/previous policy). Unlike normalizePayload it does NOT
+ * default the policies or parse documentsData — matching the update handler's
+ * original behavior.
+ * @returns {{error:string}|{Data:object}}
+ */
+function parseUpdatePayload(body, contentType) {
+  let Data;
+  if (body && body.data) {
+    Data = typeof body.data === "string" ? JSON.parse(body.data) : body.data;
+  } else if (contentType && contentType.includes("multipart/form-data")) {
+    Data = body || {};
+    for (const field of ["runningPolicy", "previousPolicy"]) {
+      if (Data[field] && typeof Data[field] === "string") {
+        try {
+          Data[field] = JSON.parse(Data[field]);
+        } catch (e) {
+          Data[field] = {};
+        }
+      }
+    }
+  } else {
+    return { error: "Data not found in request body" };
+  }
+  return { Data };
+}
+
+module.exports = { updateRemark, normalizePayload, parseUpdatePayload };

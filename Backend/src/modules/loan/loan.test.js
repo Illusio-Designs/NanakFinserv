@@ -3,7 +3,7 @@
  * (controller -> service -> mocked models) and validator rejections.
  */
 jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
-  req.user = { id: 1 };
+  req.user = { id: 1, Role: 1 };
   next();
 });
 jest.mock("../../../app/models", () => ({

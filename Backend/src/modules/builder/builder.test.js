@@ -1,5 +1,8 @@
 /** Tests for the builder module (unit-category add). */
-jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => next());
+jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
+  req.user = { id: 1, Role: 1 };
+  next();
+});
 jest.mock("../../../app/models", () => ({
   unit: { findOne: jest.fn() },
   unit_category_detail: { findOne: jest.fn(), create: jest.fn() },

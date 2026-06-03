@@ -8,6 +8,8 @@ to require `?token=` / `X-Metrics-Token`). Liveness is **`/health`**, readiness
 - `prometheus-rules.yml` — alerting rules (ApiDown, HighErrorRate, ElevatedAuthFailures,
   HighRequestLatencyP95, EventLoopLagHigh, HighMemoryUsage).
 - `prometheus-scrape.example.yml` — example scrape + rule_files + Alertmanager wiring.
+- `alertmanager.example.yml` — example receivers routing critical→PagerDuty+Slack,
+  warning→Slack (replace the placeholder webhook/routing-key with yours).
 
 ## Wire it up
 1. Mount `prometheus-rules.yml` into Prometheus (e.g. `/etc/prometheus/rules/`).
