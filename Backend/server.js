@@ -5,8 +5,7 @@ const fileUpload = require("express-fileupload");
 var cors = require("cors");
 const dotenvParseVariables = require("dotenv-parse-variables");
 const { sequelize } = require("./app/models/index");
-const userRoutes = require("./app/routes/users.routes");
-const authRoutes = require("./src/modules/auth/auth.routes");
+const apiRoutes = require("./src/routes");
 const fs = require("fs");
 const alterTables = require("./app/config/db.migration");
 
@@ -137,10 +136,9 @@ app.get("/health", (req, res) => {
 app.get("/api", (req, res) => {
   res.json({ message: "API is running!" });
 });
-// Auth module routes (login / OTP verify / ping) — mounted before the legacy
-// user routes as part of the incremental migration to per-domain modules.
-app.use("/api", authRoutes);
-app.use("/api", userRoutes);
+// All API routes, split into per-domain modules under src/modules and
+// aggregated in src/routes/index.js (replaces the legacy users.routes.js).
+app.use("/api", apiRoutes);
 const PORT = process.env.PORT;
 
 // Initialize database and start server

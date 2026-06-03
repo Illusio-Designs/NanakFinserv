@@ -20,11 +20,11 @@
 | 6 | Dependency security | 8 | 3 / 10 | 2.4 | 🟠 Known-vulnerable versions |
 | 7 | Error handling & resilience | 8 | 3 / 10 | 2.4 | 🟠 Misordered handlers, starts w/o DB |
 | 8 | Logging & monitoring | 7 | 2 / 10 | 1.4 | 🟠 ~590 console.logs, leaks PII |
-| 9 | Code structure / maintainability | 7 | 2 / 10 | 1.4 | 🟠 13.3k-line single controller |
+| 9 | Code structure / maintainability | 7 | 6 / 10 | 4.2 | 🟢 Monolith split into 14 per-domain modules (services/validators pending) |
 | 10 | Testing | 5 | 2 / 10 | 1.0 | 🟡 Jest+supertest set up; auth module covered |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 34.0 / 100** | **Not production ready (auth module landed)** |
+| | **TOTAL** | **100** | | **🟠 36.8 / 100** | **Not production ready (auth + full module split landed)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -83,7 +83,7 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | Split the 13,347-line `user.controller.js` into per-domain modules | See **Target architecture** below — controller + route + service + validator + test per domain |
+| ☑ | Split the 13,347-line `user.controller.js` into per-domain modules | **DONE** — 14 modules under `src/modules`, monolith deleted, 111 routes load. Services/validators/tests per module still pending. |
 | ☐ | Add a test file for every module | Each module ships its own `*.test.js`; `test` script currently `exit 1` |
 | ☐ | Add Dockerfile + CI workflow | None today |
 | ☐ | Production start + process manager | `start` runs `nodemon` (dev tool); use PM2/systemd |
@@ -143,24 +143,34 @@ Backend/
 ```
 
 ### Module split — source domains carved out of the monolith
-Each module = its own controller + route + service + validator + **test file**.
+**Status: the 13,347-line `user.controller.js` has been fully split.** Each domain now
+has its own `*.controller.js` + `*.routes.js` under `src/modules/<domain>/`, aggregated
+in `src/routes/index.js`. The monolith and legacy `users.routes.js` are deleted. Logic
+was moved verbatim (mechanical split via `scripts/split-*.js`) — all 108 routes + 3 auth
+routes (111 total) load and register. **Remaining per module: extract a `service` +
+`validator` and add a `*.test.js`** (auth already has all of these).
 
-| ☐ | Module | Owns these existing endpoints (from `users.routes.js`) | Test file |
-|---|--------|--------------------------------------------------------|-----------|
-| ☑ | `auth` | login, verify, token issue (MSG91 verified server-side) — **DONE, 8 tests passing** | `auth.test.js` ✅ |
-| ☐ | `user` | user list (consumer/builder/roleWise), roles, add/update user | `user.test.js` |
-| ☐ | `vehicle` | vehicle user CRUD, renewal, policies, vehicle/policyplan/policytype | `vehicle.test.js` |
-| ☐ | `loan` | loan lists, detail, interested/disburse/cancel, status, configuration | `loan.test.js` |
-| ☐ | `mediclaim` | company, product, user, renewal lists | `mediclaim.test.js` |
-| ☐ | `lifeInsurance` | CRUD, documents, by-consumer, renewal | `lifeInsurance.test.js` |
-| ☐ | `builder` | builder data, units, unit categories, verticals | `builder.test.js` |
-| ☐ | `consumer` | consumer add/update, dashboard | `consumer.test.js` |
-| ☐ | `buildingManager` | create/assign/list/stats/update/remove | `buildingManager.test.js` |
-| ☐ | `blog` | blog CRUD + public list | `blog.test.js` |
-| ☐ | `notification` | list, read, read-all, count | `notification.test.js` |
-| ☐ | `inquiry` | inquiry add/list + public inquiry | `inquiry.test.js` |
-| ☐ | `dashboard` | counts, stats, amount filters | `dashboard.test.js` |
-| ☐ | `shared` | code, company-type, downloads | `shared.test.js` |
+| Controller | Routes | Service | Validator | Test | Module | Handlers |
+|:---:|:---:|:---:|:---:|:---:|--------|:---:|
+| ☑ | ☑ | ☑ | ☑ | ☑ | `auth` (MSG91 server-side, 8 tests) | 3 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `user` | 12 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `vehicle` | 11 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `loan` | 10 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `mediclaim` | 13 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `lifeInsurance` | 12 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `builder` | 9 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `consumer` | 5 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `buildingManager` | 7 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `blog` | 5 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `notification` | 4 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `inquiry` | 2 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `dashboard` | 3 |
+| ☑ | ☑ | ☐ | ☐ | ☐ | `shared` (code/company-type/policy/downloads) | 15 |
+
+> `src/modules/shared/context.js` holds the common model handles + helpers
+> (`createNotification`, etc.) the extracted controllers depend on. `__dirname`-based
+> upload/download paths were preserved via a `CTRL_DIR` constant so file paths still
+> resolve to `Backend/uploads`.
 
 ### Per-module definition of done
 A module is "done" only when **all** of these are true:
@@ -191,8 +201,8 @@ A module is "done" only when **all** of these are true:
 |--------|-------|
 | Framework | Express 4 |
 | ORM / DB | Sequelize 6 / MySQL |
-| Routes | ~120 (single `users.routes.js`) |
-| Controller size | **13,347 lines** (single file) |
+| Routes | 111 across 14 per-domain route files (aggregated in `src/routes/index.js`) |
+| Controller size | Split from one 13,347-line file into 14 domain controllers |
 | Models | 50+ |
 | `console.log` count | ~590 |
 | Tests | 0 |

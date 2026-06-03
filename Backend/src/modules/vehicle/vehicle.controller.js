@@ -1,0 +1,3329 @@
+/**
+ * vehicle controller — extracted from the legacy user.controller monolith.
+ * Logic is preserved verbatim; shared dependencies come from shared/context.
+ */
+const {
+  Blog,
+  BuilderUser,
+  BuildingManager,
+  CTRL_DIR,
+  CancelLoan,
+  Category,
+  Disburse,
+  DisbursementLoan,
+  DocumentSelectedLoan,
+  EmployeeMediclaim,
+  FamilyMember,
+  Inqueryuser,
+  LifeInsurance,
+  LifeInsuranceDocument,
+  LoginLoan,
+  Mediclaim,
+  MediclaimCompany,
+  MediclaimProduct,
+  Op,
+  PartPaymentLoan,
+  PreviousPolicies,
+  QueryLoan,
+  RunningPolicies,
+  SanctionLoan,
+  Sequelize,
+  Unit,
+  UnitCategoryDetail,
+  UnitCategoryList,
+  User,
+  Wing,
+  authConfig,
+  bcrypt,
+  builderConsumer,
+  codeDetail,
+  companyType,
+  consumerRoleMapping,
+  createNotification,
+  db,
+  documents,
+  dotenvParseVariables,
+  env,
+  floor,
+  fs,
+  fsExtra,
+  fsSync,
+  hasMeaningfulPreviousPolicyData,
+  jwt,
+  loanConfiguration,
+  loanUser,
+  moment,
+  nodemailer,
+  path,
+  policyPlan,
+  policyType,
+  property,
+  references,
+  unit_category_list,
+  userCatergory,
+  uuidv4,
+  vehcileRunningPolicy,
+  vehiclePreviousPolicy,
+  vehicleUser,
+  vehicle_document,
+  vehicles
+} = require("../shared/context");
+
+exports.getAllVehicleInsUser = async (req, res) => {
+    let whereObj = {};
+
+    if (req.user.Role === 4) {
+        whereObj.user_role_id = req.user.id;
+    }
+    whereObj.category_id = 6;
+
+    // Add status filter if provided
+    const status = req.query.status;
+    let userIdsWithStatus = null;
+    if (status) {
+        // Find all vehicle users with the given status
+        const vehicleUsers = await db.vehicleUser.findAll({
+            where: { status },
+            attributes: ['user_id'],
+            raw: true,
+        });
+        userIdsWithStatus = vehicleUsers.map(vu => vu.user_id);
+        if (userIdsWithStatus.length > 0) {
+            whereObj.user_consumer_id = { [Op.in]: userIdsWithStatus };
+        } else {
+            // No users with this status, return empty
+            return res.status(200).send({ message: "No vehicle consumers found for this status", data: [], status: true });
+        }
+    }
+
+    await consumerRoleMapping
+        .findAll({
+            where: whereObj,
+            attributes: ["user_role_id", "category_id", "user_consumer_id"],
+            include: [
+                {
+                    model: User,
+                    as: "userRoles",
+                    required: false,
+                    attributes: ["username", "email", "mobileNumber", "referenceName"],
+                },
+                {
+                    model: User,
+                    as: "userConsumers",
+                    required: false,
+                    attributes: ["username", "email", "mobileNumber", "referenceName"],
+                },
+                {
+                    model: db.vehicleUser,
+                    as: "vehicleUser",
+                    required: false,
+                    attributes: ["vehicle_user_id", "user_id"],
+                    where: { status: status || "interested" },
+                },
+            ],
+            raw: true,
+        })
+        .then((articles) => {
+            res.status(200).send({
+                message: "catergory unit get success",
+                data: articles,
+                status: true,
+            });
+        })
+        .catch((e) => {
+            res.status(400).send({ message: "role error", status: false });
+            console.log(e);
+        });
+};
+
+
+exports.addVehicleUserData = async (req, res) => {
+    console.log('--- [addVehicleUserData] ---');
+    console.log('req.user:', req.user);
+    console.log('req.headers:', req.headers);
+    console.log('req.body:', req.body);
+    console.log('req.files:', req.files);
+
+    if (!req.user || !req.user.id) {
+        console.log('Unauthorized: req.user is not defined.');
+        return res.status(401).json({ error: 'Unauthorized: req.user is not defined. Check your token and authentication.' });
+    }
+
+    let Data;
+    if (req.body.data) {
+        // JSON request - data is nested under 'data' property
+        Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
+        console.log('[addVehicleUserData] Processing JSON request');
+    } else if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+        // FormData request - data is directly in req.body
+        Data = req.body;
+        console.log('[addVehicleUserData] Processing FormData request');
+        console.log('🔍 [ADD] req.files object:', req.files);
+        console.log('🔍 [ADD] req.files keys:', Object.keys(req.files || {}));
+
+        // Parse JSON strings in FormData
+        if (Data.runningPolicy && typeof Data.runningPolicy === 'string') {
+            try {
+                Data.runningPolicy = JSON.parse(Data.runningPolicy);
+            } catch (e) {
+                console.log('🔍 [ADD] Error parsing runningPolicy:', e.message);
+                Data.runningPolicy = {};
+            }
+        }
+        if (Data.previousPolicy && typeof Data.previousPolicy === 'string') {
+            try {
+                Data.previousPolicy = JSON.parse(Data.previousPolicy);
+            } catch (e) {
+                console.log('🔍 [ADD] Error parsing previousPolicy:', e.message);
+                Data.previousPolicy = {};
+            }
+        }
+        console.log("📌 Previous Policy RAW DATA:", Data.previousPolicy);
+        if (Data.documentsData && typeof Data.documentsData === 'string') {
+            try {
+                Data.documentsData = JSON.parse(Data.documentsData);
+            } catch (e) {
+                console.log('🔍 [ADD] Error parsing documentsData:', e.message);
+                Data.documentsData = [];
+            }
+        }
+    } else {
+        console.warn('[addVehicleUserData] No data found in request body');
+        return res.status(400).json({ error: 'Data not found in request body' });
+    }
+    console.log('Parsed Data:', Data);
+    console.log('🔧 [addVehicleUserData] Policy fields received:', {
+        policyRadio: Data.policyRadio,
+        policy_type: Data.policy_type,
+        vehicle_policy_type: Data.vehicle_policy_type,
+        Type: Data.Type,
+        nominee_type: Data.nominee_type,
+        type: Data.type
+    });
+    console.log('🔧 [addVehicleUserData] Engine and Chassis fields:', {
+        engine_number: Data.engine_number,
+        chassis_number: Data.chassis_number,
+        EngineNumber: Data.EngineNumber,
+        ChassisNumber: Data.ChassisNumber
+    });
+
+    let documentsData = Data.documentsData || (typeof req.body.documentsData === "string" ? JSON.parse(req.body.documentsData || "[]") : req.body.documentsData);
+
+    // Defensive check for runningPolicy
+    let runningPolicy = Data.runningPolicy;
+    if (!runningPolicy || typeof runningPolicy !== 'object') {
+        runningPolicy = { PolicyTypeId: null, CompanyId: null, PolicyPlanTypeId: null };
+        Data.runningPolicy = runningPolicy;
+    }
+    // Defensive check for previousPolicy
+    let previousPolicy = Data.previousPolicy;
+    if (!previousPolicy || typeof previousPolicy !== 'object') {
+        previousPolicy = { PolicyTypeId: null, CompanyId: null, PolicyPlanTypeId: null };
+        Data.previousPolicy = previousPolicy;
+    }
+
+    // Accept both PascalCase and camelCase for all fields
+    const {
+        Name, name,
+        Email, email,
+        MobileNumber, mobileNumber,
+        policyRadio, policy_type,
+        AgentName, agentName,
+        AgentCode, agentCode,
+        AgentContactNumber, agentContactNumber,
+        CompanyName, company_name,
+        ContactPersonNo, contact_person_no,
+        remark,
+        ContactPersonName, contact_person_name,
+        VehicleNumber, vehicle_number,
+        Make, make,
+        ReferenceId, reference_id,
+        nomineeRadio, nominee_type,
+        Model, model,
+        ManufacturingYear, manufacturing_year,
+        EngineNumber, engine_number,
+        ChassisNumber, chassis_number,
+        VehicleId, vehicle_id,
+
+        user_id, documents,
+        type,
+        Type
+    } = Data;
+
+    // Use fallback logic to get the value from either style
+    const _Name = Name || name || '';
+    const _Email = Email || email || '';
+    const _MobileNumber = MobileNumber || mobileNumber || '';
+    const _policyRadio = policyRadio || policy_type || Data.policyRadio || Data.policy_type || '';
+    // const _AgentName = AgentName || agentName || '';
+    // const _AgentCode = AgentCode || agentCode || '';
+    // const _AgentContactNumber = AgentContactNumber || agentContactNumber || '';
+    // ✅ Fixed to support all naming styles (camelCase, PascalCase, snake_case)
+const _AgentName =
+AgentName || agentName || Data.agent_name || Data.Agent_Name || '';
+const _AgentCode =
+AgentCode || agentCode || Data.agent_code || Data.Agent_Code || '';
+const _AgentContactNumber =
+AgentContactNumber || agentContactNumber || Data.agent_contact_number || Data.Agent_Contact_Number || '';
+
+console.log('🔧 [addVehicleUserData] Agent details extracted:', {
+AgentName: _AgentName,
+AgentCode: _AgentCode,
+AgentContactNumber: _AgentContactNumber
+});
+
+    const _CompanyName = CompanyName || company_name || '';
+    const _ContactPersonNo = ContactPersonNo || contact_person_no || '';
+    const _remark = remark || '';
+    const _ContactPersonName = ContactPersonName || contact_person_name || '';
+    const _VehicleNumber = VehicleNumber || vehicle_number || '';
+    const _Make = Make || make || '';
+    const _ReferenceId = ReferenceId || reference_id || null;
+    const _nomineeRadio = nomineeRadio || nominee_type || Data.Type || Data.nominee_type || Data.type || '';
+    const _Model = Model || model || '';
+    const _ManufacturingYear = ManufacturingYear || manufacturing_year || '';
+    const _EngineNumber = EngineNumber || engine_number || '';
+    const _ChassisNumber = ChassisNumber || chassis_number || '';
+    const _VehicleId = VehicleId || vehicle_id || null;
+    const _user_id = user_id || null;
+    const _documents = documents || null;
+
+    console.log('🔧 [addVehicleUserData] Extracted values:', {
+        Name: _Name,
+        Email: _Email,
+        MobileNumber: _MobileNumber,
+        EngineNumber: _EngineNumber,
+        ChassisNumber: _ChassisNumber
+    });
+    console.log('runningPolicy before DB insert:', runningPolicy);
+    console.log('previousPolicy before DB insert:', previousPolicy);
+
+    if (!runningPolicy) {
+        return res.status(400).json({ error: "runningPolicy is undefined before DB insert" });
+    }
+    if (_policyRadio !== "Fresh" && !previousPolicy) {
+        return res.status(400).json({ error: "previousPolicy is undefined before DB insert" });
+    }
+
+    try {
+        // Debug logging for validation
+        console.log('🔍 [addVehicleUserData] Validation check:', {
+            engineNumber: _EngineNumber,
+            chassisNumber: _ChassisNumber,
+            engineNumberTrimmed: _EngineNumber ? _EngineNumber.trim() : null,
+            chassisNumberTrimmed: _ChassisNumber ? _ChassisNumber.trim() : null
+        });
+
+        // Check for duplicate engine number, chassis number, and vehicle number
+        let engineNumberExists = false;
+        let chassisNumberExists = false;
+        let vehicleNumberExists = false;
+        let errorMessages = [];
+
+        if (_EngineNumber && _EngineNumber.trim() !== '') {
+            const engineNumberToCheck = _EngineNumber.trim();
+            console.log('🔍 [addVehicleUserData] Checking engine number:', engineNumberToCheck);
+
+            const existingEngineNumber = await vehicleUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { engine_number: engineNumberToCheck },
+                        { engine_number: engineNumberToCheck.toUpperCase() },
+                        { engine_number: engineNumberToCheck.toLowerCase() }
+                    ]
+                }
+            });
+
+            console.log('🔍 [addVehicleUserData] Existing engine number result:', existingEngineNumber);
+
+            if (existingEngineNumber) {
+                console.log('❌ [addVehicleUserData] Engine number already exists:', engineNumberToCheck);
+                engineNumberExists = true;
+                errorMessages.push("engine number");
+            }
+        }
+
+        if (_ChassisNumber && _ChassisNumber.trim() !== '') {
+            const chassisNumberToCheck = _ChassisNumber.trim();
+            console.log('🔍 [addVehicleUserData] Checking chassis number:', chassisNumberToCheck);
+
+            const existingChassisNumber = await vehicleUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { chassis_number: chassisNumberToCheck },
+                        { chassis_number: chassisNumberToCheck.toUpperCase() },
+                        { chassis_number: chassisNumberToCheck.toLowerCase() }
+                    ]
+                }
+            });
+
+            console.log('🔍 [addVehicleUserData] Existing chassis number result:', existingChassisNumber);
+
+            if (existingChassisNumber) {
+                console.log('❌ [addVehicleUserData] Chassis number already exists:', chassisNumberToCheck);
+                chassisNumberExists = true;
+                errorMessages.push("chassis number");
+            }
+        }
+
+        // Check for duplicate vehicle number
+        if (_VehicleNumber && _VehicleNumber.trim() !== '') {
+            const vehicleNumberToCheck = _VehicleNumber.trim();
+            console.log('🔍 [addVehicleUserData] Checking vehicle number:', vehicleNumberToCheck);
+
+            const existingVehicleNumber = await vehicleUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { vehicle_number: vehicleNumberToCheck },
+                        { vehicle_number: vehicleNumberToCheck.toUpperCase() },
+                        { vehicle_number: vehicleNumberToCheck.toLowerCase() }
+                    ]
+                }
+            });
+
+            console.log('🔍 [addVehicleUserData] Existing vehicle number result:', existingVehicleNumber);
+
+            if (existingVehicleNumber) {
+                console.log('❌ [addVehicleUserData] Vehicle number already exists:', vehicleNumberToCheck);
+                vehicleNumberExists = true;
+                errorMessages.push("vehicle number");
+            }
+        }
+
+        // Return combined error message if any duplicates found
+        if (errorMessages.length > 0) {
+            const message = errorMessages.length === 1
+                ? `This ${errorMessages[0]} already exists`
+                : `This ${errorMessages.join(" and ")} already exist`;
+
+            console.log('❌ [addVehicleUserData] Validation failed:', message);
+            return res.status(400).json({
+                message: message,
+                status: false
+            });
+        }
+
+        console.log('✅ [addVehicleUserData] Validation passed, proceeding with user check/creation');
+
+        // Check if user with this mobile number already exists
+        let userData = await User.findOne({
+            where: { mobileNumber: _MobileNumber }
+        });
+
+        if (userData) {
+            console.log('🔍 [addVehicleUserData] User found with mobile number:', _MobileNumber, 'User ID:', userData.user_id);
+
+            // Check if user is already assigned to vehicle category
+            const existingMapping = await consumerRoleMapping.findOne({
+                where: {
+                    user_consumer_id: userData.user_id,
+                    category_id: 6
+                }
+            });
+
+            if (!existingMapping) {
+                // User exists but not assigned to vehicle category, add the mapping
+                console.log('🔍 [addVehicleUserData] Adding user to vehicle category');
+                await consumerRoleMapping.create({
+                    user_role_id: req.user.id,
+                    user_consumer_id: userData.user_id,
+                    category_id: 6,
+                });
+            }
+        } else {
+            console.log('🔍 [addVehicleUserData] User not found, creating new user');
+
+            // Create new user
+            userData = await User.create({
+                username: _Name,
+                email: _Email,
+                mobileNumber: _MobileNumber,
+                role_id: 3, // All users should be consumers
+                otp: "",
+                token: "",
+                created_by: req.user.id,
+                updated_by: req.user.id,
+            });
+
+            if (!userData) {
+                return res.status(400).json({ message: "User creation failed", status: false });
+            }
+
+            // Create role mapping for new user
+            await consumerRoleMapping.create({
+                user_role_id: req.user.id,
+                user_consumer_id: userData.user_id,
+                category_id: 6,
+            });
+        }
+
+        if (userData && userData.user_id) {
+            console.log('🔧 [addVehicleUserData] Saving to database:', {
+                vehicle_policy_type: _policyRadio || Data.policyRadio || Data.policy_type || '',
+                nominee_type: _nomineeRadio || Data.Type || Data.nominee_type || Data.type || ''
+            });
+
+            let vehicle = await vehicleUser.create({
+                user_id: userData.user_id,
+                vehicle_policy_type: _policyRadio || Data.policy_type || Data.policyRadio || '', // Fresh/Renewal/Portability
+                nominee_type: _nomineeRadio || Data.type || Data.Type || Data.nominee_type || '', // Individual/Corporate
+                policy_plan_type: Data.policy_plan_type || Data.PolicyType || '', // FULL/NORMAL/THIRD PARTY
+                company_name: _CompanyName,
+                contact_person_name: _ContactPersonName,
+                remark: _remark,
+                contact_person_no: _ContactPersonNo,
+                vehicle_number: _VehicleNumber,
+                vehicle_id: _VehicleId,
+                reference_id: _ReferenceId,
+                make: _Make,
+                model: _Model,
+                manufacturing_year: _ManufacturingYear,
+                engine_number: _EngineNumber,
+                chassis_number: _ChassisNumber,
+                agentName: _AgentName,
+                agentCode: _AgentCode,
+                agentContactNumber: _AgentContactNumber,
+                consumer_role_id: req.user.id,
+                vehicle_type: Data.vehicle_type || '',
+                type: Data.type || '',
+                status: Data.status || '',
+                policy_plan_type: Data.policy_plan_type || '',
+                vendor: Data.vendor || '',
+                runningPolicy: JSON.stringify(Data.runningPolicy || {}),
+                previousPolicy: JSON.stringify(Data.previousPolicy || {}),
+                // Add any other fields from Data as needed
+            });
+
+            if (!vehicle.vehicle_user_id) {
+                return res.status(400).json({ message: "Vehicle creation failed", status: false });
+            }
+
+            const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+
+            // Handle standard documents (aadhar, pan, gst, rcbook)
+            const standardDocuments = [
+                { fieldName: 'aadhar', categoryId: 1 },
+                { fieldName: 'pan', categoryId: 2 },
+                { fieldName: 'gst', categoryId: 3 },
+                { fieldName: 'rcbook', categoryId: 4 }
+            ];
+
+            for (const doc of standardDocuments) {
+                if (req.files && req.files[doc.fieldName]) {
+                    const fileObj = req.files[doc.fieldName];
+                    const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
+                    const uploadPath = path.join(uploadsDir, uniqueName);
+
+                    // Handle file movement - now using in-memory files
+                    if (fileObj.mv) {
+                        // When useTempFiles: false, use mv method (in-memory files)
+                        console.log(`📁 [CREATE] Using file.mv() for ${doc.fieldName}`);
+                        await fileObj.mv(uploadPath);
+                    } else if (fileObj.data) {
+                        // Fallback: write file data directly
+                        console.log(`📁 [CREATE] Using file.data for ${doc.fieldName}`);
+                        await fs.writeFile(uploadPath, fileObj.data);
+                    } else {
+                        throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
+                    }
+
+                    // Save document record to database
+                    await vehicle_document.create({
+                        user_id: userData.user_id,
+                        vehicle_user_id: vehicle.vehicle_user_id,
+                        categoryId: doc.categoryId,
+                        file: uniqueName
+                    });
+                    console.log(`[VehicleUserCreate] ${doc.fieldName} document saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
+                }
+            }
+
+            // Handle custom documents
+            if (documentsData && Array.isArray(documentsData)) {
+                for (const doc of documentsData) {
+                    console.log('[VehicleUserCreate] Processing custom document:', doc);
+                    const fieldName = doc.fileFieldName; // e.g., "custom_0", "custom_1"
+                    if (req.files && req.files[fieldName]) {
+                        const fileObj = req.files[fieldName];
+                        const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
+                        const uploadPath = path.join(uploadsDir, uniqueName);
+                        await fileObj.mv(uploadPath);
+
+                        // Save document record to database
+                        await vehicle_document.create({
+                            user_id: userData.user_id,
+                            vehicle_user_id: vehicle.vehicle_user_id,
+                            categoryId: doc.categoryId,
+                            file: uniqueName
+                        });
+                        console.log(`[VehicleUserCreate] Custom document ${fieldName} saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
+                    }
+                }
+            }
+
+            console.log('🔍 [CREATE] req.files keys:', Object.keys(req.files || {}));
+            console.log('🔍 [CREATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
+            if (req.files && req.files.CurrentPolicyFile) {
+                let CurrentPolicyFile = req.files.CurrentPolicyFile;
+                const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
+                const uploadPath = path.join(uploadsDir, uniqueName);
+
+                // Handle file movement - now using in-memory files
+                if (CurrentPolicyFile.mv) {
+                    // When useTempFiles: false, use mv method (in-memory files)
+                    console.log(`📁 [CREATE] Using file.mv() for CurrentPolicyFile`);
+                    await CurrentPolicyFile.mv(uploadPath);
+                } else if (CurrentPolicyFile.data) {
+                    // Fallback: write file data directly
+                    console.log(`📁 [CREATE] Using file.data for CurrentPolicyFile`);
+                    await fs.writeFile(uploadPath, CurrentPolicyFile.data);
+                } else {
+                    throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
+                }
+
+                runningPolicy.CurrentPolicyFile = uniqueName;
+                console.log(`📁 [CREATE] CurrentPolicyFile saved: ${uniqueName}`);
+            }
+
+            // Resolve company name to company_id for running policy
+            let resolvedRunningCompanyId = runningPolicy.CompanyId || null;
+            if (!resolvedRunningCompanyId && runningPolicy.CompanyName) {
+                console.log('🔍 [CREATE] Resolving running policy company name to ID:', runningPolicy.CompanyName);
+                const runningCompanyRecord = await companyType.findOne({
+                    where: { company_name: runningPolicy.CompanyName }
+                });
+                if (runningCompanyRecord) {
+                    resolvedRunningCompanyId = runningCompanyRecord.company_id;
+                    console.log('✅ [CREATE] Resolved running policy company name to ID:', resolvedRunningCompanyId);
+                } else {
+                    console.log('⚠️ [CREATE] Running policy company not found for name:', runningPolicy.CompanyName);
+                }
+            }
+
+            // Use only the safe runningPolicy variable here!
+            const runningPolicyData = {
+                vehicle_user_id: vehicle.vehicle_user_id,
+                policy_type_id: runningPolicy.PolicyTypeId,
+                company_id: resolvedRunningCompanyId,
+                policy_plan_id: runningPolicy.PolicyPlanTypeId,
+                CurrentPolicyFile: runningPolicy.CurrentPolicyFile || null,
+                isNomineeFlag: runningPolicy.isNomineeFlag || Data.isNomineeFlag || null,
+                // Add agent details
+                agentName: _AgentName || '',
+                agentCode: _AgentCode || '',
+                agentContactNumber: _AgentContactNumber || '',
+                ...runningPolicy,
+            };
+            await vehcileRunningPolicy.create(runningPolicyData);
+
+            if (req.files && req.files.PreviousCurrentPolicyFile) {
+                let PdfFile = req.files.PreviousCurrentPolicyFile;
+                const uniqueName = `${uuidv4()}-${path.basename(PdfFile.name)}`;
+                const uploadPath = path.join(uploadsDir, uniqueName);
+                await PdfFile.mv(uploadPath);
+                previousPolicy.CurrentPolicyFile = uniqueName;
+            }
+
+            // --------- SAFEGUARDED insertion of previous policy (single insert only) ----------
+            // runtime guard to avoid double insert in same request
+            let insertedPreviousPolicy = false;
+
+            // Helper: does previousPolicy contain any meaningful identifying data?
+            const hasMeaningfulPreviousPolicy = previousPolicy &&
+                (
+                    previousPolicy.PolicyTypeId ||
+                    previousPolicy.CompanyId ||
+                    previousPolicy.PolicyPlanTypeId ||
+                    previousPolicy.CompanyName ||
+                    previousPolicy.PolicyNumber
+                );
+
+                if (_policyRadio !== "Fresh" && hasMeaningfulPreviousPolicy) {
+                    // Resolve previous policy company id (if company name provided)
+                    let resolvedPreviousCompanyId = previousPolicy.CompanyId || null;
+                    if (!resolvedPreviousCompanyId && previousPolicy.CompanyName) {
+                        console.log('🔍 [CREATE] Resolving previous policy company name to ID:', previousPolicy.CompanyName);
+                        const previousCompanyRecord = await companyType.findOne({
+                            where: { company_name: previousPolicy.CompanyName }
+                        });
+                        if (previousCompanyRecord) {
+                            resolvedPreviousCompanyId = previousCompanyRecord.company_id;
+                            console.log('✅ [CREATE] Resolved previous policy company name to ID:', resolvedPreviousCompanyId);
+                        } else {
+                            console.log('⚠️ [CREATE] Previous policy company not found for name:', previousPolicy.CompanyName);
+                        }
+                    }
+    
+                    // Resolve previous policy type id (if policy type name provided)
+                    let resolvedPreviousPolicyTypeId = previousPolicy.PolicyTypeId || null;
+                    if (!resolvedPreviousPolicyTypeId && previousPolicy.PolicyType) {
+                        console.log('🔍 [CREATE] Resolving previous policy type name to ID:', previousPolicy.PolicyType);
+                        const previousPolicyTypeRecord = await db.policyType.findOne({
+                            where: { policy_type_name: previousPolicy.PolicyType }
+                        });
+                        if (previousPolicyTypeRecord) {
+                            resolvedPreviousPolicyTypeId = previousPolicyTypeRecord.policy_type_id;
+                            console.log('✅ [CREATE] Resolved previous policy type name to ID:', resolvedPreviousPolicyTypeId);
+                        } else {
+                            console.log('⚠️ [CREATE] Previous policy type not found for name:', previousPolicy.PolicyType);
+                        }
+                    }
+    
+                    // Resolve previous policy plan id (if policy plan name provided)
+                    let resolvedPreviousPolicyPlanId = previousPolicy.PolicyPlanTypeId || null;
+                    if (!resolvedPreviousPolicyPlanId && previousPolicy.PolicyPlanType) {
+                        console.log('🔍 [CREATE] Resolving previous policy plan name to ID:', previousPolicy.PolicyPlanType);
+                        const previousPolicyPlanRecord = await db.policyPlan.findOne({
+                            where: { policy_name: previousPolicy.PolicyPlanType }
+                        });
+                        if (previousPolicyPlanRecord) {
+                            resolvedPreviousPolicyPlanId = previousPolicyPlanRecord.policy_plan_id;
+                            console.log('✅ [CREATE] Resolved previous policy plan name to ID:', resolvedPreviousPolicyPlanId);
+                        } else {
+                            console.log('⚠️ [CREATE] Previous policy plan not found for name:', previousPolicy.PolicyPlanType);
+                        }
+                    }
+    
+                    // Build history data
+                    
+                    const historyData = {
+                        vehicle_user_id: vehicle.vehicle_user_id,
+                        ...previousPolicy,
+                        policy_type_id: resolvedPreviousPolicyTypeId,
+                        company_id: resolvedPreviousCompanyId,
+                        policy_plan_id: resolvedPreviousPolicyPlanId,
+                        PolicyNumber: previousPolicy.PolicyNumber || null,
+                        issue_date: previousPolicy.issue_date || null,
+                        expiry_date: previousPolicy.expiry_date || null,
+                        status: "active",
+                        agentName: previousPolicy.agentName || _AgentName || '',
+                        agentCode: previousPolicy.agentCode || _AgentCode || '',
+                        agentContactNumber: previousPolicy.agentContactNumber || _AgentContactNumber || '',
+                        Vendor: previousPolicy.Vendor || null,
+                        PolicyIssuedDate: previousPolicy.PolicyIssuedDate || null,
+                       
+                    };
+
+                // Check DB to avoid duplicate insertion:
+                // look for an existing previous policy for this vehicle_user_id that matches at least one identifying field
+                const duplicateWhere = {
+                    vehicle_user_id: vehicle.vehicle_user_id,
+                    [Op.or]: []
+                };
+
+                if (historyData.PolicyNumber) duplicateWhere[Op.or].push({ PolicyNumber: historyData.PolicyNumber });
+                if (historyData.policy_type_id) duplicateWhere[Op.or].push({ policy_type_id: historyData.policy_type_id });
+                if (historyData.company_id) duplicateWhere[Op.or].push({ company_id: historyData.company_id });
+                if (historyData.policy_plan_id) duplicateWhere[Op.or].push({ policy_plan_id: historyData.policy_plan_id });
+
+                // If there is no identifying field (shouldn't happen because hasMeaningfulPreviousPolicy true), fallback to a simple existence check
+                let alreadyExists = null;
+                if (duplicateWhere[Op.or].length > 0) {
+                    alreadyExists = await vehiclePreviousPolicy.findOne({ where: duplicateWhere });
+                } else {
+                    // fallback - check any previous policy for this vehicle_user_id (conservative)
+                    alreadyExists = await vehiclePreviousPolicy.findOne({ where: { vehicle_user_id: vehicle.vehicle_user_id } });
+                }
+
+                if (!alreadyExists) {
+                    console.log("🧾 [CREATE] Inserting previous policy:", historyData);
+                    await vehiclePreviousPolicy.create(historyData);
+                    insertedPreviousPolicy = true;
+                } else {
+                    console.log("⚠️ [CREATE] Skipping previous policy insert because a matching previous policy already exists:", alreadyExists && alreadyExists.previous_policy_id ? alreadyExists.previous_policy_id : alreadyExists);
+                }
+            } else {
+                if (_policyRadio !== "Fresh") {
+                    console.log('⚠️ [CREATE] Skipping previous policy insert — no valid data found to insert.');
+                } else {
+                    console.log('ℹ️ [CREATE] Policy is Fresh — no previous policy insertion required.');
+                }
+            }
+            // -------------------------------------------------------------------------------
+
+            // Fetch all related data for complete response
+            const createdVehicleUser = await vehicleUser.findByPk(vehicle.vehicle_user_id);
+            const createdRunningPolicy = await vehcileRunningPolicy.findOne({
+                where: { vehicle_user_id: vehicle.vehicle_user_id },
+                include: [
+                    { model: companyType, as: 'CompanyType' },
+                    { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
+                    { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
+                ]
+            });
+            const previousPolicies = await vehiclePreviousPolicy.findAll({
+                where: { vehicle_user_id: vehicle.vehicle_user_id },
+                include: [
+                    { model: companyType, as: 'CompanyType' },
+                    { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
+                    { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
+                ]
+            });
+            const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: vehicle.vehicle_user_id } });
+
+            // Create notification for admin
+            await createNotification({
+                title: "New Vehicle User Added",
+                message: _Name,
+                type: 'vehicle',
+                category: 'user_added',
+                user_id: req.user.id, // User who added the record
+                target_user_id: userData.user_id, // User who was added
+                record_id: vehicle.vehicle_user_id,
+                is_important: true,
+                metadata: {
+                    user_name: _Name,
+                    email: _Email,
+                    mobile: _MobileNumber,
+                    policy_type: _policyRadio,
+                    vehicle_number: _VehicleNumber,
+                    added_by: req.user.username || 'System'
+                }
+            });
+
+            res.status(200).send({
+                message: "Vehicle user successfully added!",
+                status: true,
+                vehicleUser: createdVehicleUser,
+                runningPolicy: createdRunningPolicy,
+                previousPolicies: previousPolicies,
+                documents: vehicleDocuments
+            });
+        } else {
+            res.status(400).json({
+                message: "user create faild",
+                status: false,
+            });
+        }
+    } catch (error) {
+        console.error('❌ [addVehicleUserData] Error:', error);
+
+        if (error.name === 'SequelizeValidationError') {
+            const errors = error.errors.map(err => err.message);
+            res.status(400).json({
+                message: 'Validation failed',
+                errors: errors,
+                status: false
+            });
+        } else if (error.name === 'SequelizeUniqueConstraintError') {
+            // Handle unique constraint violations
+            const field = error.errors[0]?.path || 'field';
+            const message = `This ${field.replace('_', ' ')} already exists`;
+            res.status(400).json({
+                message: message,
+                status: false
+            });
+        } else {
+            res.status(500).json({
+                message: 'Internal server error',
+                error: error.message,
+                status: false
+            });
+        }
+    }
+};
+
+
+exports.updateVehicleUserData = async (req, res) => {
+    // --- Clean, focused debug log for incoming request ---
+    console.log('[VehicleUserUpdate] Incoming request:', {
+        params: req.params,
+        user: req.user && req.user.id,
+        hasData: !!req?.body?.data,
+        hasFiles: !!req.files
+    });
+
+    let Data;
+    if (req.body.data) {
+        // JSON request - data is nested under 'data' property
+        Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
+        console.log('[VehicleUserUpdate] Processing JSON request');
+    } else if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+        // FormData request - data is directly in req.body
+        Data = req.body;
+        console.log('[VehicleUserUpdate] Processing FormData request');
+        console.log('🔍 [UPDATE] req.files object:', req.files);
+        console.log('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
+        
+        // Parse JSON strings in FormData
+        if (Data.runningPolicy && typeof Data.runningPolicy === 'string') {
+            try {
+                Data.runningPolicy = JSON.parse(Data.runningPolicy);
+            } catch (e) {
+                console.log('🔍 [UPDATE] Error parsing runningPolicy:', e.message);
+                Data.runningPolicy = {};
+            }
+        }
+        if (Data.previousPolicy && typeof Data.previousPolicy === 'string') {
+            try {
+                Data.previousPolicy = JSON.parse(Data.previousPolicy);
+            } catch (e) {
+                console.log('🔍 [UPDATE] Error parsing previousPolicy:', e.message);
+                Data.previousPolicy = {};
+            }
+        }
+    } else {
+        console.warn('[VehicleUserUpdate] No data found in request body');
+        return res.status(400).json({ error: 'Data not found in request body' });
+    }
+    // --- Log the parsed data keys only (not full data for privacy) ---
+    console.log('[VehicleUserUpdate] Parsed data keys:', Object.keys(Data));
+    console.log('🔧 [updateVehicleUserData] All Policy Fields received:', {
+        policy_type: Data.policy_type,           // Fresh/Renewal/Portability → vehicle_policy_type
+        type: Data.type,                         // Individual/Corporate → nominee_type
+        policy_plan_type: Data.policy_plan_type, // COMPREHENSIVE/SAOD/THIRD PARTY → policy_plan_type
+        policyRadio: Data.policyRadio,           // Alternative field name
+        Type: Data.Type,                         // Alternative field name
+        PolicyType: Data.PolicyType              // Alternative field name
+    });
+    
+    console.log('🔧 [updateVehicleUserData] Agent Fields received:', {
+        agent_name: Data.agent_name,
+        agent_code: Data.agent_code,
+        agent_contact_number: Data.agent_contact_number
+    });
+    
+    console.log('🔧 [updateVehicleUserData] RunningPolicy Fields received:', {
+        PremiumAmount: Data.runningPolicy?.PremiumAmount,
+        PolicyTenure: Data.runningPolicy?.PolicyTenure,
+        NomineeAge: Data.runningPolicy?.NomineeAge,
+        PolicyNumber: Data.runningPolicy?.PolicyNumber,
+        PolicyFrom: Data.runningPolicy?.PolicyFrom,
+        PolicyTo: Data.runningPolicy?.PolicyTo
+    });
+    console.log('🔧 [updateVehicleUserData] Full Data object keys:', Object.keys(Data));
+
+    const {
+        Name, Email, MobileNumber, 
+        policy_type, // Frontend sends this
+        type, // Frontend sends this
+        contact_person_name, // Frontend sends this
+        contact_person_no, // Frontend sends this
+        vehicle_number, // Frontend sends this
+        make, // Frontend sends this
+        model, // Frontend sends this
+        vendor, // Frontend sends this
+        company_name, // Frontend sends this
+        user_id, documents, remark,
+        // Additional fields from frontend
+        agent_code, agent_contact_number, agent_name,
+        chassis_number, engine_number, manufacturing_year,
+        reference_id, vehicle_id, vehicle_type,
+        policy_plan_type, status, nominee_type,
+        runningPolicy = null, // Default to null if not provided
+        previousPolicy = null // Default to null if not provided
+    } = Data;
+
+    // Debug logging for Name, Email, Mobile fields
+    console.log('🔍 [updateVehicleUserData] Name/Email/Mobile fields received:', {
+        Name: Name,
+        Email: Email,
+        MobileNumber: MobileNumber
+    });
+
+    try {
+        let resolvedUserId = user_id;
+        if (!resolvedUserId) {
+            const tempUser = await vehicleUser.findByPk(req.params.vehicle_user_id);
+            if (tempUser && tempUser.user_id) {
+                resolvedUserId = tempUser.user_id;
+            }
+        }
+        if (!resolvedUserId) {
+            console.warn('[VehicleUserUpdate] User ID not provided and could not be resolved');
+            return res.status(400).json({ error: "User ID not provided" });
+        }
+        
+        // Debug logging for resolvedUserId after it's defined
+        console.log('🔍 [updateVehicleUserData] resolvedUserId:', resolvedUserId);
+        if (!req.params.vehicle_user_id) {
+            console.warn('[VehicleUserUpdate] Vehicle user ID not provided');
+            return res.status(400).json({ error: "Vehicle user ID not provided" });
+        }
+        // Fetch the vehicle user record before using it
+        const vehicleUserRecord = await vehicleUser.findByPk(req.params.vehicle_user_id);
+        if (!vehicleUserRecord) {
+            console.warn('[VehicleUserUpdate] Vehicle not found with ID:', req.params.vehicle_user_id);
+            return res.status(404).json({ error: "Vehicle not found" });
+        }
+        // Now construct the update object
+        const vehicleUserUpdateObj = {
+            vehicle_policy_type: Data.policy_type || Data.policyRadio || vehicleUserRecord.vehicle_policy_type, // Fresh/Renewal/Portability (radio)
+            nominee_type: Data.type || Data.Type || vehicleUserRecord.nominee_type, // Individual/Corporate (radio)
+            policy_plan_type: Data.policy_plan_type || vehicleUserRecord.policy_plan_type, // Policy Plan Type dropdown (COMPREHENSIVE/SAOD/THIRD PARTY)
+
+            company_name: company_name,
+            contact_person_name: contact_person_name,
+            remark: remark || '',
+            contact_person_no: contact_person_no,
+            vehicle_number: vehicle_number,
+            vehicle_id: vehicle_id,
+            reference_id: reference_id,
+            make: make,
+            model: model,
+            manufacturing_year: manufacturing_year,
+            engine_number: engine_number,
+            chassis_number: chassis_number,
+            agentName: agent_name,
+            agentCode: agent_code,
+            agentContactNumber: agent_contact_number,
+            status: status || Data.status,
+            policy_plan_type: policy_plan_type || Data.policy_plan_type,
+            vehicle_type: vehicle_type || Data.vehicle_type,
+            vendor: vendor || Data.vendor,
+        };
+        console.log('[VehicleUserUpdate] Updating vehicleUser with:', vehicleUserUpdateObj);
+        
+        // Debug logging for validation
+        console.log('🔍 [updateVehicleUserData] Validation check:', {
+            engineNumber: engine_number,
+            chassisNumber: chassis_number,
+            vehicleUserId: req.params.vehicle_user_id,
+            engineNumberTrimmed: engine_number ? engine_number.trim() : null,
+            chassisNumberTrimmed: chassis_number ? chassis_number.trim() : null
+        });
+
+        // Check for duplicate engine number, chassis number, and vehicle number (excluding current record)
+        let engineNumberExists = false;
+        let chassisNumberExists = false;
+        let vehicleNumberExists = false;
+        let errorMessages = [];
+
+        if (engine_number && engine_number.trim() !== '') {
+            const engineNumberToCheck = engine_number.trim();
+            console.log('🔍 [updateVehicleUserData] Checking engine number:', engineNumberToCheck);
+            
+            const existingEngineNumber = await vehicleUser.findOne({
+                where: {
+                    [Op.and]: [
+                        {
+                            [Op.or]: [
+                                { engine_number: engineNumberToCheck },
+                                { engine_number: engineNumberToCheck.toUpperCase() },
+                                { engine_number: engineNumberToCheck.toLowerCase() }
+                            ]
+                        },
+                        { vehicle_user_id: { [Op.ne]: req.params.vehicle_user_id } } // Exclude current record
+                    ]
+                }
+            });
+            
+            console.log('🔍 [updateVehicleUserData] Existing engine number result:', existingEngineNumber);
+            
+            if (existingEngineNumber) {
+                console.log('❌ [updateVehicleUserData] Engine number already exists:', engineNumberToCheck);
+                engineNumberExists = true;
+                errorMessages.push("engine number");
+            }
+        }
+
+        if (chassis_number && chassis_number.trim() !== '') {
+            const chassisNumberToCheck = chassis_number.trim();
+            console.log('🔍 [updateVehicleUserData] Checking chassis number:', chassisNumberToCheck);
+            
+            const existingChassisNumber = await vehicleUser.findOne({
+                where: {
+                    [Op.and]: [
+                        {
+                            [Op.or]: [
+                                { chassis_number: chassisNumberToCheck },
+                                { chassis_number: chassisNumberToCheck.toUpperCase() },
+                                { chassis_number: chassisNumberToCheck.toLowerCase() }
+                            ]
+                        },
+                        { vehicle_user_id: { [Op.ne]: req.params.vehicle_user_id } } // Exclude current record
+                    ]
+                }
+            });
+            
+            console.log('🔍 [updateVehicleUserData] Existing chassis number result:', existingChassisNumber);
+            
+            if (existingChassisNumber) {
+                console.log('❌ [updateVehicleUserData] Chassis number already exists:', chassisNumberToCheck);
+                chassisNumberExists = true;
+                errorMessages.push("chassis number");
+            }
+        }
+
+        // Check for duplicate vehicle number (excluding current record)
+        if (vehicle_number && vehicle_number.trim() !== '') {
+            const vehicleNumberToCheck = vehicle_number.trim();
+            console.log('🔍 [updateVehicleUserData] Checking vehicle number:', vehicleNumberToCheck);
+            
+            const existingVehicleNumber = await vehicleUser.findOne({
+                where: {
+                    [Op.and]: [
+                        {
+                            [Op.or]: [
+                                { vehicle_number: vehicleNumberToCheck },
+                                { vehicle_number: vehicleNumberToCheck.toUpperCase() },
+                                { vehicle_number: vehicleNumberToCheck.toLowerCase() }
+                            ]
+                        },
+                        { vehicle_user_id: { [Op.ne]: req.params.vehicle_user_id } } // Exclude current record
+                    ]
+                }
+            });
+            
+            console.log('🔍 [updateVehicleUserData] Existing vehicle number result:', existingVehicleNumber);
+            
+            if (existingVehicleNumber) {
+                console.log('❌ [updateVehicleUserData] Vehicle number already exists:', vehicleNumberToCheck);
+                vehicleNumberExists = true;
+                errorMessages.push("vehicle number");
+            }
+        }
+
+        // Return combined error message if any duplicates found
+        if (errorMessages.length > 0) {
+            const message = errorMessages.length === 1 
+                ? `This ${errorMessages[0]} already exists`
+                : `This ${errorMessages.join(" and ")} already exist`;
+            
+            console.log('❌ [updateVehicleUserData] Validation failed:', message);
+            return res.status(400).json({ 
+                message: message, 
+                status: false 
+            });
+        }
+
+        console.log('✅ [updateVehicleUserData] Validation passed, proceeding with update');
+
+        // First, update the User table with basic user information
+        if (Name || Email || MobileNumber) {
+            try {
+                const userUpdateData = {};
+                if (Name) userUpdateData.username = Name;
+                if (Email) userUpdateData.email = Email;
+                if (MobileNumber) userUpdateData.mobileNumber = MobileNumber;
+                
+                console.log('🔍 [updateVehicleUserData] Updating User table with:', userUpdateData);
+                console.log('🔍 [updateVehicleUserData] User ID to update:', resolvedUserId);
+                
+                const userUpdateResult = await User.update(userUpdateData, {
+                    where: { user_id: resolvedUserId }
+                });
+                console.log('✅ [updateVehicleUserData] User table updated:', userUpdateResult);
+            } catch (userUpdateError) {
+                console.error('❌ [updateVehicleUserData] Error updating User table:', userUpdateError);
+            }
+        } else {
+            console.log('🔍 [updateVehicleUserData] No Name/Email/Mobile fields to update in User table');
+        }
+
+        console.log('🚗 [updateVehicleUserData] Database fields to update:', {
+            vehicle_policy_type: vehicleUserUpdateObj.vehicle_policy_type,  // From policyRadio (Fresh/Renewal/Portability)
+            nominee_type: vehicleUserUpdateObj.nominee_type,                // From Type (Individual/Corporate)
+            policy_plan_type: vehicleUserUpdateObj.policy_plan_type         // From PolicyPlanType (COMPREHENSIVE/SAOD/THIRD PARTY)
+        });
+        await vehicleUserRecord.update({
+            ...vehicleUserUpdateObj,
+            // fallback to old values if undefined
+            vehicle_policy_type: vehicleUserUpdateObj.vehicle_policy_type || vehicleUserRecord.vehicle_policy_type,
+            nominee_type: vehicleUserUpdateObj.nominee_type || vehicleUserRecord.nominee_type,
+
+            company_name: vehicleUserUpdateObj.company_name || vehicleUserRecord.company_name,
+            contact_person_name: vehicleUserUpdateObj.contact_person_name || vehicleUserRecord.contact_person_name,
+            remark: vehicleUserUpdateObj.remark || vehicleUserRecord.remark || '',
+            contact_person_no: vehicleUserUpdateObj.contact_person_no || vehicleUserRecord.contact_person_no,
+            vehicle_number: vehicleUserUpdateObj.vehicle_number || vehicleUserRecord.vehicle_number,
+            vehicle_id: vehicleUserUpdateObj.vehicle_id || vehicleUserRecord.vehicle_id,
+            reference_id: vehicleUserUpdateObj.reference_id || vehicleUserRecord.reference_id,
+            make: vehicleUserUpdateObj.make || vehicleUserRecord.make,
+            model: vehicleUserUpdateObj.model || vehicleUserRecord.model,
+            manufacturing_year: vehicleUserUpdateObj.manufacturing_year || vehicleUserRecord.manufacturing_year,
+            engine_number: vehicleUserUpdateObj.engine_number || vehicleUserRecord.engine_number,
+            chassis_number: vehicleUserUpdateObj.chassis_number || vehicleUserRecord.chassis_number,
+            agentName: vehicleUserUpdateObj.agentName || vehicleUserRecord.agentName,
+            agentCode: vehicleUserUpdateObj.agentCode || vehicleUserRecord.agentCode,
+            agentContactNumber: vehicleUserUpdateObj.agentContactNumber || vehicleUserRecord.agentContactNumber,
+            status: vehicleUserUpdateObj.status || vehicleUserRecord.status,
+            policy_plan_type: vehicleUserUpdateObj.policy_plan_type || vehicleUserRecord.policy_plan_type,
+            vehicle_type: vehicleUserUpdateObj.vehicle_type || vehicleUserRecord.vehicle_type,
+            vendor: vehicleUserUpdateObj.vendor || vehicleUserRecord.vendor,
+        });
+        console.log('[VehicleUserUpdate] vehicleUser update successful for ID:', req.params.vehicle_user_id);
+
+        // --- RENEWAL FLOW: Transfer Running Policy to Previous Policy FIRST (before updating running policy) ---
+        const isRenewalOrPortability = policy_type === 'Renewal' || policy_type === 'Portability';
+        if (isRenewalOrPortability && runningPolicy && typeof runningPolicy === 'object') {
+            console.log('🔄 [RENEWAL] Starting renewal process - transferring current running policy to previous');
+            
+            // Fetch the CURRENT running policy before we overwrite it
+            const currentRunningPolicy = await vehcileRunningPolicy.findOne({
+                where: { vehicle_user_id: req.params.vehicle_user_id },
+                include: [
+                    { model: companyType, as: 'CompanyType' },
+                    { model: db.policyPlan, as: 'policyPlan' },
+                    { model: db.policyType, as: 'policyType' }
+                ]
+            });
+            
+            if (currentRunningPolicy) {
+                console.log('🔄 [RENEWAL] Found current running policy to transfer:', {
+                    PolicyNumber: currentRunningPolicy.PolicyNumber,
+                    PolicyFrom: currentRunningPolicy.PolicyFrom,
+                    PolicyTo: currentRunningPolicy.PolicyTo,
+                    company_id: currentRunningPolicy.company_id,
+                    policy_type_id: currentRunningPolicy.policy_type_id,
+                    policy_plan_id: currentRunningPolicy.policy_plan_id,
+                    CompanyType: currentRunningPolicy.CompanyType,
+                    policyPlan: currentRunningPolicy.policyPlan,
+                    policyType: currentRunningPolicy.policyType
+                });
+                
+                // Mark all existing previous policies as inactive
+                await vehiclePreviousPolicy.update({
+                    status: "notActive",
+                }, {
+                    where: { vehicle_user_id: req.params.vehicle_user_id }
+                });
+                
+                // Transfer current running policy to previous policy
+                const transferredPolicy = {
+                    vehicle_user_id: req.params.vehicle_user_id,
+                    PolicyNumber: currentRunningPolicy.PolicyNumber,
+                    policy_type_id: currentRunningPolicy.policy_type_id,
+                    company_id: currentRunningPolicy.company_id,
+                    policy_plan_id: currentRunningPolicy.policy_plan_id,
+                    PolicyFrom: currentRunningPolicy.PolicyFrom,
+                    PolicyTo: currentRunningPolicy.PolicyTo,
+                    PolicyIssuedDate: currentRunningPolicy.PolicyIssuedDate,
+                    ExpiryDate: currentRunningPolicy.ExpiryDate || currentRunningPolicy.PolicyTo,
+                    PolicyTenure: currentRunningPolicy.PolicyTenure,
+                    PremiumAmount: currentRunningPolicy.PremiumAmount,
+                    IDV: currentRunningPolicy.IDV,
+                    NCB: currentRunningPolicy.NCB,
+                    NomineeName: currentRunningPolicy.NomineeName,
+                    NomineeRelation: currentRunningPolicy.NomineeRelation,
+                    NomineeAge: currentRunningPolicy.NomineeAge,
+                    NomineeDob: currentRunningPolicy.NomineeDob,
+                    CurrentPolicyFile: currentRunningPolicy.CurrentPolicyFile,
+                    Vendor: currentRunningPolicy.Vendor,
+                    agentName: currentRunningPolicy.agentName || agent_name,
+                    agentCode: currentRunningPolicy.agentCode || agent_code,
+                    agentContactNumber: currentRunningPolicy.agentContactNumber || agent_contact_number,
+                    status: "active",
+                };
+                
+                console.log('🔄 [RENEWAL] Transferring policy with company_id:', currentRunningPolicy.company_id);
+                
+                const createdPreviousPolicy = await vehiclePreviousPolicy.create(transferredPolicy);
+                console.log('✅ [RENEWAL] Successfully transferred running policy to previous policy');
+                console.log('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
+            } else {
+                console.log('⚠️ [RENEWAL] No existing running policy found to transfer');
+            }
+        }
+
+        // --- Running Policy Update ---
+        if (runningPolicy && typeof runningPolicy === 'object') {
+            const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+            let findPolicy = await vehcileRunningPolicy.findOne({
+                where: { vehicle_user_id: req.params.vehicle_user_id }
+            });
+            
+            // Resolve company name to company_id if CompanyName is provided
+            let resolvedCompanyId = runningPolicy.company_id || runningPolicy.CompanyId || Data.company_id || null;
+            if (!resolvedCompanyId && (runningPolicy.CompanyName || company_name)) {
+                const companyNameToLookup = runningPolicy.CompanyName || company_name;
+                console.log('🔍 [RENEWAL] Resolving company name to ID:', companyNameToLookup);
+                const companyRecord = await companyType.findOne({
+                    where: { company_name: companyNameToLookup }
+                });
+                if (companyRecord) {
+                    resolvedCompanyId = companyRecord.company_id;
+                    console.log('✅ [RENEWAL] Resolved company name to ID:', resolvedCompanyId);
+                } else {
+                    console.log('⚠️ [RENEWAL] Company not found for name:', companyNameToLookup);
+                }
+            }
+            console.log('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
+            console.log('🔍 [UPDATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
+            if (req.files && req.files.CurrentPolicyFile) {
+                let CurrentPolicyFile = req.files.CurrentPolicyFile;
+                const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
+                const uploadPath = path.join(uploadsDir, uniqueName);
+                
+                // Delete old file if it exists
+                if (findPolicy?.CurrentPolicyFile) {
+                    const oldFilePath = path.join(uploadsDir, findPolicy.CurrentPolicyFile);
+                    if (fsSync.existsSync(oldFilePath)) {
+                        fsSync.unlinkSync(oldFilePath);
+                        console.log(`📁 [UPDATE] Deleted old CurrentPolicyFile: ${findPolicy.CurrentPolicyFile}`);
+                    }
+                }
+                
+                // Handle file movement - now using in-memory files
+                if (CurrentPolicyFile.mv) {
+                    // When useTempFiles: false, use mv method (in-memory files)
+                    console.log(`📁 [UPDATE] Using file.mv() for CurrentPolicyFile`);
+                await CurrentPolicyFile.mv(uploadPath);
+                } else if (CurrentPolicyFile.data) {
+                    // Fallback: write file data directly
+                    console.log(`📁 [UPDATE] Using file.data for CurrentPolicyFile`);
+                    await fs.writeFile(uploadPath, CurrentPolicyFile.data);
+                } else {
+                    throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
+                }
+                
+                runningPolicy.CurrentPolicyFile = uniqueName;
+                console.log(`📁 [UPDATE] CurrentPolicyFile saved: ${uniqueName}`);
+            }
+            const runningPolicyData = {
+                policy_type_id: runningPolicy.policy_type_id || runningPolicy.PolicyTypeId || Data.policy_type_id || null,
+                company_id: resolvedCompanyId,
+                policy_plan_id: runningPolicy.policy_plan_id || runningPolicy.PolicyPlanTypeId || Data.policy_plan_id || null,
+                CurrentPolicyFile: runningPolicy.CurrentPolicyFile || (findPolicy ? findPolicy.CurrentPolicyFile : null),
+                isNomineeFlag: runningPolicy.isNomineeFlag || Data.isNomineeFlag || null,
+                // Handle PremiumAmount specifically to avoid empty string database errors
+                PremiumAmount: runningPolicy.PremiumAmount && runningPolicy.PremiumAmount !== '' ? parseFloat(runningPolicy.PremiumAmount) : null,
+                // Handle other numeric fields that might cause similar issues
+                PolicyTenure: runningPolicy.PolicyTenure && runningPolicy.PolicyTenure !== '' ? parseInt(runningPolicy.PolicyTenure) : null,
+                NomineeAge: runningPolicy.NomineeAge && runningPolicy.NomineeAge !== '' ? parseInt(runningPolicy.NomineeAge) : null,
+                // Add agent details
+                agentName: agent_name || '',
+                agentCode: agent_code || '',
+                agentContactNumber: agent_contact_number || '',
+                // Spread the rest of runningPolicy but exclude the fields we've handled above
+                ...Object.fromEntries(
+                    Object.entries(runningPolicy).filter(([key]) => 
+                        !['PremiumAmount', 'PolicyTenure', 'NomineeAge', 'agentName', 'agentCode', 'agentContactNumber'].includes(key)
+                    )
+                ),
+            };
+            console.log('[VehicleUserUpdate] RunningPolicy update object:', runningPolicyData);
+            if (findPolicy) {
+                await vehcileRunningPolicy.update(runningPolicyData, { where: { vehicle_user_id: req.params.vehicle_user_id } });
+                console.log('[VehicleUserUpdate] RunningPolicy updated for vehicle_user_id:', req.params.vehicle_user_id);
+            } else {
+                runningPolicyData.vehicle_user_id = req.params.vehicle_user_id;
+                await vehcileRunningPolicy.create(runningPolicyData);
+                console.log('[VehicleUserUpdate] RunningPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
+            }
+        }
+        // --- Previous Policy Update (for Portability when user manually enters previous policy data) ---
+        // Note: Renewal flow is already handled above, so skip this for Renewal
+        if (previousPolicy && typeof previousPolicy === 'object' && policy_type === 'Portability') {
+            console.log('🔄 [PORTABILITY] Handling manually entered previous policy data');
+            
+            // Check if previous policy has actual data (not empty object)
+            const hasPreviousPolicyData = previousPolicy.PolicyNumber || previousPolicy.CompanyName || 
+                                         previousPolicy.PolicyFrom || previousPolicy.PolicyTo;
+            
+            if (hasPreviousPolicyData) {
+                // Mark existing previous policies as inactive
+                await vehiclePreviousPolicy.update({
+                    status: "notActive",
+                }, {
+                    where: { vehicle_user_id: req.params.vehicle_user_id }
+                });
+                
+                const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+                if (req.files && req.files.PreviousCurrentPolicyFile) {
+                    let PdfFile = req.files.PreviousCurrentPolicyFile;
+                    const uniqueName = `${uuidv4()}-${path.basename(PdfFile.name)}`;
+                    const uploadPath = path.join(uploadsDir, uniqueName);
+                    await PdfFile.mv(uploadPath);
+                    previousPolicy.CurrentPolicyFile = uniqueName;
+                }
+                
+                const historyData = {
+                    vehicle_user_id: req.params.vehicle_user_id,
+                    ...previousPolicy,
+                    policy_type_id: previousPolicy.PolicyTypeId || previousPolicy.policy_type_id,
+                    company_id: previousPolicy.CompanyId || previousPolicy.company_id,
+                    policy_plan_id: previousPolicy.PolicyPlanTypeId || previousPolicy.policy_plan_id,
+                    status: "active",
+                    // Add agent details for portability policies
+                    agentName: previousPolicy.agentName || agent_name || '',
+                    agentCode: previousPolicy.agentCode || agent_code || '',
+                    agentContactNumber: previousPolicy.agentContactNumber || agent_contact_number || '',
+                };
+                // Remove id if present to avoid duplicate primary key error
+                if (historyData.id) delete historyData.id;
+                
+                await vehiclePreviousPolicy.create(historyData);
+                console.log('✅ [PORTABILITY] PreviousPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
+            } else {
+                console.log('⚠️ [PORTABILITY] No previous policy data provided, skipping');
+            }
+        }
+        console.log('[VehicleUserUpdate] Update process completed successfully for vehicle_user_id:', req.params.vehicle_user_id);
+        
+        // --- Document Upload Handling (aadhar, pan, gst, custom) ---
+        const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+        
+        // Handle standard documents (aadhar, pan, gst, rcbook)
+        const standardDocuments = [
+            { fieldName: 'aadhar', categoryId: 1 },
+            { fieldName: 'pan', categoryId: 2 },
+            { fieldName: 'gst', categoryId: 3 },
+            { fieldName: 'rcbook', categoryId: 4 }
+        ];
+        
+        for (const doc of standardDocuments) {
+            if (req.files && req.files[doc.fieldName]) {
+                const fileObj = req.files[doc.fieldName];
+                const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
+                const uploadPath = path.join(uploadsDir, uniqueName);
+                
+                // Handle file movement - now using in-memory files
+                if (fileObj.mv) {
+                    // When useTempFiles: false, use mv method (in-memory files)
+                    console.log(`📁 [UPDATE] Using file.mv() for ${doc.fieldName}`);
+                await fileObj.mv(uploadPath);
+                } else if (fileObj.data) {
+                    // Fallback: write file data directly
+                    console.log(`📁 [UPDATE] Using file.data for ${doc.fieldName}`);
+                    await fs.writeFile(uploadPath, fileObj.data);
+                } else {
+                    throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
+                }
+                
+                // Delete old document for this categoryId/vehicle_user_id
+                await vehicle_document.destroy({
+                    where: {
+                        vehicle_user_id: req.params.vehicle_user_id,
+                        categoryId: doc.categoryId
+                    }
+                });
+                
+                // Create new document record
+                await vehicle_document.create({
+                    user_id: resolvedUserId,
+                    vehicle_user_id: req.params.vehicle_user_id,
+                    categoryId: doc.categoryId,
+                    file: uniqueName
+                });
+                console.log(`[VehicleUserUpdate] ${doc.fieldName} document saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
+            }
+        }
+        
+        // Handle custom documents
+        let documentsData;
+        if (req.body.data) {
+            // JSON request - documentsData is nested under 'data' property
+            documentsData = req.body.documentsData;
+        if (typeof documentsData === "string") {
+            try { documentsData = JSON.parse(documentsData); } catch (e) { documentsData = null; }
+            }
+        } else {
+            // FormData request - documentsData is directly in req.body
+            documentsData = Data.documentsData;
+            if (typeof documentsData === "string") {
+                try { documentsData = JSON.parse(documentsData); } catch (e) { documentsData = null; }
+            }
+        }
+        if (documentsData && Array.isArray(documentsData)) {
+            for (const doc of documentsData) {
+                const fieldName = doc.fileFieldName; // e.g., "custom_0", "custom_1"
+                if (req.files && req.files[fieldName]) {
+                    const fileObj = req.files[fieldName];
+                    const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
+                    const uploadPath = path.join(uploadsDir, uniqueName);
+                    await fileObj.mv(uploadPath);
+                    
+                    // Create custom document record
+                    await vehicle_document.create({
+                        user_id: resolvedUserId,
+                        vehicle_user_id: req.params.vehicle_user_id,
+                        categoryId: doc.categoryId,
+                        file: uniqueName
+                    });
+                    console.log(`[VehicleUserUpdate] Custom document ${fieldName} saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
+                }
+            }
+        }
+        // --- Fetch all related data for full response ---
+        const updatedVehicleUser = await vehicleUser.findByPk(req.params.vehicle_user_id);
+        const runningPolicyData = await vehcileRunningPolicy.findOne({ 
+            where: { vehicle_user_id: req.params.vehicle_user_id },
+            include: [
+                { model: companyType, as: 'CompanyType' },
+                { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
+                { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
+            ]
+        });
+        const previousPolicies = await vehiclePreviousPolicy.findAll({ 
+            where: { vehicle_user_id: req.params.vehicle_user_id },
+            include: [
+                { model: companyType, as: 'CompanyType' },
+                { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
+                { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
+            ]
+        });
+        const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: req.params.vehicle_user_id } });
+        return res.status(200).send({
+            message: "Vehicle successfully updated!",
+            status: true,
+            vehicleUser: updatedVehicleUser,
+            runningPolicy: runningPolicyData,
+            previousPolicies: previousPolicies,
+            documents: vehicleDocuments
+        });
+    } catch (error) {
+        console.error("[VehicleUserUpdate] Error updating vehicle user data:", error);
+        if (error.name === 'SequelizeValidationError') {
+            const errors = error.errors.map(err => err.message);
+            return res.status(400).json({ 
+                message: 'Validation failed', 
+                errors: errors,
+                status: false 
+            });
+        } else if (error.name === 'SequelizeUniqueConstraintError') {
+            // Handle unique constraint violations
+            const field = error.errors[0]?.path || 'field';
+            const message = `This ${field.replace('_', ' ')} already exists`;
+            return res.status(400).json({ 
+                message: message, 
+                status: false 
+            });
+        } else {
+            return res.status(500).json({ 
+                message: 'Internal server error', 
+                error: error.message,
+                status: false 
+            });
+        }
+    }
+};
+
+
+exports.getVehicleUserData = async (req, res) => {
+
+    // Make dates optional - only use them if provided
+    const startDate = req.body.startDate;
+    const endDate = req.body.endDate;
+    const startDay = startDate ? new Date(startDate) : null;
+    const endDay = endDate ? new Date(endDate) : null;
+
+    console.log('🔍 [getVehicleUserData] User info:', {
+        id: req.user.id,
+        Role: req.user.Role,
+        username: req.user.username
+    });
+
+    // Open for all roles - no role restrictions
+    vehicleUser.findAll({
+        include: [
+            { model: User, as: "user_pk_vehicle_id" }, 
+            { model: references }  // No alias - use default
+        ]
+    })
+        .then(async (vehicleData) => {
+                // Convert to plain objects
+                vehicleData = vehicleData.map(item => item.get({ plain: true }));
+                
+                console.log('🔍 [getVehicleUserData] Found vehicle data count:', vehicleData.length);
+                
+                // If no data found, return empty array
+                if (!vehicleData || vehicleData.length === 0) {
+                    return res.status(200).send({
+                        message: "Vehicle category users retrieved successfully.",
+                        data: [],
+                        success: true,
+                        status: true,
+                    });
+                }
+                
+                const vehicleIds = vehicleData.map((item) => item.vehicle_user_id); // Extract mediclaim IDs
+                const documnets_user = await vehicle_document.findAll({
+                    where: { vehicle_user_id: vehicleIds },
+                    raw: true,
+                });
+                const runningPolicies = await vehcileRunningPolicy.findAll({
+                    where: { vehicle_user_id: vehicleIds },
+                    include: [
+                        { model: companyType, as: 'CompanyType' },  // Use correct alias 'CompanyType'
+                        { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
+                        { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
+                    ]
+                    // remove raw: true
+                });
+                const previousPolicies = await vehiclePreviousPolicy.findAll({
+                    where: { vehicle_user_id: vehicleIds },
+                    include: [
+                        { model: companyType, as: 'CompanyType' },
+                        { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
+                        { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
+                    ]
+                    // remove raw: true to get associations
+                });
+                
+                // Convert to plain objects to include associations
+                const runningPoliciesPlain = runningPolicies.map(item => item.get({ plain: true }));
+                const previousPoliciesPlain = previousPolicies.map(item => item.get({ plain: true }));
+                
+                console.log(documnets_user)
+                console.log('Fetched runningPolicies:', JSON.stringify(runningPoliciesPlain, null, 2));
+
+                // Step 3: Attach family members to the corresponding mediclaim records
+                const mediclaimWithFamily = vehicleData.map((mediclaim) => {
+                    const document = documnets_user.filter((member) => member.vehicle_user_id === mediclaim.vehicle_user_id);
+                    const running = runningPoliciesPlain.filter((member) => member.vehicle_user_id === mediclaim.vehicle_user_id);
+                    const previous = previousPoliciesPlain.filter((member) => member.vehicle_user_id === mediclaim.vehicle_user_id);
+                    return {
+                        ...mediclaim, // Convert Sequelize instance to plain JSON
+                        documents: document,
+                        runningPolicy: running.length ? running[0] : {},
+                        previousPolicy: previous.length ? previous[0] : {},
+                        previousPolicies: previous // Return all previous policies as array
+                    };
+                }).filter((item) => {
+                    // Only apply date filtering if dates are provided
+                    if (!startDay || !endDay) {
+                        return true; // Return all items if no date filter
+                    }
+
+                    const policyIssued = item.runningPolicy?.PolicyIssuedDate
+                        ? new Date(item.runningPolicy.PolicyIssuedDate)
+                        : null;
+
+                    let createdAtDate = null;
+                    if (!policyIssued && item.createdAt) {
+                        // Convert UTC to IST
+                        const utcDate = new Date(item.createdAt);
+                        const istOffset = 5.5 * 60 * 60 * 1000;
+                        const istDate = new Date(utcDate.getTime() + istOffset);
+                        createdAtDate = new Date(istDate.toISOString().split("T")[0]); // Only keep yyyy-mm-dd
+                    }
+
+                    // Priority: use policyIssued
+                    if (policyIssued) {
+                        return policyIssued >= startDay && policyIssued <= endDay;
+                    }
+
+                    // Fallback: use createdAt (local date)
+                    return createdAtDate && createdAtDate >= startDay && createdAtDate <= endDay;
+                });
+                res.status(200).send({
+                    message: "Vehicle category users retrieved successfully.",
+                    data: mediclaimWithFamily,
+                    success: true,
+                    status: true,
+                });
+            })
+            .catch((e) => {
+                console.log('🔍 [getVehicleUserData] Error:', e);
+                console.log('🔍 [getVehicleUserData] Error Message:', e.message);
+                console.log('🔍 [getVehicleUserData] Error Stack:', e.stack);
+                res.status(400).send({ 
+                    message: "Error fetching vehicle data", 
+                    error: e.message,
+                    status: false 
+                });
+            });
+
+
+};
+
+// exports.getVehicleUserRenewalData = async (req, res) => {
+//     try {
+//         const { startDate, endDate } = req.body;
+        
+//         // If no dates provided, get all vehicle category users (including those without vehicle records)
+//         if (!startDate || !endDate) {
+//             console.log('🔍 getVehicleUserRenewalData: No dates provided, fetching all vehicle category users');
+            
+//             // Get all users assigned to Vehicle category (category_id: 6)
+//             const vehicleCategoryUsers = await db.consumerRoleMapping.findAll({
+//                 where: { category_id: 6 },
+//                 include: [
+//                     {
+//                         model: db.user,
+//                         as: 'userConsumers',
+//                         attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'role_id']
+//                     }
+//                 ],
+//                 raw: true
+//             });
+
+//             console.log('🔍 getVehicleUserRenewalData: Found vehicle category users:', vehicleCategoryUsers.length);
+
+//             // Get all vehicle user data directly (not per user mapping)
+//             const vehicleUserData = await vehicleUser.findAll({
+//                     include: [
+//                         { model: User, as: "user_pk_vehicle_id" },
+//                         { model: references, as: 'reference' },
+//                         {
+//                             model: vehcileRunningPolicy,
+//                             as: 'runningPolicy',
+//                             required: false,
+//                             attributes: [
+//                                 "id",
+//                                 "PolicyNumber",
+//                                 "PolicyTenure",
+//                                 "PremiumAmount",
+//                                 "PolicyFrom",
+//                                 "PolicyTo",
+//                                 "NCB",
+//                                 "IDV",
+//                                 "PolicyIssuedDate",
+//                                 "ExpiryDate",
+//                                 "policy_type_id",
+//                                 "policy_plan_id",
+//                                 "Vendor",
+//                                 "NomineeName",
+//                                 "NomineeRelation",
+//                                 "NomineeDob",
+//                                 "NomineeAge",
+//                                 "CurrentPolicyFile",
+//                             ],
+//                             include: [{ model: companyType, as: 'CompanyType' }]
+//                         },
+//                         { 
+//                             model: vehiclePreviousPolicy, 
+//                             as: 'previousPolicies',
+//                             where: { status: 'active' },
+//                             required: false,
+//                             attributes: [
+//                                 "id",
+//                                 "vehicle_user_id",
+//                                 "PolicyNumber",
+//                                 "policy_type_id",
+//                                 "policy_plan_id",
+//                                 "company_id",
+//                                 "PolicyTenure",
+//                                 "PremiumAmount",
+//                                 "NomineeName",
+//                                 "NomineeRelation",
+//                                 "PolicyFrom",
+//                                 "PolicyTo",
+//                                 "PolicyIssuedDate",
+//                                 "ExpiryDate",
+//                                 "NomineeDob",
+//                                 "Vendor",
+//                                 "IDV",
+//                                 "isNomineeFlag",
+//                                 "claim",
+//                                 "NCB",
+//                                 "NomineeAge",
+//                                 "CurrentPolicyFile",
+//                                 "status",
+//                                 "agentName",
+//                                 "agentCode",
+//                                 "agentContactNumber"
+//                             ],
+//                             include: [
+//                                 { model: companyType, as: 'CompanyType' },
+//                                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] }
+//                             ]
+//                         },
+//                         {
+//                             model: vehicle_document,
+//                             as: 'documents',
+//                             required: false,
+//                             attributes: ['id', 'categoryId', 'file']
+//                         }
+//                     ]
+//                 });
+
+//             console.log('🔍 getVehicleUserRenewalData: Found vehicle records:', vehicleUserData.length);
+
+//             // Process the vehicle data
+//             const result = vehicleUserData.map(vehicleRecord => {
+//                 const item = vehicleRecord.get({ plain: true });
+                
+//                 // Debug: Log previous policies count
+//                 if (item.previousPolicies) {
+//                     console.log(`🔍 Vehicle ${item.vehicle_user_id}: Found ${item.previousPolicies.length} previous policies`);
+//                 }
+                
+//                 // Fix previous policies (now an array) - maintain backwards compatibility
+//                 if (item.previousPolicies && Array.isArray(item.previousPolicies) && item.previousPolicies.length > 0) {
+//                     // Keep first previous policy as previousPolicy for backwards compatibility
+//                     item.previousPolicy = item.previousPolicies[0];
+                    
+//                     // Fix company name for all previous policies
+//                     item.previousPolicies = item.previousPolicies.map(prevPolicy => {
+//                         if (!prevPolicy.companytype || !prevPolicy.companytype.company_name) {
+//                             if (item.company_name) {
+//                                 prevPolicy.companytype = {
+//                                     company_name: item.company_name,
+//                                     company_id: null
+//                                 };
+//                             }
+//                         }
+//                         return prevPolicy;
+//                     });
+                    
+//                     // Also fix the first previousPolicy for backwards compatibility
+//                     if (!item.previousPolicy.companytype || !item.previousPolicy.companytype.company_name) {
+//                         if (item.company_name) {
+//                             item.previousPolicy.companytype = {
+//                                 company_name: item.company_name,
+//                                 company_id: null
+//                             };
+//                         }
+//                     }
+//                 }
+                
+//                 // Fix reference data structure - ensure it's an object
+//                 if (item.reference && typeof item.reference === 'string') {
+//                     // If reference is a string, convert it to proper object structure
+//                     item.reference = {
+//                         reference_id: item.reference_id,
+//                         reference_name: item.reference
+//                     };
+//                 } else if (!item.reference && item.reference_id) {
+//                     // If reference is null but reference_id exists, create reference object
+//                     item.reference = {
+//                         reference_id: item.reference_id,
+//                         reference_name: item.reference_name || 'N/A'
+//                     };
+//                 }
+                
+//                     if (item.runningPolicy && item.runningPolicy.policyPlan) {
+//                         item.runningPolicy.PolicyPlanType = item.runningPolicy.policyPlan.PolicyPlanType;
+//                         delete item.runningPolicy.policyPlan;
+//                     }
+//                     // Ensure vehicle_user_id is always present
+//                     if (!item.vehicle_user_id && item.id) {
+//                         item.vehicle_user_id = item.id;
+//                     }
+//                     return item;
+//             });
+
+//             console.log('🔍 getVehicleUserRenewalData: Final result count:', result.length);
+            
+//             return res.status(200).send({
+//                 success: true,
+//                 message: "Vehicle category users retrieved successfully.",
+//                 data: result
+//             });
+//         }
+
+//         // Original logic for date-based filtering
+//         let whereObj = {};
+//         if (req.user.Role !== 1) {
+//             whereObj.consumer_role_id = req.user.id;
+//         }
+//         // Add status filter if provided
+//         if (req.body.status) {
+//             whereObj.status = req.body.status;
+//         }
+
+//         const vehicleData = await vehicleUser.findAll({
+//             where: whereObj,
+//             include: [
+//                 { model: User, as: "user_pk_vehicle_id" },
+//                 { model: references, as: 'reference' },
+//                 {
+//                     model: vehcileRunningPolicy,
+//                     as: 'runningPolicy',
+//                     required: false,
+//                     attributes: [
+//                         "id",
+//                         "PolicyNumber",
+//                         "PolicyTenure",
+//                         "PremiumAmount",
+//                         "PolicyFrom",
+//                         "PolicyTo",
+//                         "NCB",
+//                         "IDV",
+//                         "PolicyIssuedDate",
+//                         "ExpiryDate",
+//                         "policy_type_id",
+//                         "policy_plan_id",
+//                         "Vendor",
+//                         "NomineeName",
+//                         "NomineeRelation",
+//                         "NomineeDob",
+//                         "NomineeAge",
+//                         "CurrentPolicyFile",
+//                     ],
+//                     include: [{ model: companyType, as: 'CompanyType' }]
+//                 },
+//                 { 
+//                     model: vehiclePreviousPolicy, 
+//                     as: 'previousPolicies',
+//                     required: false,
+//                     include: [
+//                         { model: companyType, as: 'CompanyType' },
+//                         { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] }
+//                     ]
+//                 },
+//                 {
+//                     model: vehicle_document,
+//                     as: 'documents',
+//                     required: false,
+//                     attributes: ['id', 'categoryId', 'file']
+//                 }
+//             ]
+//         });
+
+//         console.log('🔍 getVehicleUserRenewalData: vehicleData.length before filtering:', vehicleData.length);
+
+//         // Apply date filtering after fetching data - but only if dates are provided
+//         let filteredVehicleData = vehicleData;
+//         if (startDate && endDate) {
+//             filteredVehicleData = vehicleData.filter(item => {
+//             const start = new Date(startDate);
+//             const end = new Date(endDate);
+
+//             const policyIssued = item.runningPolicy?.PolicyIssuedDate
+//                 ? new Date(item.runningPolicy.PolicyIssuedDate)
+//                 : null;
+
+//             let createdAtDate = null;
+//             if (!policyIssued && item.createdAt) {
+//                 // Convert UTC to IST
+//                 const utcDate = new Date(item.createdAt);
+//                 const istOffset = 5.5 * 60 * 60 * 1000;
+//                 const istDate = new Date(utcDate.getTime() + istOffset);
+//                 createdAtDate = new Date(istDate.toISOString().split("T")[0]); // Only keep yyyy-mm-dd
+//             }
+
+//             // Priority: use policyIssued
+//             if (policyIssued) {
+//                 return policyIssued >= start && policyIssued <= end;
+//             }
+
+//             // Fallback: use createdAt (local date)
+//             return createdAtDate && createdAtDate >= start && createdAtDate <= end;
+//         });
+//         }
+
+//         console.log('🔍 getVehicleUserRenewalData: vehicleData.length after filtering:', filteredVehicleData.length);
+
+//         if (!filteredVehicleData.length) {
+//             return res.status(200).send({ success: true, data: [], message: "No vehicle renewal data found for the selected dates." });
+//         }
+
+//         const plainVehicleData = filteredVehicleData.map(d => {
+//             const item = d.get({ plain: true });
+            
+//             // Fix previous policy company name - use vehicleuser company_name as fallback
+//             if (item.previousPolicy) {
+//                 // If previous policy doesn't have company info from companytype association, use vehicleuser company_name
+//                 if (!item.previousPolicy.companytype || !item.previousPolicy.companytype.company_name) {
+//                     if (item.company_name) {
+//                         // Create a companytype object with the company name from vehicleuser
+//                         item.previousPolicy.companytype = {
+//                             company_name: item.company_name,
+//                             company_id: null
+//                         };
+//                     }
+//                 }
+//             }
+            
+//             // Fix reference data structure - ensure it's an object
+//             if (item.reference && typeof item.reference === 'string') {
+//                 // If reference is a string, convert it to proper object structure
+//                 item.reference = {
+//                     reference_id: item.reference_id,
+//                     reference_name: item.reference
+//                 };
+//             } else if (!item.reference && item.reference_id) {
+//                 // If reference is null but reference_id exists, create reference object
+//                 item.reference = {
+//                     reference_id: item.reference_id,
+//                     reference_name: item.reference_name || 'N/A'
+//                 };
+//             }
+            
+//             if (item.runningPolicy && item.runningPolicy.policyPlan) {
+//                 item.runningPolicy.PolicyPlanType = item.runningPolicy.policyPlan.PolicyPlanType;
+//                 delete item.runningPolicy.policyPlan;
+//             }
+//             // Ensure vehicle_user_id is always present
+//             if (!item.vehicle_user_id && item.id) {
+//                 item.vehicle_user_id = item.id;
+//             }
+//             return item;
+//         });
+
+//         return res.status(200).send({
+//             success: true,
+//             message: "Vehicle data retrieved successfully.",
+//             data: plainVehicleData
+//         });
+
+//     } catch (error) {
+//         console.error("Error fetching vehicle renewal data:", error);
+//         return res.status(500).send({ success: false, message: "Internal server error." });
+//     }
+// };
+
+
+// exports.getVehicleUserRenewalData = async (req, res) => {
+//   try {
+//     const { startDate, endDate } = req.body;
+//     const { Op } = require("sequelize");
+
+//     let dateFilter = {};
+//     if (startDate && endDate) {
+//       dateFilter.createdAt = {
+//         [Op.between]: [new Date(startDate), new Date(endDate)],
+//       };
+//     }
+
+//     // Get all consumer/builder-consumer users
+//     const users = await User.findAll({
+//       order: [["username", "asc"]],
+//       where: {
+//         role_id: [3, 5],
+//         ...dateFilter,
+//       },
+//       attributes: [
+//         "user_id",
+//         "username",
+//         "email",
+//         "mobileNumber",
+//         "referenceName",
+//         "role_id",
+//         "builder_user",
+//         "created_by",
+//         "updated_by",
+//         "is_from_builder_user",
+//         "createdAt",
+//         "updatedAt",
+//       ],
+//       include: [
+//         {
+//           model: db.role,
+//           attributes: ["role_name"],
+//           as: "role",
+//         },
+//       ],
+//     });
+
+//     // Map each user to check Vehicle Insurance category and get vehicle data
+//     const updatedUsers = await Promise.all(
+//       users.map(async (user) => {
+//         const crList = await consumerRoleMapping.findAll({
+//           where: { user_consumer_id: user.user_id },
+//           include: [
+//             {
+//               model: User,
+//               as: "userRoles",
+//               attributes: ["username", "email"],
+//             },
+//             {
+//               model: db.category,
+//               as: "category",
+//               attributes: ["category_name"],
+//             },
+//           ],
+//           raw: true,
+//         });
+
+//         // ✅ Filter for only Vehicle Insurance
+//         const vehicleOnly = crList.filter(
+//           (m) => m["category.category_name"] === "Vehicle Insurance"
+//         );
+
+//         if (vehicleOnly.length === 0) return null; // Skip users with no Vehicle Insurance
+
+//         const roleDisplays = vehicleOnly.map((m) => {
+//           const cat = m["category.category_name"] || "N/A";
+//           const roleUser = m["userRoles.username"] || "N/A";
+//           return `(Vertical = ${cat} : Role User : ${roleUser})`;
+//         });
+
+//         // ✅ Fetch vehicle data for this user
+//         const vehicleRecords = await vehicleUser.findAll({
+//           where: { 
+//             user_id: user.user_id 
+//           },
+//           include: [
+//             { 
+//               model: references, 
+//               as: 'reference',
+//               attributes: ['reference_id', 'reference_name']
+//             },
+//             {
+//               model: vehcileRunningPolicy,
+//               as: 'runningPolicy',
+//               required: false,
+//               attributes: [
+//                 "id",
+//                 "PolicyNumber",
+//                 "PolicyTenure",
+//                 "PremiumAmount",
+//                 "PolicyFrom",
+//                 "PolicyTo",
+//                 "NCB",
+//                 "IDV",
+//                 "PolicyIssuedDate",
+//                 "ExpiryDate",
+//                 "policy_type_id",
+//                 "policy_plan_id",
+//                 "Vendor",
+//                 "NomineeName",
+//                 "NomineeRelation",
+//                 "NomineeDob",
+//                 "NomineeAge",
+//                 "CurrentPolicyFile",
+//               ],
+//               include: [
+//                 { model: companyType, as: 'CompanyType' },
+//                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] }
+//               ]
+//             },
+//             { 
+//               model: vehiclePreviousPolicy, 
+//               as: 'previousPolicies',
+//               where: { status: 'active' },
+//               required: false,
+//               attributes: [
+//                 "id",
+//                 "vehicle_user_id",
+//                 "PolicyNumber",
+//                 "policy_type_id",
+//                 "policy_plan_id",
+//                 "company_id",
+//                 "PolicyTenure",
+//                 "PremiumAmount",
+//                 "NomineeName",
+//                 "NomineeRelation",
+//                 "PolicyFrom",
+//                 "PolicyTo",
+//                 "PolicyIssuedDate",
+//                 "ExpiryDate",
+//                 "NomineeDob",
+//                 "Vendor",
+//                 "IDV",
+//                 "isNomineeFlag",
+//                 "claim",
+//                 "NCB",
+//                 "NomineeAge",
+//                 "CurrentPolicyFile",
+//                 "status",
+//                 "agentName",
+//                 "agentCode",
+//                 "agentContactNumber"
+//               ],
+//               include: [
+//                 { model: companyType, as: 'CompanyType' },
+//                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] }
+//               ]
+//             },
+//             {
+//               model: vehicle_document,
+//               as: 'documents',
+//               required: false,
+//               attributes: ['id', 'categoryId', 'file']
+//             }
+//           ]
+//         });
+
+//         // Process vehicle records
+//         const processedVehicleRecords = vehicleRecords.map(vr => {
+//           const item = vr.get({ plain: true });
+          
+//           // Fix previous policies
+//           if (item.previousPolicies && Array.isArray(item.previousPolicies) && item.previousPolicies.length > 0) {
+//             item.previousPolicy = item.previousPolicies[0];
+            
+//             item.previousPolicies = item.previousPolicies.map(prevPolicy => {
+//               if (!prevPolicy.CompanyType || !prevPolicy.CompanyType.company_name) {
+//                 if (item.company_name) {
+//                   prevPolicy.CompanyType = {
+//                     company_name: item.company_name,
+//                     company_id: null
+//                   };
+//                 }
+//               }
+//               return prevPolicy;
+//             });
+            
+//             if (!item.previousPolicy.CompanyType || !item.previousPolicy.CompanyType.company_name) {
+//               if (item.company_name) {
+//                 item.previousPolicy.CompanyType = {
+//                   company_name: item.company_name,
+//                   company_id: null
+//                 };
+//               }
+//             }
+//           }
+          
+//           // Fix reference
+//           if (item.reference && typeof item.reference === 'string') {
+//             item.reference = {
+//               reference_id: item.reference_id,
+//               reference_name: item.reference
+//             };
+//           } else if (!item.reference && item.reference_id) {
+//             item.reference = {
+//               reference_id: item.reference_id,
+//               reference_name: item.reference_name || 'N/A'
+//             };
+//           }
+          
+//           // Fix running policy
+//           if (item.runningPolicy && item.runningPolicy.policyPlan) {
+//             item.runningPolicy.PolicyPlanType = item.runningPolicy.policyPlan.PolicyPlanType;
+//             delete item.runningPolicy.policyPlan;
+//           }
+          
+//           // Ensure vehicle_user_id
+//           if (!item.vehicle_user_id && item.id) {
+//             item.vehicle_user_id = item.id;
+//           }
+          
+//           return item;
+//         });
+
+//         return {
+//           ...user.toJSON(),
+//           category: vehicleOnly,
+//           roleDisplay: roleDisplays.join(" | "),
+//           vehicleRecords: processedVehicleRecords, // ✅ Add vehicle data
+//           hasVehicleRecords: processedVehicleRecords.length > 0 // ✅ Flag to check if user has vehicle data
+//         };
+//       })
+//     );
+
+//     // Remove users who don't match Vehicle Insurance
+//     const filtered = updatedUsers.filter((u) => u !== null);
+
+//     res.status(200).json({
+//       message: "Vehicle Insurance consumer get success",
+//       data: filtered,
+//       status: true,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error in getVehicleUserRenewalData:", error);
+//     res.status(500).json({
+//       message: "Server error while fetching Vehicle Insurance users",
+//       error: error.message,
+//       status: false,
+//     });
+//   }
+// };
+
+
+
+// exports.getVehicleUserRenewalData = async (req, res) => {
+//     try {
+//       const { startDate, endDate } = req.body;
+//       const { Op } = require("sequelize");
+  
+//       let dateFilter = {};
+//       if (startDate && endDate) {
+//         dateFilter.createdAt = {
+//           [Op.between]: [new Date(startDate), new Date(endDate)],
+//         };
+//       }
+  
+//       const users = await User.findAll({
+//         order: [["username", "asc"]],
+//         where: {
+//           role_id: [3, 5],
+//           ...dateFilter,
+//         },
+//         attributes: [
+//           "user_id",
+//           "username",
+//           "email",
+//           "mobileNumber",
+//           "referenceName",
+//           "role_id",
+//           "builder_user",
+//           "created_by",
+//           "updated_by",
+//           "is_from_builder_user",
+//           "createdAt",
+//           "updatedAt",
+//         ],
+//         include: [
+//           {
+//             model: db.role,
+//             attributes: ["role_name"],
+//             as: "role",
+//           },
+//         ],
+//       });
+  
+//       const allVehicleRecords = [];
+  
+//       for (const user of users) {
+//         const crList = await consumerRoleMapping.findAll({
+//           where: { user_consumer_id: user.user_id },
+//           include: [
+//             {
+//               model: User,
+//               as: "userRoles",
+//               attributes: ["username", "email"],
+//             },
+//             {
+//               model: db.category,
+//               as: "category",
+//               attributes: ["category_name"],
+//             },
+//           ],
+//           raw: true,
+//         });
+  
+//         const vehicleOnly = crList.filter(
+//           (m) => m["category.category_name"] === "Vehicle Insurance"
+//         );
+  
+//         if (vehicleOnly.length === 0) {
+//           // ⚙ Include users with no Vehicle records but valid consumer entry
+//           allVehicleRecords.push({
+//             ...user.toJSON(),
+//             category: [],
+//             roleDisplay: "No Vehicle Insurance Category",
+//             hasVehicleRecords: false,
+//           });
+//           continue;
+//         }
+  
+//         const roleDisplays = vehicleOnly.map((m) => {
+//           const cat = m["category.category_name"] || "N/A";
+//           const roleUser = m["userRoles.username"] || "N/A";
+//           return `Vertical = ${cat} : Role User : ${roleUser}`;
+//         });
+  
+//         const vehicleRecords = await vehicleUser.findAll({
+//           where: { user_id: user.user_id },
+//           include: [
+//             {
+//               model: references,
+//               as: "reference",
+//               attributes: ["reference_id", "reference_name"],
+//             },
+//             {
+//               model: vehcileRunningPolicy,
+//               as: "runningPolicy",
+//               required: false,
+//               attributes: [
+//                 "id",
+//                 "PolicyNumber",
+//                 "PolicyTenure",
+//                 "PremiumAmount",
+//                 "PolicyFrom",
+//                 "PolicyTo",
+//                 "NCB",
+//                 "IDV",
+//                 "PolicyIssuedDate",
+//                 "ExpiryDate",
+//                 "policy_type_id",
+//                 "policy_plan_id",
+//                 "Vendor",
+//                 "NomineeName",
+//                 "NomineeRelation",
+//                 "NomineeDob",
+//                 "NomineeAge",
+//                 "CurrentPolicyFile",
+//               ],
+//               include: [
+//                 { model: companyType, as: "CompanyType" },
+//                 {
+//                   model: db.policyPlan,
+//                   as: "policyPlan",
+//                   attributes: [["policy_name", "PolicyPlanType"]],
+//                 },
+//               ],
+//             },
+//             {
+//               model: vehiclePreviousPolicy,
+//               as: "previousPolicies",
+//               where: { status: "active" },
+//               required: false,
+//               attributes: [
+//                 "id",
+//                 "vehicle_user_id",
+//                 "PolicyNumber",
+//                 "policy_type_id",
+//                 "policy_plan_id",
+//                 "company_id",
+//                 "PolicyTenure",
+//                 "PremiumAmount",
+//                 "NomineeName",
+//                 "NomineeRelation",
+//                 "PolicyFrom",
+//                 "PolicyTo",
+//                 "PolicyIssuedDate",
+//                 "ExpiryDate",
+//                 "NomineeDob",
+//                 "Vendor",
+//                 "IDV",
+//                 "isNomineeFlag",
+//                 "claim",
+//                 "NCB",
+//                 "NomineeAge",
+//                 "CurrentPolicyFile",
+//                 "status",
+//                 "agentName",
+//                 "agentCode",
+//                 "agentContactNumber",
+//               ],
+//               include: [
+//                 { model: companyType, as: "CompanyType" },
+//                 {
+//                   model: db.policyPlan,
+//                   as: "policyPlan",
+//                   attributes: [["policy_name", "PolicyPlanType"]],
+//                 },
+//               ],
+//             },
+//             {
+//               model: vehicle_document,
+//               as: "documents",
+//               required: false,
+//               attributes: ["id", "categoryId", "file"],
+//             },
+//           ],
+//         });
+  
+//         if (vehicleRecords.length === 0) {
+//           // ⚙ Include consumers without vehicles
+//           allVehicleRecords.push({
+//             ...user.toJSON(),
+//             category: vehicleOnly,
+//             roleDisplay: roleDisplays.join(" | "),
+//             hasVehicleRecords: false,
+//           });
+//           continue;
+//         }
+  
+//         for (const vr of vehicleRecords) {
+//           const item = vr.get({ plain: true });
+  
+//           if (item.previousPolicies?.length > 0) {
+//             item.previousPolicy = item.previousPolicies[0];
+//           }
+  
+//           if (item.runningPolicy?.policyPlan) {
+//             item.runningPolicy.PolicyPlanType =
+//               item.runningPolicy.policyPlan.PolicyPlanType;
+//             delete item.runningPolicy.policyPlan;
+//           }
+  
+//           const vehicleRecord = {
+//             user_id: user.user_id,
+//             username: user.username,
+//             email: user.email,
+//             mobileNumber: user.mobileNumber,
+//             referenceName: user.referenceName,
+//             role_id: user.role_id,
+//             createdAt: user.createdAt,
+//             updatedAt: user.updatedAt,
+  
+//             vehicle_user_id: item.vehicle_user_id || item.id,
+//             vehicle_number: item.vehicle_number,
+//             make: item.make,
+//             model: item.model,
+//             manufacturing_year: item.manufacturing_year,
+//             engine_number: item.engine_number,
+//             chassis_number: item.chassis_number,
+//             vehicle_type: item.vehicle_type,
+//             company_name: item.company_name,
+//             contact_person_name: item.contact_person_name,
+//             contact_person_no: item.contact_person_no,
+//             vehicle_policy_type: item.vehicle_policy_type,
+//             nominee_type: item.nominee_type,
+//             reference_id: item.reference_id,
+//             reference: item.reference,
+  
+//             runningPolicy: item.runningPolicy,
+//             previousPolicies: item.previousPolicies,
+//             previousPolicy: item.previousPolicy,
+//             documents: item.documents,
+  
+//             category: vehicleOnly,
+//             roleDisplay: roleDisplays.join(" | "),
+//             hasVehicleRecords: true,
+//           };
+  
+//           allVehicleRecords.push(vehicleRecord);
+//         }
+//       }
+  
+//       console.log(`✅ Total vehicle records found: ${allVehicleRecords.length}`);
+  
+//       res.status(200).json({
+//         message: "Vehicle Insurance consumer get success",
+//         data: allVehicleRecords,
+//         status: true,
+//       });
+//     } catch (error) {
+//       console.error("❌ Error in getVehicleUserRenewalData:", error);
+//       res.status(500).json({
+//         message: "Server error while fetching Vehicle Insurance users",
+//         error: error.message,
+//         status: false,
+//       });
+//     }
+//   };
+  
+
+
+
+exports.getVehicleUserRenewalData = async (req, res) => {
+    try {
+      const { startDate, endDate } = req.body;
+      const { Op } = require("sequelize");
+  
+      let dateFilter = {};
+      if (startDate && endDate) {
+        dateFilter.createdAt = {
+          [Op.between]: [new Date(startDate), new Date(endDate)],
+        };
+      }
+  
+      const users = await User.findAll({
+        order: [["username", "asc"]],
+        where: {
+          role_id: [3, 5],
+          ...dateFilter,
+        },
+        attributes: [
+          "user_id",
+          "username",
+          "email",
+          "mobileNumber",
+          "referenceName",
+          "role_id",
+          "builder_user",
+          "created_by",
+          "updated_by",
+          "is_from_builder_user",
+          "createdAt",
+          "updatedAt",
+        ],
+        include: [
+          {
+            model: db.role,
+            attributes: ["role_name"],
+            as: "role",
+          },
+        ],
+      });
+  
+      const allVehicleRecords = [];
+  
+      for (const user of users) {
+        const crList = await consumerRoleMapping.findAll({
+          where: { user_consumer_id: user.user_id },
+          include: [
+            {
+              model: User,
+              as: "userRoles",
+              attributes: ["username", "email"],
+            },
+            {
+              model: db.category,
+              as: "category",
+              attributes: ["category_name"],
+            },
+          ],
+          raw: true,
+        });
+  
+        // Check category presence
+        const hasMediclaim = crList.some(
+          (m) => m["category.category_name"] === "Mediclaim"
+        );
+        const hasVehicle = crList.some(
+          (m) => m["category.category_name"] === "Vehicle Insurance"
+        );
+        if (!hasVehicle) {
+            console.log("Skipping Non-Vehicle User:", user.username);
+            continue;
+          }
+        // ❌ Remove ONLY if Mediclaim exists AND Vehicle DOES NOT exist
+        if (hasMediclaim && !hasVehicle) {
+          console.log("Skipping Mediclaim-only user:", user.username);
+          continue;
+        }
+  
+        // ✔ Only vehicle category records
+        const vehicleOnly = crList.filter(
+          (m) => m["category.category_name"] === "Vehicle Insurance"
+        );
+  
+        if (vehicleOnly.length === 0) {
+          // Include users with no Vehicle records but valid consumer entry
+          allVehicleRecords.push({
+            ...user.toJSON(),
+            category: [],
+            roleDisplay: "No Vehicle Insurance Category",
+            hasVehicleRecords: false,
+          });
+          continue;
+        }
+  
+        const roleDisplays = vehicleOnly.map((m) => {
+          const cat = m["category.category_name"] || "N/A";
+          const roleUser = m["userRoles.username"] || "N/A";
+          return `Vertical = ${cat} : Role User : ${roleUser}`;
+        });
+  
+        // ✅ Updated vehicleUser query with agent fields
+        const vehicleRecords = await vehicleUser.findAll({
+          where: { user_id: user.user_id },
+          attributes: [
+            "vehicle_user_id",
+            "vehicle_number",
+            "make",
+            "model",
+            "manufacturing_year",
+            "engine_number",
+            "chassis_number",
+            "vehicle_type",
+            "company_name",
+            "contact_person_name",
+            "contact_person_no",
+            "vehicle_policy_type",
+            "nominee_type",
+            "reference_id",
+            "remark",
+            "vendor",
+            "policy_plan_type",
+            "agentName",
+            "agentCode",
+            "agentContactNumber", // ✅ Added here
+            "createdAt",
+            "updatedAt",
+          ],
+          include: [
+            {
+              model: references,
+              as: "reference",
+              attributes: ["reference_id", "reference_name"],
+            },
+            {
+              model: vehcileRunningPolicy,
+              as: "runningPolicy",
+              required: false,
+              attributes: [
+                "id",
+                "PolicyNumber",
+                "PolicyTenure",
+                "PremiumAmount",
+                "PolicyFrom",
+                "PolicyTo",
+                "NCB",
+                "IDV",
+                "PolicyIssuedDate",
+                "ExpiryDate",
+                "policy_type_id",
+                "policy_plan_id",
+                "Vendor",
+                "NomineeName",
+                "NomineeRelation",
+                "NomineeDob",
+                "NomineeAge",
+                "CurrentPolicyFile",
+                "agentName",
+                "agentCode",
+                "agentContactNumber", // ✅ Added here too
+              ],
+              include: [
+                { model: companyType, as: "CompanyType" },
+                {
+                  model: db.policyPlan,
+                  as: "policyPlan",
+                  attributes: [["policy_name", "PolicyPlanType"]],
+                },
+              ],
+            },
+            {
+              model: vehiclePreviousPolicy,
+              as: "previousPolicies",
+              where: { status: "active" },
+              required: false,
+              attributes: [
+                "id",
+                "vehicle_user_id",
+                "PolicyNumber",
+                "policy_type_id",
+                "policy_plan_id",
+                "company_id",
+                "PolicyTenure",
+                "PremiumAmount",
+                "NomineeName",
+                "NomineeRelation",
+                "PolicyFrom",
+                "PolicyTo",
+                "PolicyIssuedDate",
+                "ExpiryDate",
+                "NomineeDob",
+                "Vendor",
+                "IDV",
+                "isNomineeFlag",
+                "claim",
+                "NCB",
+                "NomineeAge",
+                "CurrentPolicyFile",
+                "status",
+                "agentName",
+                "agentCode",
+                "agentContactNumber", // ✅ Already here
+              ],
+              include: [
+                { model: companyType, as: "CompanyType" },
+                {
+                  model: db.policyPlan,
+                  as: "policyPlan",
+                  attributes: [["policy_name", "PolicyPlanType"]],
+                },
+              ],
+            },
+            {
+              model: vehicle_document,
+              as: "documents",
+              required: false,
+              attributes: ["id", "categoryId", "file"],
+            },
+          ],
+        });
+  
+        if (vehicleRecords.length === 0) {
+          allVehicleRecords.push({
+            ...user.toJSON(),
+            category: vehicleOnly,
+            roleDisplay: roleDisplays.join(" | "),
+            hasVehicleRecords: false,
+          });
+          continue;
+        }
+  
+        for (const vr of vehicleRecords) {
+          const item = vr.get({ plain: true });
+  
+          if (item.previousPolicies?.length > 0) {
+            item.previousPolicy = item.previousPolicies[0];
+          }
+  
+          if (item.runningPolicy?.policyPlan) {
+            item.runningPolicy.PolicyPlanType =
+              item.runningPolicy.policyPlan.PolicyPlanType;
+            delete item.runningPolicy.policyPlan;
+          }
+  
+          // ✅ Include agent details in final response object
+          const vehicleRecord = {
+            user_id: user.user_id,
+            username: user.username,
+            email: user.email,
+            mobileNumber: user.mobileNumber,
+            referenceName: user.referenceName,
+            role_id: user.role_id,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+  
+            vehicle_user_id: item.vehicle_user_id || item.id,
+            vehicle_number: item.vehicle_number,
+            make: item.make,
+            model: item.model,
+            manufacturing_year: item.manufacturing_year,
+            engine_number: item.engine_number,
+            chassis_number: item.chassis_number,
+            vehicle_type: item.vehicle_type,
+            company_name: item.company_name,
+            contact_person_name: item.contact_person_name,
+            contact_person_no: item.contact_person_no,
+            vehicle_policy_type: item.vehicle_policy_type,
+            nominee_type: item.nominee_type,
+  
+            agentName: item.agentName || "",
+            agentCode: item.agentCode || "",
+            agentContactNumber: item.agentContactNumber || "", // ✅
+  
+            reference_id: item.reference_id,
+            reference: item.reference,
+  
+            runningPolicy: item.runningPolicy,
+            previousPolicies: item.previousPolicies,
+            previousPolicy: item.previousPolicy,
+            documents: item.documents,
+  
+            category: vehicleOnly,
+            roleDisplay: roleDisplays.join(" | "),
+            hasVehicleRecords: true,
+          };
+  
+          allVehicleRecords.push(vehicleRecord);
+        }
+      }
+  
+      console.log(`✅ Total vehicle records found: ${allVehicleRecords.length}`);
+  
+      res.status(200).json({
+        message: "Vehicle Insurance consumer get success",
+        data: allVehicleRecords,
+        status: true,
+      });
+    } catch (error) {
+      console.error("❌ Error in getVehicleUserRenewalData:", error);
+      res.status(500).json({
+        message: "Server error while fetching Vehicle Insurance users",
+        error: error.message,
+        status: false,
+      });
+    }
+  };
+  
+  
+
+
+exports.updateVehicleUserRemarkData = async (req, res) => {
+    console.log('🔧 updateVehicleUserRemarkData called with:', {
+        body: req.body,
+        params: req.params,
+        user: req.user
+    });
+
+    if (!req?.body?.remark) {
+        console.log('❌ No remark found in request body');
+        return res.status(400).json({ error: 'Remark not found in request body' });
+    }
+
+    if (!req.params.vehicle_user_id) {
+        console.log('❌ Vehicle user ID not provided');
+        return res.status(400).json({ error: 'Vehicle user ID not provided' });
+    }
+
+    // Add validation for remark length
+    if (req.body.remark.length > 1000) {
+        console.log('❌ Remark too long:', req.body.remark.length);
+        return res.status(400).json({ error: 'Remark is too long. Maximum length is 1000 characters.' });
+    }
+
+    try {
+        console.log('🔧 Finding vehicle user with ID:', req.params.vehicle_user_id);
+        const user = await vehicleUser.findByPk(req.params.vehicle_user_id);
+
+        if (!user) {
+            console.log('❌ Vehicle not found with ID:', req.params.vehicle_user_id);
+            return res.status(404).json({ error: "Vehicle not found" });
+        }
+        
+        console.log('🔧 Updating remark:', req.body.remark);
+        await user.update({
+            remark: req.body.remark
+        });
+        
+        console.log('✅ Vehicle remark updated successfully');
+        return res.status(200).send({
+            message: "Vehicle remark successfully updated!",
+            status: true,
+            userData: user,
+        });
+
+    } catch (error) {
+        console.error("❌ Error updating vehicle remark:", error);
+        if (error.name === 'SequelizeValidationError') {
+            // Validation error occurred
+            const errors = error.errors.map(err => err.message);
+            return res.status(400).json({ errors });
+        } else {
+            return res.status(500).json({ error: error.message });
+        }
+    }
+};
+
+// Get Vehicle Renewal Statistics
+
+exports.getVehicleRenewalStats = async (req, res) => {
+    try {
+        console.log('📊 getVehicleRenewalStats: Fetching statistics');
+
+        // Fetch all vehicle data with running policies
+        const vehicleData = await vehicleUser.findAll({
+            include: [
+                {
+                    model: vehcileRunningPolicy,
+                    as: 'runningPolicy',
+                    required: false,
+                    attributes: [
+                        "id",
+                        "ExpiryDate",
+                        "PolicyNumber"
+                    ]
+                }
+            ]
+        });
+
+        console.log('📊 getVehicleRenewalStats: Total vehicle records:', vehicleData.length);
+
+        // Calculate statistics
+        const now = new Date();
+        now.setHours(0, 0, 0, 0); // Set to start of today
+        const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const oneMonthFromNow = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
+        let expiredCount = 0;
+        let totalPolicies = vehicleData.length; // Count all policies
+        let weekCount = 0;
+        let monthCount = 0;
+        let yearCount = 0;
+
+        vehicleData.forEach(vehicle => {
+            const item = vehicle.get({ plain: true });
+            const runningPolicy = item.runningPolicy;
+            const expiryDateStr = runningPolicy?.ExpiryDate;
+
+            // Only process policies with expiry dates for other counts
+            if (expiryDateStr) {
+
+                // Parse expiry date - handle multiple formats
+                const parseDate = (dateStr) => {
+                    if (!dateStr) return null;
+                    
+                    // Try DD/MM/YYYY format
+                    const parts = dateStr.split('/');
+                    if (parts.length === 3) {
+                        const day = parseInt(parts[0], 10);
+                        const month = parseInt(parts[1], 10) - 1;
+                        const year = parseInt(parts[2], 10);
+                        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && year < 2100) {
+                            return new Date(year, month, day);
+                        }
+                    }
+                    
+                    // Try standard date parsing
+                    const dateObj = new Date(dateStr);
+                    return isNaN(dateObj.getTime()) ? null : dateObj;
+                };
+
+                const expiryDate = parseDate(expiryDateStr);
+
+                if (expiryDate) {
+                    // Check if expired (before today)
+                    if (expiryDate < now) {
+                        expiredCount++;
+                    }
+                    // Count renewals by time period (only future expirations)
+                    else if (expiryDate >= now && expiryDate <= oneWeekFromNow) {
+                        weekCount++;
+                    }
+                    if (expiryDate >= now && expiryDate <= oneMonthFromNow) {
+                        monthCount++;
+                    }
+                    if (expiryDate >= now && expiryDate <= oneYearFromNow) {
+                        yearCount++;
+                    }
+                }
+            }
+        });
+
+        const stats = {
+            expiredCount,
+            totalPolicies,
+            weekCount,
+            monthCount,
+            yearCount
+        };
+
+        console.log('📊 getVehicleRenewalStats: Statistics calculated:', stats);
+
+        return res.status(200).send({
+            success: true,
+            message: "Vehicle renewal statistics retrieved successfully.",
+            data: stats
+        });
+
+    } catch (error) {
+        console.error("💥 Error fetching vehicle renewal statistics:", error);
+        return res.status(500).send({ 
+            success: false, 
+            message: "Internal server error.",
+            error: error.message 
+        });
+    }
+};
+
+
+exports.getVehicleRenewalSheet = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.body;
+        if (!startDate || !endDate) {
+            return res.status(400).send({ success: false, message: "Please provide both start and end dates." });
+        }
+        
+        const vehicleData = await vehicleUser.findAll({
+            include: [
+                { model: User, as: "user_pk_vehicle_id" },
+                { model: references, as: 'reference' },
+                { model: vehicles, as: 'vehicle' },
+                {
+                    model: vehcileRunningPolicy,
+                    as: 'runningPolicy',
+                    required: true,
+                    where: {
+                        ExpiryDate: { [Op.between]: [new Date(startDate), new Date(endDate)] }
+                    },
+                    include: [
+                        { model: companyType, as: 'CompanyType' },
+                        {
+                            model: db.policyPlan,
+                            as: 'policyPlan',
+                            attributes: [['policy_name', 'PolicyPlanType']]
+                        }
+                    ]
+                },
+                { 
+                    model: vehiclePreviousPolicy, 
+                    as: 'previousPolicies', 
+                    include: [
+                        { model: companyType, as: 'CompanyType' },
+                        { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] }
+                    ] 
+                }
+            ]
+        });
+
+        if (!vehicleData.length) {
+            return res.status(200).send({ success: false, message: "No vehicle renewal data found for the selected dates." });
+        }
+        const plainVehicleData = vehicleData.map(d => {
+            const item = d.get({ plain: true });
+            // Add backwards compatibility for previousPolicy
+            if (item.previousPolicies && Array.isArray(item.previousPolicies) && item.previousPolicies.length > 0) {
+                item.previousPolicy = item.previousPolicies[0];
+            }
+            return item;
+        });
+        return res.status(200).send({ success: true, message: "Vehicle renewal data retrieved successfully.", data: plainVehicleData });
+    } catch (error) {
+        console.error("Error fetching vehicle renewal data:", error);
+        return res.status(500).send({ success: false, message: "Internal server error." });
+    }
+};
+
+// The above line is just to ensure export. I will combine them next.
+
+// TEMPORARY DEBUG ENDPOINT: List all vehicle users with their status
+
+exports.listAllVehicleUsersDebug = async (req, res) => {
+    try {
+        const allVehicleUsers = await vehicleUser.findAll({
+            attributes: [
+                'vehicle_user_id',
+                'user_id',
+                'status',
+                'createdAt',
+                'updatedAt'
+            ],
+            order: [['vehicle_user_id', 'DESC']]
+        });
+        res.status(200).send({
+            message: 'All vehicle users (debug)',
+            data: allVehicleUsers,
+            status: true
+        });
+    } catch (error) {
+        res.status(500).send({ message: 'Error fetching vehicle users', error });
+    }
+};
+
+
+exports.getVehicleUserById = async (req, res) => {
+    console.log('🔍 [getVehicleUserById] Function called!');
+    console.log('🔍 [getVehicleUserById] Request params:', req.params);
+    console.log('🔍 [getVehicleUserById] Request headers:', req.headers);
+    console.log('🔍 [getVehicleUserById] Request method:', req.method);
+    console.log('🔍 [getVehicleUserById] Request URL:', req.url);
+    
+    try {
+        const vehicle = await vehicleUser.findOne({
+            where: { vehicle_user_id: req.params.vehicle_user_id },
+            attributes: [
+                'vehicle_user_id',
+                'vehicle_policy_type',
+                'nominee_type',
+                'company_name',
+                'user_id',
+                'contact_person_name',
+                'remark',
+                'contact_person_no',
+                'vehicle_number',
+                'vehicle_id',
+                'reference_id',
+                'make',
+                'model',
+                'manufacturing_year',
+                'engine_number',
+                'chassis_number',
+                'consumer_role_id',
+                'agentName',
+                'agentCode',
+                'agentContactNumber',
+                'status',
+                'vehicle_type',
+                'vendor',
+                'policy_plan_type',
+                'createdAt',
+                'updatedAt'
+            ],
+            include: [
+                { 
+                    model: User, 
+                    as: "user_pk_vehicle_id",
+                    attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName']
+                },
+                { model: references, as: 'reference' },
+                { model: vehcileRunningPolicy, as: "runningPolicy" },
+                { model: vehiclePreviousPolicy, as: "previousPolicies" }
+            ]
+        });
+        if (!vehicle) {
+            return res.status(404).json({ message: "Vehicle user not found" });
+        }
+        
+        // Fetch vehicle documents with comprehensive debugging
+        console.log('🔍 [getVehicleUserById] Fetching documents for vehicle_user_id:', req.params.vehicle_user_id);
+        
+        // First, let's check if there are ANY documents in the vehicle_documents table
+        const totalDocumentsCount = await vehicle_document.count();
+        console.log('🔍 [getVehicleUserById] Total documents in vehicle_documents table:', totalDocumentsCount);
+        
+        // Check if there are documents for this specific vehicle_user_id
+        const documentsForThisVehicle = await vehicle_document.count({ 
+            where: { vehicle_user_id: req.params.vehicle_user_id } 
+        });
+        console.log('🔍 [getVehicleUserById] Documents count for this vehicle_user_id:', documentsForThisVehicle);
+        
+        const vehicleDocuments = await vehicle_document.findAll({ 
+            where: { vehicle_user_id: req.params.vehicle_user_id } 
+        });
+        
+        console.log('🔍 [getVehicleUserById] Raw vehicle_document query result:', vehicleDocuments);
+        console.log('🔍 [getVehicleUserById] Number of documents found:', vehicleDocuments.length);
+        
+        // Log each document individually
+        vehicleDocuments.forEach((doc, index) => {
+            console.log(`🔍 [getVehicleUserById] Document ${index + 1}:`, {
+                id: doc.id,
+                user_id: doc.user_id,
+                vehicle_user_id: doc.vehicle_user_id,
+                categoryId: doc.categoryId,
+                file: doc.file,
+                createdAt: doc.createdAt,
+                updatedAt: doc.updatedAt
+            });
+        });
+        
+                 // Add documents to the vehicle data
+                 const vehicleData = vehicle.toJSON();
+                 vehicleData.documents = vehicleDocuments;
+        
+        // Debug logging to see what data is being fetched
+        console.log('🔍 [getVehicleUserById] Final vehicle data structure:', {
+            vehicle_user_id: vehicleData.vehicle_user_id,
+            documents_count: vehicleData.documents.length,
+            documents: vehicleData.documents
+        });
+        console.log('🔍 [getVehicleUserById] Agent fields:', {
+            agentName: vehicle.agentName,
+            agentCode: vehicle.agentCode,
+            agentContactNumber: vehicle.agentContactNumber
+        });
+        
+        res.status(200).json({ status: true, data: vehicleData });
+    } catch (error) {
+        res.status(500).json({ status: false, error: error.message });
+    }
+};
+
+// ==================== LIFE INSURANCE FUNCTIONS ====================
+
+// Basic payload validation for Life Insurance
+function validateLifeInsurancePayload(body) {
+    const errors = [];
+    const requiredString = (val) => typeof val === 'string' && val.trim().length > 0;
+    const requiredNumber = (val) => val !== undefined && val !== null && !isNaN(Number(val));
+
+    // Proposer
+    if (!requiredString(body.proposer_name)) errors.push('proposer_name is required');
+    if (!requiredString(body.proposer_gender)) errors.push('proposer_gender is required');
+    if (!body.proposer_dob) errors.push('proposer_dob is required');
+    if (!requiredString(body.proposer_married_status)) errors.push('proposer_married_status is required');
+    if (!requiredString(body.proposer_mailing_address)) errors.push('proposer_mailing_address is required');
+    if (!requiredString(body.proposer_permanent_address)) errors.push('proposer_permanent_address is required');
+
+    // Life assured
+    if (!requiredString(body.life_assured_name)) errors.push('life_assured_name is required');
+    if (!requiredString(body.life_assured_gender)) errors.push('life_assured_gender is required');
+    if (!body.life_assured_dob) errors.push('life_assured_dob is required');
+    if (!requiredString(body.life_assured_married_status)) errors.push('life_assured_married_status is required');
+
+    // Product
+    if (!requiredString(body.product_name)) errors.push('product_name is required');
+    if (!requiredNumber(body.premium_payment_term)) errors.push('premium_payment_term is required');
+    if (!requiredNumber(body.sum_assured)) errors.push('sum_assured is required');
+    if (!requiredNumber(body.policy_term)) errors.push('policy_term is required');
+
+    // Premium
+    if (!requiredNumber(body.premium_amount)) errors.push('premium_amount is required');
+    if (!requiredString(body.premium_payment_mode)) errors.push('premium_payment_mode is required');
+
+    return errors;
+}
+
+// Helper function to save document
+const saveDocument = async (lifeInsuranceId, fieldName, file, uploadDir, userId) => {
+    try {
+        // Generate unique filename
+        const fileExtension = path.extname(file.name);
+        const uniqueFilename = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExtension}`;
+        const filePath = path.join(uploadDir, uniqueFilename);
+        
+        // Move file to upload directory
+        await file.mv(filePath);
+        
+        // Map field names to document types
+        const documentTypeMap = {
+            'policy_document': 'Policy Document',
+            'identity_document': 'Identity Document',
+            'address_proof': 'Address Proof',
+            'medical_certificate': 'Medical Certificate',
+            'other_documents': 'Other Document'
+        };
+        
+        // Create document record in database
+        const documentData = {
+            life_insurance_id: lifeInsuranceId,
+            document_name: documentTypeMap[fieldName] || 'Document',
+            document_type: fieldName,
+            file_path: filePath,
+            original_filename: file.name,
+            file_size: file.size,
+            mime_type: file.mimetype,
+            upload_status: 'Uploaded',
+            uploaded_by: userId
+        };
+        
+        const document = await LifeInsuranceDocument.create(documentData);
+        return document;
+    } catch (error) {
+        console.error('Error saving document:', error);
+        return null;
+    }
+};
+
+
+// Create Life Insurance Policy
+
+exports.renewVehiclePolicy = async (req, res) => {
+  try {
+    const { vehicle_user_id } = req.body;
+
+    if (!vehicle_user_id) {
+      return res.status(400).json({ status: false, message: "vehicle_user_id is required" });
+    }
+
+    // 🔍 Find the running policy record for this vehicle
+    const runningRecord = await vehcileRunningPolicy.findOne({ where: { vehicle_user_id } });
+    if (!runningRecord) {
+      return res.status(404).json({ status: false, message: "Running policy not found for this vehicle_user_id" });
+    }
+
+    const running = runningRecord.get ? runningRecord.get({ plain: true }) : runningRecord;
+
+    // 🧾 Prepare the previous policy payload
+    const previousPayload = {
+      vehicle_user_id: running.vehicle_user_id,
+      PolicyNumber: running.PolicyNumber?.trim() || "",
+      company_id:
+        running.company_id ||
+        (running.CompanyType && running.CompanyType.company_id) ||
+        null,
+      CompanyName:
+        running.CompanyName ||
+        (running.CompanyType && running.CompanyType.company_name) ||
+        "",
+      PolicyFrom: running.From || running.PolicyFrom || "",
+      PolicyTo: running.To || running.PolicyTo || "",
+      PolicyIssuedDate: running.PolicyIssuedDate || "",
+      PolicyExpiryDate:
+        running.PolicyExpiryDate || running.ExpiryDate || running.To || "",
+      PolicyTenure: running.PolicyTenure || "",
+      PremiumAmount: running.PremiumAmount || 0,
+      IDV: running.IDV || "",
+      NCB: running.NCB || "",
+      NomineeName: running.NomineeName || "",
+      NomineeRelation: running.NomineeRelation || "",
+      NomineeDob: running.NomineeDob || "",
+      NomineeAge: running.NomineeAge || "",
+      CurrentPolicyFile: running.CurrentPolicyFile || running.PdfFile || "",
+    };
+
+    // ✅ Check if the data is meaningful enough to move
+    const hasMeaningfulFields =
+      previousPayload.PolicyNumber ||
+      previousPayload.CompanyName ||
+      previousPayload.CurrentPolicyFile ||
+      previousPayload.PolicyFrom ||
+      previousPayload.PolicyTo;
+
+    if (!hasMeaningfulFields) {
+      return res.status(400).json({
+        status: false,
+        message: "No meaningful running policy data found to move",
+      });
+    }
+
+    // ✅ Check for existing previous policy (avoid duplicate)
+    let existingPrev = null;
+
+    if (previousPayload.PolicyNumber) {
+      existingPrev = await vehiclePreviousPolicy.findOne({
+        where: {
+          vehicle_user_id,
+          PolicyNumber: previousPayload.PolicyNumber,
+        },
+      });
+    }
+
+    if (!existingPrev && previousPayload.CurrentPolicyFile) {
+      existingPrev = await vehiclePreviousPolicy.findOne({
+        where: {
+          vehicle_user_id,
+          CurrentPolicyFile: previousPayload.CurrentPolicyFile,
+        },
+      });
+    }
+
+    let createdPrev;
+    if (existingPrev) {
+      console.log("⚠️ Existing previous policy found — updating instead of creating new.");
+      createdPrev = await existingPrev.update(previousPayload);
+    } else {
+      createdPrev = await vehiclePreviousPolicy.create(previousPayload);
+      console.log("✅ Previous policy created:", createdPrev.PolicyNumber);
+    }
+
+    // 🧹 Reset the running policy after successful move
+    await runningRecord.update({
+      PolicyNumber: "",
+      PolicyIssuedDate: "",
+      PolicyExpiryDate: "",
+      PolicyTenure: "",
+      From: "",
+      To: "",
+      PremiumAmount: 0,
+      NCB: "",
+      IDV: "",
+      NomineeName: "",
+      NomineeRelation: "",
+      NomineeAge: "",
+      NomineeDob: "",
+      Vendor: "",
+      CurrentPolicyFile: "",
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Policy renewed successfully — running policy moved to previous",
+      previousPolicy: createdPrev,
+    });
+  } catch (error) {
+    console.error("❌ [RENEW VEHICLE POLICY] Error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Error renewing policy",
+      error: error.message,
+    });
+  }
+};
+
+// Get all consumer data (vehicles, mediclaim, loans) for logged-in consumer
