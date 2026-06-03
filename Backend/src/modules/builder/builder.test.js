@@ -55,3 +55,15 @@ describe("POST builderUnitCategory", () => {
     expect(db.unit.findOne).not.toHaveBeenCalled();
   });
 });
+
+describe("builder validators", () => {
+  it("400 add builder without company_name", async () => {
+    const res = await request(buildApp()).post("/api/user/data/add/builder").send({});
+    expect(res.status).toBe(400);
+  });
+
+  it("400 add builderUnit without unit_id", async () => {
+    const res = await request(buildApp()).post("/api/user/data/add/builderUnit").send({});
+    expect(res.status).toBe(400);
+  });
+});

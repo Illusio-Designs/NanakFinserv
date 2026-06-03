@@ -16,15 +16,15 @@
 | 2 | Authorization (RBAC) | 12 | 8 / 10 | 9.6 | 🟢 `requireRole` applied across **all** route files (ADMIN/BUILDER_OPS/PORTAL/CONSUMER_VIEW groups); inclusive sets to avoid lockouts. Exact role sets still want product confirmation |
 | 3 | Secrets management | 12 | 7 / 10 | 8.4 | 🟢 hardcoded JWT/Gmail/DB secrets removed from code; env-driven + prod fail-fast. **You: rotate values + purge git history** |
 | 4 | Data privacy / uploads | 8 | 9 / 10 | 7.2 | 🟢 + /uploads access gate (blog public, customer files need JWT) |
-| 5 | Input validation | 8 | 8 / 10 | 6.4 | 🟢 validators across all 13 domains (mutating endpoints) |
+| 5 | Input validation | 8 | 9 / 10 | 7.2 | 🟢 validators across all domains incl. builder/mediclaim-user/product writes |
 | 6 | Dependency security | 8 | 10 / 10 | 8.0 | 🟢 firebase/firebase-admin/bcrypt removed; mysql2/nodemailer/uuid upgraded; uuid override → **0 vulns** |
-| 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
+| 7 | Error handling & resilience | 8 | 9 / 10 | 7.2 | 🟢 + asyncHandler wraps every route so rejections always reach the central handler |
 | 8 | Logging & monitoring | 7 | 10 / 10 | 7.0 | 🟢 pino; /metrics + /health + /ready; alert rules + Alertmanager receiver example (live webhook URLs are ops) |
 | 9 | Code structure / maintainability | 7 | 9 / 10 | 6.3 | 🟢 14 modules w/ service+validator+tests; big handlers (consumer/lifeIns/vehicle) extracting into services |
 | 10 | Testing | 5 | 9 / 10 | 4.5 | 🟢 all 14 modules + middleware/metrics (79 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 7 / 10 | 3.5 | 🟢 migrations + readiness + `DEPLOY.md`/`SECURITY.md` runbooks (CI/Docker excluded by request) |
-| | **TOTAL** | **100** | | **🟢 79.3 / 100** | **Production-ready pending owner ops: full RBAC, runbooks, alert receivers, deeper extraction (CI/Docker excluded by request)** |
+| | **TOTAL** | **100** | | **🟢 80.9 / 100** | **(≈85% of the 95 non-CI/CD points). Pending: owner ops + deeper extraction** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 

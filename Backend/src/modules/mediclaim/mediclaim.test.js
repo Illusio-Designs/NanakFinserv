@@ -100,3 +100,15 @@ describe("POST /api/user/mediclaim/product/add/:id", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("more mediclaim validators", () => {
+  it("rejects user add without `data` (validator)", async () => {
+    const res = await request(buildApp()).post("/api/user/mediclaim/user/add").send({});
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects product update without a name (validator)", async () => {
+    const res = await request(buildApp()).put("/api/user/mediclaim/product/update/5").send({});
+    expect(res.status).toBe(400);
+  });
+});
