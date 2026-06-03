@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const userService = require("./user.service");
+const logger = require("../../config/logger");
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -286,26 +288,13 @@ exports.getAllBuilderListUsers = async (req, res) => {
 
 
 exports.getCategoryById = async (req, res) => {
-    userCatergory
-        .findAll({
-            include: [Category],
-            where: {
-                user_id: req.body.user_id,
-            },
-            raw: true,
-            // attributes:[['id','key'],['name','value']]
-        })
-        .then((articles) => {
-            res.status(200).send({
-                message: "user category get success",
-                data: articles,
-                status: true,
-            });
-        })
-        .catch((e) => {
-            res.status(400).send({ message: "error", status: false });
-            console.log(e);
-        });
+    try {
+        const data = await userService.getCategoriesByUserId(req.body.user_id);
+        res.status(200).send({ message: "user category get success", data, status: true });
+    } catch (e) {
+        logger.error({ err: e }, "getCategoryById failed");
+        res.status(400).send({ message: "error", status: false });
+    }
 };
 
 exports.getAllRolesUsers = async (req, res) => {
@@ -404,19 +393,13 @@ exports.getAllRolesUsers = async (req, res) => {
 
 
 exports.getAllRoles = async (req, res) => {
-    Category.findAll({
-        raw: true,
-        // attributes:[['id','key'],['name','value']]
-    })
-        .then((articles) => {
-            res
-                .status(200)
-                .send({ message: "role get success", data: articles, status: true });
-        })
-        .catch((e) => {
-            res.status(400).send({ message: "role error", status: false });
-            console.log(e);
-        });
+    try {
+        const data = await userService.getRoles();
+        res.status(200).send({ message: "role get success", data, status: true });
+    } catch (e) {
+        logger.error({ err: e }, "getAllRoles failed");
+        res.status(400).send({ message: "role error", status: false });
+    }
 };
 
 
@@ -683,24 +666,13 @@ exports.updateData = async (req, res) => {
 
 
 exports.getAllUnitVerticle = async (req, res) => {
-    Category.findAll({
-        raw: true,
-        where: {
-            category_id: { [Op.ne]: [1, 3] },
-        },
-        // attributes:[['id','key'],['name','value']]
-    })
-        .then((articles) => {
-            res.status(200).send({
-                message: "catergory unit get success",
-                data: articles,
-                status: true,
-            });
-        })
-        .catch((e) => {
-            res.status(400).send({ message: "role error", status: false });
-            console.log(e);
-        });
+    try {
+        const data = await userService.getUnitVerticals();
+        res.status(200).send({ message: "catergory unit get success", data, status: true });
+    } catch (e) {
+        logger.error({ err: e }, "getAllUnitVerticle failed");
+        res.status(400).send({ message: "role error", status: false });
+    }
 };
 
 

@@ -154,7 +154,7 @@ routes (111 total) load and register. **Remaining per module: extract a `service
 | Controller | Routes | Service | Validator | Test | Module | Handlers |
 |:---:|:---:|:---:|:---:|:---:|--------|:---:|
 | ☑ | ☑ | ☑ | ☑ | ☑ | `auth` (MSG91 server-side, 8 tests) | 3 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `user` | 12 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `user` — service (reads) + validators + 8 tests | 12 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `vehicle` | 11 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `loan` | 10 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `mediclaim` | 13 |
