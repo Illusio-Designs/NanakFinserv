@@ -253,33 +253,9 @@ exports.createLifeInsurance = async (req, res) => {
             }
         });
 
-        // Generate unique proposer number if not provided or if it already exists
-        if (!lifeInsuranceData.proposer_number) {
-            const timestamp = Date.now();
-            lifeInsuranceData.proposer_number = `LI${timestamp}`;
-        } else {
-            // Check if proposer_number already exists
-            const existingPolicy = await LifeInsurance.findOne({
-                where: { proposer_number: lifeInsuranceData.proposer_number }
-            });
-            if (existingPolicy) {
-            const timestamp = Date.now();
-            lifeInsuranceData.proposer_number = `LI${timestamp}`;
-            }
-        }
-
-        logger.debug('🔍 [CREATE] Creating life insurance with data:', lifeInsuranceData);
-        const lifeInsurance = await LifeInsurance.create(lifeInsuranceData);
-        logger.debug('🔍 [CREATE] Life insurance created successfully:', lifeInsurance.id);
-        
-        // Create ConsumerRoleMapping for life insurance category
-        // Use the current logged-in user as the role user (vertical assignment)
-        await consumerRoleMapping.create({
-            user_role_id: req.user.id, // Current logged-in user becomes the role user (vertical)
-            user_consumer_id: req.user.id, // Use the current user as consumer
-            category_id: 5, // life insurance category
-        });
-        logger.debug('🔍 [CREATE] ConsumerRoleMapping created for life insurance category');
+        // Persist the policy + vertical mapping (proposer_number uniqueness,
+        // create, and consumer-role mapping live in the service).
+        const lifeInsurance = await lifeInsuranceService.createPolicy(lifeInsuranceData);
         
         // Handle document uploads
         const uploadedDocuments = [];

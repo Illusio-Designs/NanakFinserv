@@ -137,7 +137,6 @@ const LifeInsuranceDocument = db.lifeInsuranceDocument;
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 const moment = require("moment");
-const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const fsExtra = require("fs-extra");
 const dotenvParseVariables = require("dotenv-parse-variables");
@@ -152,4 +151,4 @@ env = dotenvParseVariables(env.parsed);
 // keep resolving to Backend/uploads exactly as before the split.
 const CTRL_DIR = path.join(__dirname, "../../../app/controllers");
 
-module.exports = { Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, bcrypt, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
+module.exports = { Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
