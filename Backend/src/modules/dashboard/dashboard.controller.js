@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const dashboardService = require("./dashboard.service");
+const logger = require("../../config/logger");
 
 exports.getUserCounts = async (req, res) => {
     try {
@@ -469,26 +471,12 @@ exports.getLoanAmounFilterDate = async (req, res) => {
         const startOfDay = new Date(startDay.setHours(0, 0, 0, 0));
         const endOfDay = new Date(endDay.setHours(23, 59, 59, 999));
 
-        // Adding filters for today's total loan and disbursed amount
-        const totalDisbursedFilter = { disbursementDate: { [Op.between]: [startOfDay, endOfDay] } };
-        const totalLoanedFilter = { loanDate: { [Op.between]: [startOfDay, endOfDay] } };
-        const totalPartPaymentFilter = { part_date: { [Op.between]: [startOfDay, endOfDay] } };
-
-
-        // Execute both counts in parallel using Promise.all
+        // Execute the aggregate sums (admins only).
         if (req.user.Role === 1) {
-            const [totalDisbursedAmount, totalLoandAmount, totalPartPaymentAmount] = await Promise.all([
-                DisbursementLoan.sum('disbursementAmount', { where: totalDisbursedFilter }),
-                LoginLoan.sum('loanAmount', { where: totalLoanedFilter }),
-                PartPaymentLoan.sum('part_amount', { where: totalPartPaymentFilter })
-            ]);
+            const data = await dashboardService.sumLoanAmounts(startOfDay, endOfDay);
             res.status(200).send({
                 message: "Counts fetched successfully",
-                data: {
-                    totalLoandAmount,
-                    totalDisbursedAmount,
-                    totalPartPaymentAmount
-                },
+                data,
                 status: true,
             });
         } else {

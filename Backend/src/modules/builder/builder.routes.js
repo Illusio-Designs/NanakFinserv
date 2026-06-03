@@ -4,6 +4,7 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const controller = require("./builder.controller");
+const v = require("./builder.validator");
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get("/user/data/builder/unitCategory/:unitId", verifyToken, controller.ge
 router.post("/user/data/add/builderUnit", verifyToken, controller.addBuilderUnit);
 router.put("/user/data/update/builderUnit", verifyToken, controller.updateBuilderUnit);
 router.post("/user/data/builder/getunitwithconsumer", verifyToken, controller.getUintByConsumer);
-router.post("/user/data/add/builderUnitCategory", verifyToken, controller.addBuilderUnitCategory);
+router.post("/user/data/add/builderUnitCategory", verifyToken, v.validateAddUnitCategory, controller.addBuilderUnitCategory);
 router.put("/user/data/update/builderUnitCategory", verifyToken, controller.updateBuilderUnitCategory);
 
 module.exports = router;

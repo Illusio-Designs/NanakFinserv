@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const lifeInsuranceService = require("./lifeInsurance.service");
+const logger = require("../../config/logger");
 
 exports.getAllLifeInsUser = async (req, res) => {
     // Set cache control headers to prevent 304 responses
@@ -757,30 +759,14 @@ exports.updateLifeInsurance = async (req, res) => {
 
 exports.deleteLifeInsurance = async (req, res) => {
     try {
-        const { id } = req.params;
-
-        const deletedRowsCount = await LifeInsurance.destroy({
-            where: { id: id }
-        });
-
-        if (deletedRowsCount === 0) {
-            return res.status(404).json({
-                status: false,
-                message: 'Life insurance policy not found'
-            });
+        const deleted = await lifeInsuranceService.deleteById(req.params.id);
+        if (!deleted) {
+            return res.status(404).json({ status: false, message: 'Life insurance policy not found' });
         }
-
-        res.status(200).json({
-            status: true,
-            message: 'Life insurance policy deleted successfully'
-        });
+        res.status(200).json({ status: true, message: 'Life insurance policy deleted successfully' });
     } catch (error) {
-        console.error('Error deleting life insurance policy:', error);
-        res.status(500).json({
-            status: false,
-            message: 'Error deleting life insurance policy',
-            error: error.message
-        });
+        logger.error({ err: error }, "deleteLifeInsurance failed");
+        res.status(500).json({ status: false, message: 'Error deleting life insurance policy' });
     }
 };
 

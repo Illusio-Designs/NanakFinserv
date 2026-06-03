@@ -4,6 +4,7 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const controller = require("./lifeInsurance.controller");
+const v = require("./lifeInsurance.validator");
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get("/user/life-insurance/list", verifyToken, controller.getAllLifeInsura
 router.get("/user/life-insurance/:id", verifyToken, controller.getLifeInsuranceById);
 router.put("/user/life-insurance/update/:id", verifyToken, controller.updateLifeInsurance);
 router.delete("/user/life-insurance/delete/:id", verifyToken, controller.deleteLifeInsurance);
-router.put("/user/life-insurance/status/:id", verifyToken, controller.updateLifeInsuranceStatus);
+router.put("/user/life-insurance/status/:id", verifyToken, v.validateStatus, controller.updateLifeInsuranceStatus);
 router.post("/user/life-insurance/:lifeInsuranceId/documents/upload", verifyToken, controller.uploadLifeInsuranceDocument);
 router.get("/user/life-insurance/:lifeInsuranceId/documents", verifyToken, controller.getLifeInsuranceDocuments);
 router.delete("/user/life-insurance/documents/:documentId", verifyToken, controller.deleteLifeInsuranceDocument);

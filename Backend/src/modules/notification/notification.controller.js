@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const notificationService = require("./notification.service");
+const logger = require("../../config/logger");
 
 exports.getNotifications = async (req, res) => {
     try {
@@ -146,29 +148,14 @@ exports.getNotifications = async (req, res) => {
 
 exports.markNotificationAsRead = async (req, res) => {
     try {
-        const { notificationId } = req.params;
-        
-        const notification = await db.notification.findByPk(notificationId);
-        if (!notification) {
-            return res.status(404).json({
-                message: 'Notification not found',
-                status: false
-            });
+        const updated = await notificationService.markAsRead(req.params.notificationId);
+        if (!updated) {
+            return res.status(404).json({ message: 'Notification not found', status: false });
         }
-
-        await notification.update({ is_read: true });
-
-        res.status(200).json({
-            message: 'Notification marked as read',
-            status: true
-        });
+        res.status(200).json({ message: 'Notification marked as read', status: true });
     } catch (error) {
-        console.error('Error marking notification as read:', error);
-        res.status(500).json({
-            message: 'Error marking notification as read',
-            status: false,
-            error: error.message
-        });
+        logger.error({ err: error }, "markNotificationAsRead failed");
+        res.status(500).json({ message: 'Error marking notification as read', status: false });
     }
 };
 
@@ -270,24 +257,15 @@ exports.markAllNotificationsAsRead = async (req, res) => {
 
 exports.getNotificationCount = async (req, res) => {
     try {
-        const totalCount = await db.notification.count();
-        const unreadCount = await db.notification.count({ where: { is_read: false } });
-
+        const data = await notificationService.getCounts();
         res.status(200).json({
             message: 'Notification count retrieved successfully',
             status: true,
-            data: {
-                total: totalCount,
-                unread: unreadCount
-            }
+            data,
         });
     } catch (error) {
-        console.error('Error getting notification count:', error);
-        res.status(500).json({
-            message: 'Error getting notification count',
-            status: false,
-            error: error.message
-        });
+        logger.error({ err: error }, "getNotificationCount failed");
+        res.status(500).json({ message: 'Error getting notification count', status: false });
     }
 };
 
