@@ -1,35 +1,34 @@
-// Direct API Configuration
-// This file provides a direct way to configure API URLs without relying on environment variables
+// API configuration — environment-driven.
+//
+// Precedence:
+//   1. REACT_APP_* build-time env vars (set per environment)
+//   2. hostname heuristic (localhost -> dev API, otherwise prod API)
+//
+// Replaces the previous hardcoded `config = DEVELOPMENT_CONFIG`, which made
+// production builds talk to http://localhost:5001.
 
-// PRODUCTION CONFIGURATION
 const PRODUCTION_CONFIG = {
   API_URL: 'https://api.nanakfinserv.com/api',
   DOWNLOAD_URL: 'https://api.nanakfinserv.com/api/user/download/',
   BASE_URL: 'https://api.nanakfinserv.com',
-  NODE_ENV: 'production'
 };
 
-// DEVELOPMENT CONFIGURATION
 const DEVELOPMENT_CONFIG = {
   API_URL: 'http://localhost:5001/api',
   DOWNLOAD_URL: 'http://localhost:5001/api/user/download/',
   BASE_URL: 'http://localhost:5001',
-  NODE_ENV: 'development'
 };
 
-// Determine which configuration to use
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+const fallback = isLocalhost ? DEVELOPMENT_CONFIG : PRODUCTION_CONFIG;
 
-// Force development URLs for local development (uncomment the line below to force production)
-const config = DEVELOPMENT_CONFIG;
-
-// Use this line instead if you want to auto-detect based on hostname
-// const config = isDevelopment ? DEVELOPMENT_CONFIG : PRODUCTION_CONFIG;
-
-console.log('🔧 API Configuration (Direct):');
-console.log('Using config for:', isDevelopment ? 'DEVELOPMENT' : 'PRODUCTION');
-console.log('API_URL:', config.API_URL);
-console.log('DOWNLOAD_URL:', config.DOWNLOAD_URL);
-console.log('BASE_URL:', config.BASE_URL);
+const config = {
+  API_URL: process.env.REACT_APP_API_URL || fallback.API_URL,
+  DOWNLOAD_URL: process.env.REACT_APP_DOWNLOAD_URL || fallback.DOWNLOAD_URL,
+  BASE_URL: process.env.REACT_APP_BASE_URL || fallback.BASE_URL,
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  IS_PRODUCTION: (process.env.NODE_ENV || 'development') === 'production',
+};
 
 export default config;

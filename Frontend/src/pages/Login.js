@@ -5,6 +5,11 @@ import { login } from '../serviceAPI/userAPI';
 import FlagDropdown from './Flag';
 import toast from 'react-hot-toast';
 
+// MSG91 widget credentials — env-driven (fall back to the existing values so
+// local dev keeps working). Set REACT_APP_MSG91_* per environment.
+const MSG91_WIDGET_ID = process.env.REACT_APP_MSG91_WIDGET_ID || '346776667162353937323330';
+const MSG91_TOKEN_AUTH = process.env.REACT_APP_MSG91_TOKEN_AUTH || '426738TclvGmDmM66a8ec44P1';
+
 const Login = () => {
   const navigate = useNavigate();
   const firstOtpInputRef = useRef(Array.from({ length: 6 }).map(() => React.createRef()));
@@ -22,8 +27,8 @@ const Login = () => {
     }
     try {
       window.initSendOTP({
-        widgetId: "346776667162353937323330",
-        tokenAuth: "426738TclvGmDmM66a8ec44P1",
+        widgetId: MSG91_WIDGET_ID,
+        tokenAuth: MSG91_TOKEN_AUTH,
         exposeMethods: true,
         success: () => console.log('[Login] Provider initialized'),
         failure: (e) => console.warn('[Login] Provider init failed', e)
@@ -87,8 +92,8 @@ const Login = () => {
         if (window.initSendOTP) {
           console.warn('[Login] Retrying via initSendOTP after sendOtp error');
           window.initSendOTP({
-            widgetId: "346776667162353937323330",
-            tokenAuth: "426738TclvGmDmM66a8ec44P1",
+            widgetId: MSG91_WIDGET_ID,
+            tokenAuth: MSG91_TOKEN_AUTH,
             exposeMethods: true,
             identifier,
             success: successCb,
@@ -99,8 +104,8 @@ const Login = () => {
     } else if (window.initSendOTP) {
       // Fallback: initialize with identifier if exposed method not present
       window.initSendOTP({
-        widgetId: "346776667162353937323330",
-        tokenAuth: "426738TclvGmDmM66a8ec44P1",
+        widgetId: MSG91_WIDGET_ID,
+        tokenAuth: MSG91_TOKEN_AUTH,
         exposeMethods: true,
         identifier,
         success: successCb,
