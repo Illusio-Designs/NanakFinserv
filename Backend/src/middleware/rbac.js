@@ -46,4 +46,36 @@ function requireRole(...allowed) {
   };
 }
 
-module.exports = { requireRole, ROLES, ADMIN, BUILDER_OPS, PORTAL, CONSUMER_VIEW };
+/**
+ * Object-level guard: allow privileged roles through unconditionally, otherwise
+ * only allow when the route param identifies the caller's own record.
+ *   requireSelfOrRoles("consumerId", ADMIN)
+ */
+function requireSelfOrRoles(paramName, allowedRoles) {
+  const allow = allowedRoles.map(Number);
+  return (req, res, next) => {
+    const role = req.user && Number(req.user.Role);
+    if (role && allow.includes(role)) return next();
+    const target = req.params && req.params[paramName];
+    if (
+      target !== undefined &&
+      req.user &&
+      String(target) === String(req.user.id)
+    ) {
+      return next();
+    }
+    return res
+      .status(403)
+      .json({ message: "Forbidden: not your resource", status: false });
+  };
+}
+
+module.exports = {
+  requireRole,
+  requireSelfOrRoles,
+  ROLES,
+  ADMIN,
+  BUILDER_OPS,
+  PORTAL,
+  CONSUMER_VIEW,
+};

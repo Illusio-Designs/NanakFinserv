@@ -72,3 +72,37 @@ describe("service.createPolicy", () => {
     expect(data.proposer_number).toMatch(/^LI\d+$/);
   });
 });
+
+describe("service.buildCreatePayload", () => {
+  const service = require("./lifeInsurance.service");
+
+  it("normalizes mobile arrays, coerces ints, stamps the actor", () => {
+    const out = service.buildCreatePayload(
+      {
+        proposer_mobile_numbers: ["", "9876543210"],
+        tobacco_days: "5",
+        alcohol_days: "",
+        life_assured_father_name: "  Bob  ",
+        updated_by: "",
+      },
+      7
+    );
+    expect(out.proposer_mobile_numbers).toBe("9876543210");
+    expect(out.tobacco_days).toBe(5);
+    expect(out.alcohol_days).toBeNull();
+    expect(out.life_assured_father_name).toBe("Bob");
+    expect(out.user_id).toBe(7);
+    expect(out.created_by).toBe(7);
+    expect(out.status).toBe("Draft");
+    expect(out.updated_by).toBeNull();
+    expect(out.policy_numbers).toMatch(/^POL/);
+  });
+
+  it("reads an indexed FormData mobile key", () => {
+    const out = service.buildCreatePayload(
+      { "nominee_mobile_numbers[0]": "9999999999" },
+      1
+    );
+    expect(out.nominee_mobile_numbers).toBe("9999999999");
+  });
+});

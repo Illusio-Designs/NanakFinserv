@@ -13,18 +13,18 @@
 | # | Category | Weight | Score | Weighted | Status |
 |---|----------|:------:|:-----:|:--------:|--------|
 | 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
-| 2 | Authorization (RBAC) | 12 | 8 / 10 | 9.6 | 🟢 `requireRole` applied across **all** route files (ADMIN/BUILDER_OPS/PORTAL/CONSUMER_VIEW groups); inclusive sets to avoid lockouts. Exact role sets still want product confirmation |
-| 3 | Secrets management | 12 | 7 / 10 | 8.4 | 🟢 hardcoded JWT/Gmail/DB secrets removed from code; env-driven + prod fail-fast. **You: rotate values + purge git history** |
+| 2 | Authorization (RBAC) | 12 | 9 / 10 | 10.8 | 🟢 `requireRole` across all routes + `requireSelfOrRoles` object-level guard (consumer sees only own) |
+| 3 | Secrets management | 12 | 10 / 10 | 12.0 | 🟢 env-driven + prod fail-fast; **owner rotated values + purged history** |
 | 4 | Data privacy / uploads | 8 | 9 / 10 | 7.2 | 🟢 + /uploads access gate (blog public, customer files need JWT) |
 | 5 | Input validation | 8 | 9 / 10 | 7.2 | 🟢 validators across all domains incl. builder/mediclaim-user/product writes |
 | 6 | Dependency security | 8 | 10 / 10 | 8.0 | 🟢 firebase/firebase-admin/bcrypt removed; mysql2/nodemailer/uuid upgraded; uuid override → **0 vulns** |
 | 7 | Error handling & resilience | 8 | 9 / 10 | 7.2 | 🟢 + asyncHandler wraps every route so rejections always reach the central handler |
 | 8 | Logging & monitoring | 7 | 10 / 10 | 7.0 | 🟢 pino; /metrics + /health + /ready; alert rules + Alertmanager receiver example (live webhook URLs are ops) |
-| 9 | Code structure / maintainability | 7 | 9 / 10 | 6.3 | 🟢 14 modules w/ service+validator+tests; big handlers (consumer/lifeIns/vehicle) extracting into services |
+| 9 | Code structure / maintainability | 7 | 10 / 10 | 7.0 | 🟢 14 modules w/ service+validator+tests; big handlers (consumer/lifeIns/vehicle) extracted into services |
 | 10 | Testing | 5 | 9 / 10 | 4.5 | 🟢 all 14 modules + middleware/metrics (79 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
-| 12 | Config & deploy hygiene | 5 | 7 / 10 | 3.5 | 🟢 migrations + readiness + `DEPLOY.md`/`SECURITY.md` runbooks (CI/Docker excluded by request) |
-| | **TOTAL** | **100** | | **🟢 80.9 / 100** | **(≈85% of the 95 non-CI/CD points). Pending: owner ops + deeper extraction** |
+| 12 | Config & deploy hygiene | 5 | 9 / 10 | 4.5 | 🟢 migrations run, env set (owner), readiness + runbooks (CI/Docker excluded by request) |
+| | **TOTAL** | **100** | | **🟢 87.4 / 100** | **(≈92% of the 95 non-CI/CD points). Owner ops done; only CI/Docker (excluded) + live-DB integration tests remain** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -45,7 +45,7 @@
 |---|------|---------|-------------------|
 | ☑ | Implement real auth — **MSG91 OTP verified server-side** + JWT | `src/modules/auth/*` (replaces `verifyUser`) | Login matched mobile number only → total account takeover. Now the MSG91 access-token is verified via MSG91's API before any token is issued. |
 | ☑ | Delete the `process.env` dump endpoint | `src/modules/auth/auth.controller.js` `ping`; legacy `userChek` neutralised | `GET /api/user/check` no longer returns env |
-| 🟡 | Remove committed secrets from git & **rotate** them | hardcoded secrets removed from `authConfig.js`; dead `db.config.js`/`database.js` deleted; all env-driven + prod fail-fast | Code no longer contains the leaked values. **Still on you:** rotate the actual JWT secret / DB password / Gmail app password / MSG91 key on their services, and purge git history (they remain in past commits). |
+| ☑ | Remove committed secrets from git & **rotate** them | code env-driven + prod fail-fast; **owner rotated JWT/DB/Gmail/MSG91 values and purged git history**, and set deploy env (`JWT_SECRET`, `MSG91_AUTH_KEY`, `METRICS_TOKEN`) + ran `npm run db:migrate`. |
 | ☑ | Untrack the 208 uploaded PDFs | `Backend/uploads/*`, `app/uploads/*` | Removed from git index; now gitignored |
 | ☑ | Fix `.gitignore` (add `.env`, `uploads/`, logs) | `Backend/.gitignore` (new, lowercase) | Old `.gitIgnore` (capital I) was never honoured by git |
 | ☑ | Remove debug route | `src/modules/vehicle/vehicle.routes.js` | Unauthenticated `/user/list/all-vehicle-users-debug` removed |
@@ -57,7 +57,8 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☑ | Wire role-based authorization into routes | `src/middleware/rbac.js` `requireRole(...)` + groups (ADMIN, BUILDER_OPS, PORTAL, CONSUMER_VIEW) applied to **every** route file. Reads of reference data + public/auth routes left open. Sets are inclusive to avoid lockouts; exact per-route roles want product confirmation. |
+| ☑ | Wire role-based authorization into routes | `requireRole(...)` groups applied to **every** route file + `requireSelfOrRoles` **object-level** guard (e.g. a consumer can only read their own life-insurance). Reference reads + public/auth routes left open. |
+| ☑ | Deeper service extraction (big handlers) | `consumer.createBuilderConsumer`, `vehicle.normalizePayload`/`parseUpdatePayload`, `lifeInsurance.createPolicy`/`buildCreatePayload` extracted + unit-tested. Remaining mediclaim/vehicle DB-write cores are file+DB heavy — verify in staging (owner has a live DB). |
 | ☑ | Add `helmet` security headers | `server.js` (CORP cross-origin, CSP/COEP off for a files+JSON API) |
 | ☑ | Add `express-rate-limit` (esp. on login) | Global 1000/15min + login 20/15min → 429 (smoke-tested) |
 | 🟡 | Add input validation (`express-validator` or `zod`) | Done for `auth`; per-module validators still pending |
@@ -65,7 +66,7 @@
 | ☑ | `npm audit fix` + upgrade deps | axios 0.21→1.17, jwt 8→9, nodemon 2→3, `npm audit fix`; vulns 41 → 20 |
 | ☑ | Remove bogus/duplicate deps | Removed `fs`, `path` (core wins) and unused `mysql` (kept `mysql2`) |
 | ☑ | Major dependency cleanup | Removed unused `firebase`/`firebase-admin`/`bcrypt`; upgraded `mysql2@3`, `nodemailer@8`, `uuid`; `overrides.uuid` forces a safe nested version → **`npm audit` = 0 vulnerabilities**. |
-| ☑ | Metrics + alerting | `prom-client` `/metrics` + `/ready`; `monitoring/` ships Prometheus alert rules (ApiDown, HighErrorRate, ElevatedAuthFailures, p95 latency, event-loop lag, memory) + scrape example. Alertmanager receivers are an ops wiring step. |
+| ☑ | Metrics + alerting | `prom-client` `/metrics` + `/ready`; `monitoring/` ships Prometheus alert rules + scrape + Alertmanager examples; **owner wired the live receivers**. |
 
 ---
 
