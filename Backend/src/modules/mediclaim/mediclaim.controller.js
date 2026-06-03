@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const mediclaimService = require("./mediclaim.service");
+const logger = require("../../config/logger");
 
 exports.getAllMediclaimUser = async (req, res) => {
     // Set cache control headers to prevent 304 responses
@@ -130,124 +132,59 @@ exports.getAllMediclaimUser = async (req, res) => {
 
 
 exports.getAllMediclaimCompany = async (req, res) => {
-    console.log('🔍 Backend: getAllMediclaimCompany called');
     try {
-        const companies = await MediclaimCompany.findAll({
-        raw: true,
-        });
-        console.log('🔍 Backend: Found companies:', companies);
-        console.log('🔍 Backend: Number of companies:', companies.length);
-        
-            res.status(200).send({
-                message: "mediclaim company get success",
-            data: companies,
-                status: true,
-            });
+        const data = await mediclaimService.getCompanies();
+        res.status(200).send({ message: "mediclaim company get success", data, status: true });
     } catch (e) {
-        console.error('🔍 Backend: Error in getAllMediclaimCompany:', e);
+        logger.error({ err: e }, "getAllMediclaimCompany failed");
         res.status(400).send({ message: "mediclaim company error", status: false });
     }
 };
 
 
-exports.addMediclaimCompanyData = (req, res) => {
-    console.log('🔍 [ADD COMPANY] Request body:', req.body);
-    
-    if (!req.body?.mediclaim_company_name) {
-        return res.status(400).send({
-            message: "Company name not provided",
+exports.addMediclaimCompanyData = async (req, res) => {
+    try {
+        const { conflict, created } = await mediclaimService.addCompany(
+            req.body.mediclaim_company_name
+        );
+        if (conflict) {
+            return res.status(400).send({
+                message: "Mediclaim company name is already in use.",
                 status: false,
-        });
-    }
-    
-    MediclaimCompany.findOne({
-        where: {
-            mediclaim_company_name: req.body.mediclaim_company_name
-        },
-    })
-        .then((user) => {
-            if (!user) {
-                MediclaimCompany.create({
-                    mediclaim_company_name: req.body.mediclaim_company_name,
-                })
-                    .then(async (articles) => {
-                        console.log('🔍 [ADD COMPANY] Company created:', articles);
-                        res.status(200).send({
-                            message: "Mediclaim company successfully added!",
-                            status: true,
-                            data: articles,
-                        });
-                    })
-                    .catch((e) => {
-                        console.error('🔍 [ADD COMPANY] Error creating company:', e);
-                        res.status(400).send({
-                            message: "Error creating company",
-                        status: false,
-                            error: e.message
-                        });
-                    });
-            } else {
-                console.log('🔍 [ADD COMPANY] Company name already exists');
-                res.status(400).send({
-                    message: "Mediclaim company name is already in use.",
-                    status: false,
-                });
-            }
-        })
-        .catch((e) => {
-            console.error('🔍 [ADD COMPANY] Error checking company:', e);
-            res.status(500).send({ 
-                message: e?.message || "Internal server error",
-                status: false
             });
+        }
+        return res.status(200).send({
+            message: "Mediclaim company successfully added!",
+            status: true,
+            data: created,
         });
+    } catch (e) {
+        logger.error({ err: e }, "addMediclaimCompanyData failed");
+        return res.status(500).send({ message: "Internal server error", status: false });
+    }
 };
 
 
 exports.updateMediclaimCompanyData = async (req, res) => {
-    console.log('🔍 [UPDATE COMPANY] Request body:', req.body);
-    
     try {
-        // Check if another company already has this name
-    let user = await MediclaimCompany.findOne({
-        where: {
-            mediclaim_company_id: { [Op.ne]: req.body.mediclaim_company_id },
-            mediclaim_company_name: req.body.mediclaim_company_name,
-        },
-    });
-        
-    if (user) {
-            console.log('🔍 [UPDATE COMPANY] Company name already exists');
-            return res.status(400).send({ 
-                message: "Mediclaim company name already in use", 
-                status: false 
+        const { conflict, result } = await mediclaimService.updateCompany(
+            req.body.mediclaim_company_id,
+            req.body.mediclaim_company_name
+        );
+        if (conflict) {
+            return res.status(400).send({
+                message: "Mediclaim company name already in use",
+                status: false,
             });
         }
-        
-        const result = await MediclaimCompany.update(
-        {
-            mediclaim_company_name: req.body.mediclaim_company_name,
-        },
-        {
-            where: {
-                mediclaim_company_id: req.body.mediclaim_company_id,
-            },
-        }
-        );
-        
-        console.log('🔍 [UPDATE COMPANY] Update result:', result);
-        
-            return res.status(200).send({
-                message: "Mediclaim company successfully updated!",
-                status: true,
+        return res.status(200).send({
+            message: "Mediclaim company successfully updated!",
+            status: true,
             data: result,
         });
     } catch (e) {
-        console.error('🔍 [UPDATE COMPANY] Error:', e);
-        res.status(500).send({ 
-            message: e?.message || "Internal server error",
-            status: false
-        });
+        logger.error({ err: e }, "updateMediclaimCompanyData failed");
+        res.status(500).send({ message: "Internal server error", status: false });
     }
 };
 

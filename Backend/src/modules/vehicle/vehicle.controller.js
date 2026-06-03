@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const vehicleService = require("./vehicle.service");
+const logger = require("../../config/logger");
 
 exports.getAllVehicleInsUser = async (req, res) => {
     let whereObj = {};
@@ -2764,58 +2766,28 @@ exports.getVehicleUserRenewalData = async (req, res) => {
 
 
 exports.updateVehicleUserRemarkData = async (req, res) => {
-    console.log('🔧 updateVehicleUserRemarkData called with:', {
-        body: req.body,
-        params: req.params,
-        user: req.user
-    });
-
-    if (!req?.body?.remark) {
-        console.log('❌ No remark found in request body');
-        return res.status(400).json({ error: 'Remark not found in request body' });
-    }
-
-    if (!req.params.vehicle_user_id) {
-        console.log('❌ Vehicle user ID not provided');
-        return res.status(400).json({ error: 'Vehicle user ID not provided' });
-    }
-
-    // Add validation for remark length
-    if (req.body.remark.length > 1000) {
-        console.log('❌ Remark too long:', req.body.remark.length);
-        return res.status(400).json({ error: 'Remark is too long. Maximum length is 1000 characters.' });
-    }
-
     try {
-        console.log('🔧 Finding vehicle user with ID:', req.params.vehicle_user_id);
-        const user = await vehicleUser.findByPk(req.params.vehicle_user_id);
+        const user = await vehicleService.updateRemark(
+            req.params.vehicle_user_id,
+            req.body.remark
+        );
 
         if (!user) {
-            console.log('❌ Vehicle not found with ID:', req.params.vehicle_user_id);
             return res.status(404).json({ error: "Vehicle not found" });
         }
-        
-        console.log('🔧 Updating remark:', req.body.remark);
-        await user.update({
-            remark: req.body.remark
-        });
-        
-        console.log('✅ Vehicle remark updated successfully');
+
         return res.status(200).send({
             message: "Vehicle remark successfully updated!",
             status: true,
             userData: user,
         });
-
     } catch (error) {
-        console.error("❌ Error updating vehicle remark:", error);
+        logger.error({ err: error }, "updateVehicleUserRemarkData failed");
         if (error.name === 'SequelizeValidationError') {
-            // Validation error occurred
-            const errors = error.errors.map(err => err.message);
+            const errors = error.errors.map((err) => err.message);
             return res.status(400).json({ errors });
-        } else {
-            return res.status(500).json({ error: error.message });
         }
+        return res.status(500).json({ error: "Internal Server Error" });
     }
 };
 
