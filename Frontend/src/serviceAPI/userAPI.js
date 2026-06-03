@@ -37,19 +37,15 @@ if (API_URL.includes('localhost')) {
 }
 
 
-const login = async (mobileNumber, addToast) => {
+const login = async (mobileNumber, accessToken) => {
   try {
-    console.log('🔍 [LOGIN] Attempting login with mobileNumber:', mobileNumber);
-    console.log('🔍 [LOGIN] API_URL from config:', API_URL);
-    console.log('🔍 [LOGIN] Full login URL:', `${API_URL}/user/login`);
-    console.log('🔍 [LOGIN] Request payload:', { mobileNumber });
-    
-    // Development mode - localhost URLs are allowed
-    if (API_URL.includes('localhost')) {
-      console.log('🔧 [DEV MODE] Using localhost API URL for development');
-    }
-    
-    const response = await axios.post(`${API_URL}/user/login`, { mobileNumber }, { withCredentials: true });
+    // accessToken is the MSG91 widget access-token from a successful OTP.
+    // The backend verifies it server-side before issuing the app JWT.
+    const response = await axios.post(
+      `${API_URL}/user/login`,
+      { mobileNumber, accessToken },
+      { withCredentials: true }
+    );
     console.log('🔍 [LOGIN] Response received:', response);
     
     if (!response.data) {

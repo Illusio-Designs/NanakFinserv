@@ -137,8 +137,11 @@ const dotenvParseVariables = require("dotenv-parse-variables");
 let env = require('dotenv').config();
 env = dotenvParseVariables(env.parsed);
 
+// NOTE: Auth/login endpoints now live in src/modules/auth. This handler is no
+// longer routed. It previously leaked the entire process.env; that has been
+// removed. Kept only to avoid breaking any stale references.
 exports.userChek = async (req, res) => {
-    return res.send({ messge: "Api test", env: process?.env });
+    return res.send({ message: "Api test", status: true });
 };
 
 exports.verifyUser = async (req, res) => {
