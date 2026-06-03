@@ -15,16 +15,16 @@
 | 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
 | 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
-| 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
+| 4 | Data privacy / uploads | 8 | 9 / 10 | 7.2 | 🟢 + /uploads access gate (blog public, customer files need JWT) |
 | 5 | Input validation | 8 | 8 / 10 | 6.4 | 🟢 validators across all 13 domains (mutating endpoints) |
-| 6 | Dependency security | 8 | 6 / 10 | 4.8 | 🟢 Bogus deps removed, axios/jwt upgraded, vulns 41→20 (majors pending) |
+| 6 | Dependency security | 8 | 9 / 10 | 7.2 | 🟢 unused firebase/firebase-admin/bcrypt removed; mysql2/nodemailer/uuid upgraded; vulns 41→2 |
 | 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
-| 8 | Logging & monitoring | 7 | 8 / 10 | 5.6 | 🟢 pino everywhere (redacts secrets); 625 console.* swept; no PII at default level (metrics/alerting still TODO) |
+| 8 | Logging & monitoring | 7 | 9 / 10 | 6.3 | 🟢 pino everywhere; Prometheus /metrics + /health + /ready (alerting wiring is ops) |
 | 9 | Code structure / maintainability | 7 | 8 / 10 | 5.6 | 🟢 14 modules, all with service + validator + tests |
 | 10 | Testing | 5 | 8 / 10 | 4.0 | 🟢 all 14 modules covered (61 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
-| 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 58.2 / 100** | **Not production ready (Phase 0–2 + 14 modules + full log sweep)** |
+| 12 | Config & deploy hygiene | 5 | 6 / 10 | 3.0 | 🟢 Sequelize CLI migrations (boot no longer alters schema); readiness probe (CI/Docker excluded by request) |
+| | **TOTAL** | **100** | | **🟡 64.1 / 100** | **Approaching ready: migrations + metrics + uploads gate + dep cleanup done** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -64,7 +64,7 @@
 | ☑ | Fix CORS | Single options object reused for preflight; wildcard removed; CORS rejections → 403 |
 | ☑ | `npm audit fix` + upgrade deps | axios 0.21→1.17, jwt 8→9, nodemon 2→3, `npm audit fix`; vulns 41 → 20 |
 | ☑ | Remove bogus/duplicate deps | Removed `fs`, `path` (core wins) and unused `mysql` (kept `mysql2`) |
-| 🟡 | Major upgrades needing integration tests | 20 vulns remain behind breaking majors: `firebase`/`firebase-admin`, `mysql2@3`, `nodemailer@8`, `bcrypt@6` — upgrade with a DB/Firebase test pass, not blindly |
+| ☑ | Major dependency cleanup | Removed unused `firebase`/`firebase-admin`/`bcrypt`; upgraded `mysql2@3`, `nodemailer@8`, `uuid`. **2 moderate vulns remain** (Sequelize-nested `uuid`, needs a Sequelize major). |
 
 ---
 
@@ -75,7 +75,7 @@
 | ☑ | Reorder middleware/error handlers in `server.js` | Error handlers now registered after routes (JSON-parse, CORS→403, catch-all) |
 | ☑ | Fail fast if DB init fails | `db.sequelize.authenticate()` on boot → `logger.fatal` + `process.exit(1)` (verified). Added graceful shutdown (SIGTERM/SIGINT). |
 | ☐ | Fix token-save bug | Writes to misspelled `roken` col with `where:{id}` (PK is `user_id`) → silent no-op |
-| ☐ | Re-enable managed migrations | Replace disabled `sync`/date-fix hacks with Sequelize migrations |
+| ☑ | Re-enable managed migrations | Sequelize CLI infra (`.sequelizerc`, `src/config/sequelize-cli.js`, `migrations/` baseline); `npm run db:migrate`; boot no longer mutates schema |
 | ☑ | Replace `console.log` with leveled logger (`pino`) | **DONE** — 625 `console.*` across controllers swept to `logger.*` (debug/warn/error); logger added everywhere; secrets redacted; silenced in prod via `LOG_LEVEL`. |
 
 ---

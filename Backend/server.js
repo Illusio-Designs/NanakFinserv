@@ -9,7 +9,6 @@ const dotenvParseVariables = require("dotenv-parse-variables");
 const { sequelize } = require("./app/models/index");
 const apiRoutes = require("./src/routes");
 const fs = require("fs");
-const alterTables = require("./app/config/db.migration");
 const logger = require("./src/config/logger");
 
 let env = require("dotenv").config();
@@ -31,6 +30,11 @@ app.use(
 // Behind a proxy/load balancer (needed for correct client IPs in rate limiting)
 app.set("trust proxy", 1);
 
+// Prometheus metrics: record every request, expose /metrics.
+const { metricsMiddleware, metricsHandler } = require("./src/config/metrics");
+app.use(metricsMiddleware);
+app.get("/metrics", metricsHandler);
+
 // Middleware to handle file uploads
 app.use(
   fileUpload({
@@ -51,10 +55,13 @@ if (!fs.existsSync(appUploadsDir)) {
   fs.mkdirSync(appUploadsDir);
 }
 
-app.use("/uploads", express.static(uploadsDir));
-app.use("/public/uploads", express.static(uploadsDir));
+// Access control: blog images are public; all other uploaded files (customer
+// documents) require a valid JWT (header or ?token=).
+const uploadsAccess = require("./src/middleware/uploadsAccess");
+app.use("/uploads", uploadsAccess, express.static(uploadsDir));
+app.use("/public/uploads", uploadsAccess, express.static(uploadsDir));
 // Also serve files from app/uploads directory
-app.use("/uploads", express.static(appUploadsDir));
+app.use("/uploads", uploadsAccess, express.static(appUploadsDir));
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -121,26 +128,28 @@ app.use("/api", apiLimiter);
 
 const db = require("./app/models/index");
 
-// Verify the DB connection and run table alterations.
-// Fail-fast: if the database is unreachable we must NOT start serving traffic.
+// Verify the DB connection. Fail-fast: if the database is unreachable we must
+// NOT start serving traffic. Schema changes are managed by Sequelize CLI
+// migrations (`npm run db:migrate`), run during deploy — not on boot.
 const initializeDatabase = async () => {
   await db.sequelize.authenticate(); // throws if the DB is unreachable
   logger.info("Database connection established");
-
-  // Table alterations for new fields. A failure here is logged but not fatal
-  // (the connection itself is healthy); migrations should move to a managed
-  // migration tool — see WORK.md.
-  try {
-    await alterTables();
-    logger.info("Table alterations completed");
-  } catch (error) {
-    logger.error({ err: error }, "Table alterations failed (continuing)");
-  }
 };
 
-// Health check route
+// Liveness: process is up.
 app.get("/health", (req, res) => {
-  res.json({ message: "Welcome to NanakFinserv API!" });
+  res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// Readiness: can we reach the database? (for load-balancer / k8s probes)
+app.get("/ready", async (req, res) => {
+  try {
+    await db.sequelize.authenticate();
+    res.json({ status: "ready" });
+  } catch (e) {
+    logger.warn({ err: e }, "Readiness check failed");
+    res.status(503).json({ status: "not-ready" });
+  }
 });
 
 // API routes
