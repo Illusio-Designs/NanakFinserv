@@ -19,12 +19,12 @@
 | 5 | Input validation | 8 | 8 / 10 | 6.4 | 🟢 validators across all 13 domains (mutating endpoints) |
 | 6 | Dependency security | 8 | 6 / 10 | 4.8 | 🟢 Bogus deps removed, axios/jwt upgraded, vulns 41→20 (majors pending) |
 | 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
-| 8 | Logging & monitoring | 7 | 5 / 10 | 3.5 | 🟢 pino logger (redacts secrets); JWTAuth PII logging removed; bulk sweep pending |
+| 8 | Logging & monitoring | 7 | 8 / 10 | 5.6 | 🟢 pino everywhere (redacts secrets); 625 console.* swept; no PII at default level (metrics/alerting still TODO) |
 | 9 | Code structure / maintainability | 7 | 8 / 10 | 5.6 | 🟢 14 modules, all with service + validator + tests |
 | 10 | Testing | 5 | 8 / 10 | 4.0 | 🟢 all 14 modules covered (61 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 56.1 / 100** | **Not production ready (Phase 0–2 + all 14 modules deepened)** |
+| | **TOTAL** | **100** | | **🟠 58.2 / 100** | **Not production ready (Phase 0–2 + 14 modules + full log sweep)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -76,7 +76,7 @@
 | ☑ | Fail fast if DB init fails | `db.sequelize.authenticate()` on boot → `logger.fatal` + `process.exit(1)` (verified). Added graceful shutdown (SIGTERM/SIGINT). |
 | ☐ | Fix token-save bug | Writes to misspelled `roken` col with `where:{id}` (PK is `user_id`) → silent no-op |
 | ☐ | Re-enable managed migrations | Replace disabled `sync`/date-fix hacks with Sequelize migrations |
-| 🟡 | Replace `console.log` with leveled logger (`pino`) | Logger added (`src/config/logger.js`, redacts secrets). Wired into `server.js` + JWTAuth (was logging tokens/PII). Bulk sweep of extracted controllers pending (done per module during service extraction). |
+| ☑ | Replace `console.log` with leveled logger (`pino`) | **DONE** — 625 `console.*` across controllers swept to `logger.*` (debug/warn/error); logger added everywhere; secrets redacted; silenced in prod via `LOG_LEVEL`. |
 
 ---
 

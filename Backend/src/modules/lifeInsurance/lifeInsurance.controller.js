@@ -79,9 +79,9 @@ exports.getAllLifeInsUser = async (req, res) => {
         'Expires': '0'
     });
     
-    console.log('🔍 [LIFE INS API] User making request:', req.user);
-    console.log('🔍 [LIFE INS API] User Role:', req.user.Role);
-    console.log('🔍 [LIFE INS API] User ID:', req.user.id);
+    logger.debug('🔍 [LIFE INS API] User making request:', req.user);
+    logger.debug('🔍 [LIFE INS API] User Role:', req.user.Role);
+    logger.debug('🔍 [LIFE INS API] User ID:', req.user.id);
     
     let whereObj = {};
 
@@ -89,13 +89,13 @@ exports.getAllLifeInsUser = async (req, res) => {
     // Only apply role-based filtering if the user doesn't have life insurance category access
     if (req.user.Role === 4 && !req.user.categoryIds?.includes(5)) {
         whereObj.user_role_id = req.user.id;
-        console.log('🔍 [LIFE INS API] Setting user_role_id filter:', req.user.id);
+        logger.debug('🔍 [LIFE INS API] Setting user_role_id filter:', req.user.id);
     } else {
-        console.log('🔍 [LIFE INS API] User has life insurance category access - showing all life insurance consumers');
+        logger.debug('🔍 [LIFE INS API] User has life insurance category access - showing all life insurance consumers');
     }
     whereObj.category_id = 5;
     
-    console.log('🔍 [LIFE INS API] Final whereObj:', whereObj);
+    logger.debug('🔍 [LIFE INS API] Final whereObj:', whereObj);
     await consumerRoleMapping
         .findAll({
             where: whereObj,
@@ -117,7 +117,7 @@ exports.getAllLifeInsUser = async (req, res) => {
             raw: true,
         })
         .then((articles) => {
-            console.log(articles);
+            logger.debug(articles);
             res.status(200).send({
                 message: "catergory unit get success",
                 data: articles,
@@ -126,18 +126,18 @@ exports.getAllLifeInsUser = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
 
 exports.createLifeInsurance = async (req, res) => {
     try {
-        console.log('🔍 [CREATE] Request body:', req.body);
-        console.log('🔍 [CREATE] Request body keys:', Object.keys(req.body || {}));
+        logger.debug('🔍 [CREATE] Request body:', req.body);
+        logger.debug('🔍 [CREATE] Request body keys:', Object.keys(req.body || {}));
         const errors = validateLifeInsurancePayload(req.body || {});
         if (errors.length) {
-            console.log('🔍 [CREATE] Validation errors:', errors);
+            logger.debug('🔍 [CREATE] Validation errors:', errors);
             return res.status(400).json({ status: false, message: 'Validation failed', errors });
         }
 
@@ -177,7 +177,7 @@ exports.createLifeInsurance = async (req, res) => {
         
         // Handle integer fields - convert empty strings to null
         ['tobacco_days', 'alcohol_days', 'narcotics_days', 'tobacco_quantity', 'alcohol_quantity', 'narcotics_quantity'].forEach(field => {
-            console.log(`🔍 [CREATE] Processing ${field}:`, {
+            logger.debug(`🔍 [CREATE] Processing ${field}:`, {
                 original: req.body[field],
                 type: typeof req.body[field],
                 processed: processedData[field],
@@ -197,7 +197,7 @@ exports.createLifeInsurance = async (req, res) => {
                 processedData[field] = processedData[field];
             }
             
-            console.log(`🔍 [CREATE] After processing ${field}:`, processedData[field]);
+            logger.debug(`🔍 [CREATE] After processing ${field}:`, processedData[field]);
         });
 
         // Handle string fields - convert empty strings to null and trim whitespace
@@ -226,7 +226,7 @@ exports.createLifeInsurance = async (req, res) => {
         }
 
         // Debug: Log specific fields that are causing issues
-        console.log('🔍 [CREATE] Problem fields before processing:', {
+        logger.debug('🔍 [CREATE] Problem fields before processing:', {
             policy_numbers: processedData.policy_numbers,
             life_assured_father_name: processedData.life_assured_father_name,
             life_assured_mother_name: processedData.life_assured_mother_name,
@@ -268,9 +268,9 @@ exports.createLifeInsurance = async (req, res) => {
             }
         }
 
-        console.log('🔍 [CREATE] Creating life insurance with data:', lifeInsuranceData);
+        logger.debug('🔍 [CREATE] Creating life insurance with data:', lifeInsuranceData);
         const lifeInsurance = await LifeInsurance.create(lifeInsuranceData);
-        console.log('🔍 [CREATE] Life insurance created successfully:', lifeInsurance.id);
+        logger.debug('🔍 [CREATE] Life insurance created successfully:', lifeInsurance.id);
         
         // Create ConsumerRoleMapping for life insurance category
         // Use the current logged-in user as the role user (vertical assignment)
@@ -279,7 +279,7 @@ exports.createLifeInsurance = async (req, res) => {
             user_consumer_id: req.user.id, // Use the current user as consumer
             category_id: 5, // life insurance category
         });
-        console.log('🔍 [CREATE] ConsumerRoleMapping created for life insurance category');
+        logger.debug('🔍 [CREATE] ConsumerRoleMapping created for life insurance category');
         
         // Handle document uploads
         const uploadedDocuments = [];
@@ -315,14 +315,14 @@ exports.createLifeInsurance = async (req, res) => {
                         }
                     }
                 } catch (error) {
-                    console.error(`Error processing file ${fieldName}:`, error);
+                    logger.error(`Error processing file ${fieldName}:`, error);
                 }
             }
         } else {
-            console.log('No files received in request');
+            logger.debug('No files received in request');
         }
         
-        console.log('Total documents uploaded:', uploadedDocuments.length);
+        logger.debug('Total documents uploaded:', uploadedDocuments.length);
         
         res.status(201).json({
             status: true,
@@ -333,8 +333,8 @@ exports.createLifeInsurance = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ [CREATE] Error creating life insurance:', error);
-        console.error('❌ [CREATE] Error details:', {
+        logger.error('❌ [CREATE] Error creating life insurance:', error);
+        logger.error('❌ [CREATE] Error details:', {
             name: error.name,
             message: error.message,
             errors: error.errors
@@ -385,10 +385,10 @@ exports.getAllLifeInsurance = async (req, res) => {
             'Expires': '0'
         });
         
-        console.log('🔍 [LIFE INSURANCE API] User making request:', req.user);
-        console.log('🔍 [LIFE INSURANCE API] User Role:', req.user.Role);
-        console.log('🔍 [LIFE INSURANCE API] User ID:', req.user.id);
-        console.log('🔍 [LIFE INSURANCE API] User categoryIds:', req.user.categoryIds);
+        logger.debug('🔍 [LIFE INSURANCE API] User making request:', req.user);
+        logger.debug('🔍 [LIFE INSURANCE API] User Role:', req.user.Role);
+        logger.debug('🔍 [LIFE INSURANCE API] User ID:', req.user.id);
+        logger.debug('🔍 [LIFE INSURANCE API] User categoryIds:', req.user.categoryIds);
         
         const { page = 1, limit = 10, status, user_id } = req.query;
         const offset = (page - 1) * limit;
@@ -499,7 +499,7 @@ exports.getAllLifeInsurance = async (req, res) => {
         });
         }
     } catch (error) {
-        console.error('Error fetching life insurance policies:', error);
+        logger.error('Error fetching life insurance policies:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching life insurance policies',
@@ -568,7 +568,7 @@ exports.getLifeInsuranceById = async (req, res) => {
             data: lifeInsurance
         });
     } catch (error) {
-        console.error('Error fetching life insurance policy:', error);
+        logger.error('Error fetching life insurance policy:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching life insurance policy',
@@ -591,14 +591,14 @@ exports.updateLifeInsurance = async (req, res) => {
         const processedData = { ...req.body };
         
         // Debug: Log incoming data
-        console.log('🔍 [UPDATE] Raw req.body mobile numbers:', {
+        logger.debug('🔍 [UPDATE] Raw req.body mobile numbers:', {
             proposer: req.body.proposer_mobile_numbers,
             life_assured: req.body.life_assured_mobile_numbers,
             nominee: req.body.nominee_mobile_numbers
         });
         
         // Debug: Log raw problem fields from frontend
-        console.log('🔍 [UPDATE] Raw problem fields from frontend:', {
+        logger.debug('🔍 [UPDATE] Raw problem fields from frontend:', {
             policy_numbers: req.body.policy_numbers,
             life_assured_father_name: req.body.life_assured_father_name,
             life_assured_mother_name: req.body.life_assured_mother_name,
@@ -627,7 +627,7 @@ exports.updateLifeInsurance = async (req, res) => {
         });
         
         // Debug: Log processed data
-        console.log('🔍 [UPDATE] Processed mobile numbers:', {
+        logger.debug('🔍 [UPDATE] Processed mobile numbers:', {
             proposer: processedData.proposer_mobile_numbers,
             life_assured: processedData.life_assured_mobile_numbers,
             nominee: processedData.nominee_mobile_numbers
@@ -635,7 +635,7 @@ exports.updateLifeInsurance = async (req, res) => {
 
         // Handle integer fields - convert empty strings to null
         ['tobacco_days', 'alcohol_days', 'narcotics_days', 'tobacco_quantity', 'alcohol_quantity', 'narcotics_quantity'].forEach(field => {
-            console.log(`🔍 [UPDATE] Processing ${field}:`, {
+            logger.debug(`🔍 [UPDATE] Processing ${field}:`, {
                 original: req.body[field],
                 type: typeof req.body[field],
                 processed: processedData[field],
@@ -655,7 +655,7 @@ exports.updateLifeInsurance = async (req, res) => {
                 processedData[field] = processedData[field];
             }
             
-            console.log(`🔍 [UPDATE] After processing ${field}:`, processedData[field]);
+            logger.debug(`🔍 [UPDATE] After processing ${field}:`, processedData[field]);
         });
 
         // Handle string fields - convert empty strings to null and trim whitespace
@@ -684,7 +684,7 @@ exports.updateLifeInsurance = async (req, res) => {
         }
 
         // Debug: Log specific fields that are causing issues
-        console.log('🔍 [UPDATE] Problem fields before processing:', {
+        logger.debug('🔍 [UPDATE] Problem fields before processing:', {
             policy_numbers: processedData.policy_numbers,
             life_assured_father_name: processedData.life_assured_father_name,
             life_assured_mother_name: processedData.life_assured_mother_name,
@@ -727,7 +727,7 @@ exports.updateLifeInsurance = async (req, res) => {
                 user_consumer_id: req.user.id, // Use the current user as consumer
                 category_id: 5, // life insurance category
             });
-            console.log('🔍 [UPDATE] ConsumerRoleMapping created for life insurance category');
+            logger.debug('🔍 [UPDATE] ConsumerRoleMapping created for life insurance category');
         }
 
         const updatedLifeInsurance = await LifeInsurance.findByPk(id, {
@@ -746,7 +746,7 @@ exports.updateLifeInsurance = async (req, res) => {
             data: updatedLifeInsurance
         });
     } catch (error) {
-        console.error('Error updating life insurance policy:', error);
+        logger.error('Error updating life insurance policy:', error);
         res.status(500).json({
             status: false,
             message: 'Error updating life insurance policy',
@@ -778,16 +778,16 @@ exports.uploadLifeInsuranceDocument = async (req, res) => {
         const { documentName, documentType, remarks } = req.body;
 
         // Debug: Log JWT token and user info
-        console.log('🔍 [UPLOAD] JWT Token received:', req.headers.token ? 'YES' : 'NO');
-        console.log('🔍 [UPLOAD] User info:', req.user ? 'YES' : 'NO');
+        logger.debug('🔍 [UPLOAD] JWT Token received:', req.headers.token ? 'YES' : 'NO');
+        logger.debug('🔍 [UPLOAD] User info:', req.user ? 'YES' : 'NO');
         if (req.user) {
-            console.log('🔍 [UPLOAD] User ID:', req.user.id);
+            logger.debug('🔍 [UPLOAD] User ID:', req.user.id);
         }
         
         // Debug: Log request body to see what we're receiving
-        console.log('🔍 [DEBUG] Request body:', req.body);
-        console.log('🔍 [DEBUG] documentName type:', typeof documentName, 'value:', documentName);
-        console.log('🔍 [DEBUG] remarks type:', typeof remarks, 'value:', remarks);
+        logger.debug('🔍 [DEBUG] Request body:', req.body);
+        logger.debug('🔍 [DEBUG] documentName type:', typeof documentName, 'value:', documentName);
+        logger.debug('🔍 [DEBUG] remarks type:', typeof remarks, 'value:', remarks);
 
         if (!req.files || !req.files.document) {
             return res.status(400).json({
@@ -825,7 +825,7 @@ exports.uploadLifeInsuranceDocument = async (req, res) => {
             const file = files[i];
             
             // Debug: Log file object properties
-            console.log(`🔍 [DEBUG] Processing file ${i + 1}/${files.length}:`, {
+            logger.debug(`🔍 [DEBUG] Processing file ${i + 1}/${files.length}:`, {
                 name: file.name,
                 size: file.size,
                 mimetype: file.mimetype,
@@ -841,17 +841,17 @@ exports.uploadLifeInsuranceDocument = async (req, res) => {
             // Handle file movement based on express-fileupload configuration
             if (file.tempFilePath) {
                 // When useTempFiles: true, file is already saved to temp location
-                console.log(`📁 [DEBUG] Using tempFilePath for file ${i + 1}:`, file.tempFilePath);
+                logger.debug(`📁 [DEBUG] Using tempFilePath for file ${i + 1}:`, file.tempFilePath);
                 await fs.copyFile(file.tempFilePath, filePath);
                 // Clean up temp file
                 await fs.unlink(file.tempFilePath);
             } else if (file.mv) {
                 // When useTempFiles: false, use mv method
-                console.log(`📁 [DEBUG] Using file.mv() for file ${i + 1}`);
+                logger.debug(`📁 [DEBUG] Using file.mv() for file ${i + 1}`);
                 await file.mv(filePath);
             } else if (file.data) {
                 // Fallback: write file data directly
-                console.log(`📁 [DEBUG] Using file.data for file ${i + 1}`);
+                logger.debug(`📁 [DEBUG] Using file.data for file ${i + 1}`);
                 await fs.writeFile(filePath, file.data);
             } else {
                 throw new Error(`Unable to process file ${i + 1} - no valid file handling method found`);
@@ -900,7 +900,7 @@ exports.uploadLifeInsuranceDocument = async (req, res) => {
             count: uploadedDocuments.length
         });
     } catch (error) {
-        console.error('Error uploading document:', error);
+        logger.error('Error uploading document:', error);
         res.status(500).json({
             status: false,
             message: 'Error uploading document',
@@ -932,7 +932,7 @@ exports.getLifeInsuranceDocuments = async (req, res) => {
             data: documents
         });
     } catch (error) {
-        console.error('Error fetching documents:', error);
+        logger.error('Error fetching documents:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching documents',
@@ -969,7 +969,7 @@ exports.deleteLifeInsuranceDocument = async (req, res) => {
             message: 'Document deleted successfully'
         });
     } catch (error) {
-        console.error('Error deleting document:', error);
+        logger.error('Error deleting document:', error);
         res.status(500).json({
             status: false,
             message: 'Error deleting document',
@@ -1038,7 +1038,7 @@ exports.updateLifeInsuranceStatus = async (req, res) => {
             message: 'Life insurance status updated successfully'
         });
     } catch (error) {
-        console.error('Error updating life insurance status:', error);
+        logger.error('Error updating life insurance status:', error);
         res.status(500).json({
             status: false,
             message: 'Error updating life insurance status',
@@ -1091,7 +1091,7 @@ exports.getLifeInsuranceByConsumer = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching life insurance by consumer:', error);
+        logger.error('Error fetching life insurance by consumer:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching life insurance by consumer',
@@ -1104,10 +1104,10 @@ exports.getLifeInsuranceByConsumer = async (req, res) => {
 
 exports.getLifeInsuranceRenewalData = async (req, res) => {
     try {
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Starting renewal data fetch...');
+        logger.debug('🔍 [LIFE INSURANCE RENEWAL] Starting renewal data fetch...');
         const { startDate, endDate } = req.query;
         
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Query params:', { startDate, endDate });
+        logger.debug('🔍 [LIFE INSURANCE RENEWAL] Query params:', { startDate, endDate });
         
         if (!startDate || !endDate) {
             return res.status(400).json({
@@ -1120,7 +1120,7 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
         const startDateStr = new Date(startDate).toISOString().split('T')[0]; // YYYY-MM-DD
         const endDateStr = new Date(endDate).toISOString().split('T')[0]; // YYYY-MM-DD
         
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Date range strings:', { startDateStr, endDateStr });
+        logger.debug('🔍 [LIFE INSURANCE RENEWAL] Date range strings:', { startDateStr, endDateStr });
 
         // Build base where clause for user filtering first
         let whereObj = {};
@@ -1155,7 +1155,7 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
         
         // Debug: Check total records
         const totalRecords = await LifeInsurance.count({ where: whereObj });
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Total records (after user filter):', totalRecords);
+        logger.debug('🔍 [LIFE INSURANCE RENEWAL] Total records (after user filter):', totalRecords);
         
         // Fetch all records (with user filtering) and filter by date in memory
         // This allows us to handle NULL due_date_of_premium and use RCD as fallback
@@ -1164,7 +1164,7 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
             order: [['id', 'DESC']]
         });
         
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Total records fetched:', allLifeInsuranceData.length);
+        logger.debug('🔍 [LIFE INSURANCE RENEWAL] Total records fetched:', allLifeInsuranceData.length);
         
         // Filter by date range - use due_date_of_premium, or RCD as fallback
         let lifeInsuranceData = allLifeInsuranceData.filter((policy) => {
@@ -1191,13 +1191,13 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
             return false;
         });
         
-        console.log('🔍 [LIFE INSURANCE RENEWAL] Records after date filtering:', lifeInsuranceData.length);
+        logger.debug('🔍 [LIFE INSURANCE RENEWAL] Records after date filtering:', lifeInsuranceData.length);
         
         // If no records match the date range, show all records as fallback
         // This helps users see what data exists even if dates don't match
         let showAllRecords = false;
         if (lifeInsuranceData.length === 0 && allLifeInsuranceData.length > 0) {
-            console.log('⚠️ [LIFE INSURANCE RENEWAL] No records match date range, showing all records as fallback');
+            logger.debug('⚠️ [LIFE INSURANCE RENEWAL] No records match date range, showing all records as fallback');
             lifeInsuranceData = allLifeInsuranceData;
             showAllRecords = true;
             
@@ -1208,8 +1208,8 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
                 rcd: r.rcd,
                 proposer_name: r.proposer_name
             }));
-            console.log('🔍 [LIFE INSURANCE RENEWAL] Sample records (first 5):', sampleRecords);
-            console.log('🔍 [LIFE INSURANCE RENEWAL] Date range searched:', { startDateStr, endDateStr });
+            logger.debug('🔍 [LIFE INSURANCE RENEWAL] Sample records (first 5):', sampleRecords);
+            logger.debug('🔍 [LIFE INSURANCE RENEWAL] Date range searched:', { startDateStr, endDateStr });
         }
 
         // Format data for renewal sheet
@@ -1254,8 +1254,8 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
             showAllRecords: showAllRecords || false
         });
     } catch (error) {
-        console.error('❌ [LIFE INSURANCE RENEWAL] Error fetching renewal data:', error);
-        console.error('❌ [LIFE INSURANCE RENEWAL] Error stack:', error.stack);
+        logger.error('❌ [LIFE INSURANCE RENEWAL] Error fetching renewal data:', error);
+        logger.error('❌ [LIFE INSURANCE RENEWAL] Error stack:', error.stack);
         res.status(500).json({
             status: false,
             message: 'Error fetching life insurance renewal data',

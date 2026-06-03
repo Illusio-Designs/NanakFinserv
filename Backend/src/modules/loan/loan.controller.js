@@ -79,9 +79,9 @@ exports.getAllLoanUser = async (req, res) => {
         'Expires': '0'
     });
     
-    console.log('🔍 [LOAN API] User making request:', req.user);
-    console.log('🔍 [LOAN API] User Role:', req.user.Role);
-    console.log('🔍 [LOAN API] User ID:', req.user.id);
+    logger.debug('🔍 [LOAN API] User making request:', req.user);
+    logger.debug('🔍 [LOAN API] User Role:', req.user.Role);
+    logger.debug('🔍 [LOAN API] User ID:', req.user.id);
     
     let whereObj = {};
     let whereObjLoan = {};
@@ -90,13 +90,13 @@ exports.getAllLoanUser = async (req, res) => {
     // Only apply role-based filtering if the user doesn't have loan category access
     if (req.user.Role === 4 && !req.user.categoryIds?.includes(2)) {
         whereObj.user_role_id = req.user.id;
-        console.log('🔍 [LOAN API] Setting user_role_id filter:', req.user.id);
+        logger.debug('🔍 [LOAN API] Setting user_role_id filter:', req.user.id);
     }
     if (req.user.Role === 4 && !req.user.categoryIds?.includes(2)) {
         whereObjLoan.role_id = req.user.id;
-        console.log('🔍 [LOAN API] Setting role_id filter:', req.user.id);
+        logger.debug('🔍 [LOAN API] Setting role_id filter:', req.user.id);
     } else {
-        console.log('🔍 [LOAN API] User has loan category access - showing all loan consumers');
+        logger.debug('🔍 [LOAN API] User has loan category access - showing all loan consumers');
     }
     whereObj.category_id = 2;
     // Remove status filter to show all loan consumers
@@ -109,7 +109,7 @@ exports.getAllLoanUser = async (req, res) => {
         raw: true
     });
     const buildingManagerUserIds = buildingManagerUsers.map(bm => bm.user_id);
-    console.log('🔍 [LOAN API] Building manager user IDs to exclude:', buildingManagerUserIds);
+    logger.debug('🔍 [LOAN API] Building manager user IDs to exclude:', buildingManagerUserIds);
     
     // Exclude building managers from loan users
     if (buildingManagerUserIds.length > 0) {
@@ -121,8 +121,8 @@ exports.getAllLoanUser = async (req, res) => {
     // Only show loan users with status "notAssign"
     whereObjLoan.status = "notAssign";
     
-    console.log('🔍 [LOAN API] Final whereObj:', whereObj);
-    console.log('🔍 [LOAN API] Final whereObjLoan:', whereObjLoan);
+    logger.debug('🔍 [LOAN API] Final whereObj:', whereObj);
+    logger.debug('🔍 [LOAN API] Final whereObjLoan:', whereObjLoan);
     
     // Debug: Check what loan users exist in the database
     const allLoanUsers = await loanUser.findAll({
@@ -130,21 +130,21 @@ exports.getAllLoanUser = async (req, res) => {
         attributes: ["user_id", "role_id", "status"],
         limit: 10
     });
-    console.log('🔍 [LOAN API] All loan users in database (first 10):', allLoanUsers);
+    logger.debug('🔍 [LOAN API] All loan users in database (first 10):', allLoanUsers);
 
     let findUserList = await loanUser.findAll({
         where: whereObjLoan,
         raw: true,
         attributes: ["user_id"],
     });
-    console.log('🔍 [LOAN API] Found loan users:', findUserList);
-    console.log('🔍 [LOAN API] Number of loan users found:', findUserList.length);
+    logger.debug('🔍 [LOAN API] Found loan users:', findUserList);
+    logger.debug('🔍 [LOAN API] Number of loan users found:', findUserList.length);
     
     let userList = [];
     await findUserList.map((item) => {
         userList.push(item.user_id);
     });
-    console.log('🔍 [LOAN API] User list for consumerRoleMapping:', userList);
+    logger.debug('🔍 [LOAN API] User list for consumerRoleMapping:', userList);
     whereObj.user_consumer_id = {
         [Op.in]: userList,
     };
@@ -174,7 +174,7 @@ exports.getAllLoanUser = async (req, res) => {
                 // Exclude if consumer user is a building manager
                 const consumerRoleId = article['userConsumers.role_id'];
                 if (consumerRoleId === 7) {
-                    console.log('🔍 [LOAN API] Filtering out building manager consumer:', article.user_consumer_id);
+                    logger.debug('🔍 [LOAN API] Filtering out building manager consumer:', article.user_consumer_id);
                     return false;
                 }
                 return true;
@@ -226,7 +226,7 @@ exports.getAllLoanUser = async (req, res) => {
                 article !== null && article.loan_status === 'notAssign'
             );
 
-            console.log('🔍 [LOAN API] Enriched articles with property info (building managers and notInterested excluded):', finalArticles);
+            logger.debug('🔍 [LOAN API] Enriched articles with property info (building managers and notInterested excluded):', finalArticles);
             res.status(200).send({
                 message: "catergory unit get success",
                 data: finalArticles,
@@ -235,7 +235,7 @@ exports.getAllLoanUser = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -441,8 +441,8 @@ exports.getAllLoanUserInterested = async (req, res) => {
                         if (initialData.remarks) {
                             try {
                                 const parsedRemarks = JSON.parse(initialData.remarks);
-                                console.log('🔍 [DEBUG] Parsing remarks for user:', initialData.user_consumer_id, 'Status:', status);
-                                console.log('🔍 [DEBUG] Parsed remarks:', parsedRemarks);
+                                logger.debug('🔍 [DEBUG] Parsing remarks for user:', initialData.user_consumer_id, 'Status:', status);
+                                logger.debug('🔍 [DEBUG] Parsed remarks:', parsedRemarks);
                                 
                                 // Extract data for all status types
                                 if (parsedRemarks.sanction_details) { 
@@ -461,9 +461,9 @@ exports.getAllLoanUserInterested = async (req, res) => {
                                     userData.cancel_details = { ...userData.cancel_details, ...parsedRemarks.cancel_details }; 
                                 }
                                 if (parsedRemarks.disbursement_details) { 
-                                    console.log('🔍 [DEBUG] Found disbursement_details in remarks for user', initialData.user_id, ':', parsedRemarks.disbursement_details);
+                                    logger.debug('🔍 [DEBUG] Found disbursement_details in remarks for user', initialData.user_id, ':', parsedRemarks.disbursement_details);
                                     userData.disbursement_details = { ...userData.disbursement_details, ...parsedRemarks.disbursement_details }; 
-                                    console.log('🔍 [DEBUG] Updated userData.disbursement_details for user', initialData.user_id, ':', userData.disbursement_details);
+                                    logger.debug('🔍 [DEBUG] Updated userData.disbursement_details for user', initialData.user_id, ':', userData.disbursement_details);
                                 }
                                 if (parsedRemarks.part_details) { 
                                     userData.part_details = { ...userData.part_details, ...parsedRemarks.part_details }; 
@@ -478,10 +478,10 @@ exports.getAllLoanUserInterested = async (req, res) => {
                                     userData.property_details = parsedRemarks.property_details; 
                                 }
                                 
-                                console.log('🔍 [DEBUG] Final userData after remarks parsing:', Object.keys(userData));
+                                logger.debug('🔍 [DEBUG] Final userData after remarks parsing:', Object.keys(userData));
                             } catch (error) {
-                                console.log('❌ Error parsing remarks JSON:', error);
-                                console.log('❌ Raw remarks data:', initialData.remarks);
+                                logger.debug('❌ Error parsing remarks JSON:', error);
+                                logger.debug('❌ Raw remarks data:', initialData.remarks);
                             }
                         }
 
@@ -501,7 +501,7 @@ exports.getAllLoanUserInterested = async (req, res) => {
                             userData.referenceName = article['userConsumers.referenceName'];
                         }
 
-                        console.log('🔍 [DEBUG] Final userData for user', initialData.user_id, ':', {
+                        logger.debug('🔍 [DEBUG] Final userData for user', initialData.user_id, ':', {
                             status: userData.status,
                             hasSanctionDetails: !!userData.sanction_details,
                             sanctionDetailsKeys: userData.sanction_details ? Object.keys(userData.sanction_details) : [],
@@ -521,7 +521,7 @@ exports.getAllLoanUserInterested = async (req, res) => {
                             'userConsumers.mobileNumber': article['userConsumers.mobileNumber'] || article['userRoles.mobileNumber'],
                         };
                         
-                        console.log('🔍 [DEBUG] Final response structure for user', initialData.user_id, ':', {
+                        logger.debug('🔍 [DEBUG] Final response structure for user', initialData.user_id, ':', {
                             hasDetails: !!finalResponse.details,
                             detailsKeys: finalResponse.details ? Object.keys(finalResponse.details) : [],
                             hasSanctionDetails: finalResponse.details?.sanction_details ? true : false,
@@ -554,7 +554,7 @@ exports.getAllLoanUserInterested = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -757,7 +757,7 @@ exports.getAllLoanUserDetail = async (req, res) => {
                                     userData.sanction_details = parsedRemarks.sanction_details;
                                 }
                             } catch (error) {
-                                console.log('Error parsing remarks JSON:', error);
+                                logger.debug('Error parsing remarks JSON:', error);
                             }
                         }
 
@@ -788,7 +788,7 @@ exports.getAllLoanUserDetail = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -802,19 +802,19 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
     // Set role_id filter for Not Interested page
     if (req.user.Role === 4) {
         whereObjLoan.role_id = req.user.id;
-        console.log('🔍 [BACKEND] Setting role_id filter to:', req.user.id);
+        logger.debug('🔍 [BACKEND] Setting role_id filter to:', req.user.id);
     }
     whereObj.category_id = 2;
     whereObjLoan.status = "notInterested";
 
     // Debug: Check what statuses exist in the database
-    console.log('🔍 [BACKEND] Checking for notInterested records...');
+    logger.debug('🔍 [BACKEND] Checking for notInterested records...');
     const allStatuses = await loanUser.findAll({
         attributes: ['status'],
         group: ['status'],
         raw: true
     });
-    console.log('🔍 [BACKEND] All statuses in database:', allStatuses.map(s => s.status));
+    logger.debug('🔍 [BACKEND] All statuses in database:', allStatuses.map(s => s.status));
     
     // Check for variations of notInterested
     const notInterestedVariations = await loanUser.findAll({
@@ -827,26 +827,26 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
         group: ['status'],
         raw: true
     });
-    console.log('🔍 [BACKEND] Statuses containing "not":', notInterestedVariations.map(s => s.status));
+    logger.debug('🔍 [BACKEND] Statuses containing "not":', notInterestedVariations.map(s => s.status));
     
     // Debug: Check the whereObjLoan filter
-    console.log('🔍 [BACKEND] whereObjLoan filter:', whereObjLoan);
+    logger.debug('🔍 [BACKEND] whereObjLoan filter:', whereObjLoan);
     
     // Debug: Check if there are any notInterested records with the current role_id
     const notInterestedWithRole = await loanUser.findAll({
         where: whereObjLoan,
         raw: true
     });
-    console.log('🔍 [BACKEND] notInterested records with role_id', req.user.id, ':', notInterestedWithRole.length);
+    logger.debug('🔍 [BACKEND] notInterested records with role_id', req.user.id, ':', notInterestedWithRole.length);
     
     // Debug: Check all notInterested records regardless of role_id
     const allNotInterested = await loanUser.findAll({
         where: { status: "notInterested" },
         raw: true
     });
-    console.log('🔍 [BACKEND] All notInterested records (any role):', allNotInterested.length);
+    logger.debug('🔍 [BACKEND] All notInterested records (any role):', allNotInterested.length);
     if (allNotInterested.length > 0) {
-        console.log('🔍 [BACKEND] Sample notInterested record:', allNotInterested[0]);
+        logger.debug('🔍 [BACKEND] Sample notInterested record:', allNotInterested[0]);
         
         // Check if there are any notInterested records with the current user's role_id
         const notInterestedWithCurrentRole = await loanUser.findAll({
@@ -856,11 +856,11 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
             },
             raw: true
         });
-        console.log('🔍 [BACKEND] notInterested records with current role_id:', notInterestedWithCurrentRole.length);
+        logger.debug('🔍 [BACKEND] notInterested records with current role_id:', notInterestedWithCurrentRole.length);
         
         // If no notInterested records exist for current user, create one from the existing record
         if (notInterestedWithCurrentRole.length === 0 && allNotInterested.length > 0) {
-            console.log('🔍 [BACKEND] Creating notInterested record for current user from existing record');
+            logger.debug('🔍 [BACKEND] Creating notInterested record for current user from existing record');
             const existingRecord = allNotInterested[0];
             await loanUser.create({
                 user_id: existingRecord.user_id,
@@ -870,7 +870,7 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
                 createdAt: new Date(),
                 updatedAt: new Date()
             });
-            console.log('🔍 [BACKEND] notInterested record created for current user');
+            logger.debug('🔍 [BACKEND] notInterested record created for current user');
         }
     }
 
@@ -896,9 +896,9 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
         raw: true,
     });
     
-    console.log('🔍 [BACKEND] Found notInterested records with role filter:', findUserList.length);
+    logger.debug('🔍 [BACKEND] Found notInterested records with role filter:', findUserList.length);
     if (findUserList.length > 0) {
-        console.log('🔍 [BACKEND] Sample notInterested record:', {
+        logger.debug('🔍 [BACKEND] Sample notInterested record:', {
             user_id: findUserList[0].user_id,
             status: findUserList[0].status,
             role_id: findUserList[0].role_id,
@@ -909,11 +909,11 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
     await findUserList.map((item) => {
         userList.push(item.user_id);
     });
-    console.log('🔍 [BACKEND] User IDs from loanUser query:', userList);
+    logger.debug('🔍 [BACKEND] User IDs from loanUser query:', userList);
     
     // If no notInterested records found, return empty array
     if (userList.length === 0) {
-        console.log('🔍 [BACKEND] No notInterested records found, returning empty array');
+        logger.debug('🔍 [BACKEND] No notInterested records found, returning empty array');
         return res.status(200).send({
             message: "Category unit get success",
             data: [],
@@ -924,7 +924,7 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
     whereObj.user_consumer_id = {
         [Op.in]: userList,
     };
-    console.log('🔍 [BACKEND] consumerRoleMapping whereObj:', whereObj);
+    logger.debug('🔍 [BACKEND] consumerRoleMapping whereObj:', whereObj);
     
     // Fix: Create missing consumerRoleMapping entries for notInterested users
     for (const userId of userList) {
@@ -937,15 +937,15 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
         });
         
         if (!existingMapping) {
-            console.log('🔍 [BACKEND] Creating missing consumerRoleMapping for user_id:', userId);
+            logger.debug('🔍 [BACKEND] Creating missing consumerRoleMapping for user_id:', userId);
             await consumerRoleMapping.create({
                 user_role_id: req.user.id,
                 category_id: 2,
                 user_consumer_id: userId
             });
-            console.log('🔍 [BACKEND] consumerRoleMapping created successfully');
+            logger.debug('🔍 [BACKEND] consumerRoleMapping created successfully');
         } else {
-            console.log('🔍 [BACKEND] consumerRoleMapping already exists for user_id:', userId);
+            logger.debug('🔍 [BACKEND] consumerRoleMapping already exists for user_id:', userId);
         }
     }
     
@@ -1018,7 +1018,7 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
                                     userData.sanction_details = parsedRemarks.sanction_details;
                                 }
                             } catch (error) {
-                                console.log('Error parsing remarks JSON:', error);
+                                logger.debug('Error parsing remarks JSON:', error);
                             }
                         }
 
@@ -1049,7 +1049,7 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -1084,7 +1084,7 @@ exports.getAllLoanUserDisburse = async (req, res) => {
             }, {
                 model: DisbursementLoan
             }],
-            logging: console.log,
+            logging: (msg) => logger.debug(msg),
             raw: true,
             attributes: ["user_id", "laon_id", "status"],
         });
@@ -1180,7 +1180,7 @@ exports.getAllLoanUserDisburse = async (req, res) => {
             status: true,
         });
     } catch (error) {
-        console.error("Error in getAllLoanUserDisburse:", error);
+        logger.error("Error in getAllLoanUserDisburse:", error);
         res.status(500).send({ 
             message: "Server error", 
             error: error.message,
@@ -1244,7 +1244,7 @@ exports.updateWorkingLoanStatus = async (req, res) => {
         obj.senson_tenue = req.body?.tenue;
         obj.senson_amount = req.body?.amount;
     }
-    console.log(obj);
+    logger.debug(obj);
     loanUser
         .update(obj, {
             where: {
@@ -1260,7 +1260,7 @@ exports.updateWorkingLoanStatus = async (req, res) => {
         })
         .catch((e) => {
             res.send({ message: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -1273,7 +1273,7 @@ exports.addLoanCobfiguration = async (req, res) => {
 
         let pdfFile = req.files.pdfFile;
         const { user_id, categoryname } = req.body;
-        console.log(req.body, req.files.pdfFile)
+        logger.debug(req.body, req.files.pdfFile)
 
         const uploadsDir = path.join(CTRL_DIR, "../../uploads");
 
@@ -1398,7 +1398,7 @@ exports.addDisburse = async (req, res) => {
 
         let pdfFile = req.files.pdfFile;
         const { user_id, categoryname } = req.body;
-        console.log(req.body, req.files.pdfFile)
+        logger.debug(req.body, req.files.pdfFile)
 
         const uploadsDir = path.join(CTRL_DIR, "../../uploads");
 

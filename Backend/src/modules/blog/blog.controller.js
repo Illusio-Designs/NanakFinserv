@@ -73,10 +73,10 @@ const logger = require("../../config/logger");
 
 exports.addBlog = async (req, res) => {
     try {
-        console.log('🔍 addBlog - Request body:', req.body);
-        console.log('🔍 addBlog - Request files:', req.files);
-        console.log('🔍 addBlog - Blog model:', Blog);
-        console.log('🔍 addBlog - Database connection status:', db.sequelize.authenticate ? 'Connected' : 'Not connected');
+        logger.debug('🔍 addBlog - Request body:', req.body);
+        logger.debug('🔍 addBlog - Request files:', req.files);
+        logger.debug('🔍 addBlog - Blog model:', Blog);
+        logger.debug('🔍 addBlog - Database connection status:', db.sequelize.authenticate ? 'Connected' : 'Not connected');
         
         const { title, content, author, category, tags, status = 'draft' } = req.body;
         
@@ -112,7 +112,7 @@ exports.addBlog = async (req, res) => {
             }
         }
 
-        console.log('🔍 addBlog - Creating blog with data:', {
+        logger.debug('🔍 addBlog - Creating blog with data:', {
             title,
             content,
             image: imagePath,
@@ -136,7 +136,7 @@ exports.addBlog = async (req, res) => {
             updated_at: new Date()
         });
         
-        console.log('🔍 addBlog - Blog created successfully:', blog.toJSON());
+        logger.debug('🔍 addBlog - Blog created successfully:', blog.toJSON());
         
         // Add full URL to image path
         const blogData = blog.toJSON();
@@ -144,10 +144,10 @@ exports.addBlog = async (req, res) => {
             blogData.image = `${req.protocol}://${req.get('host')}/uploads/${blogData.image}`;
         }
         
-        console.log('🔍 addBlog - Returning response:', { message: 'Blog created successfully', blog: blogData });
+        logger.debug('🔍 addBlog - Returning response:', { message: 'Blog created successfully', blog: blogData });
         return res.status(201).json({ message: 'Blog created successfully', blog: blogData });
     } catch (error) {
-        console.error('Error creating blog:', error);
+        logger.error('Error creating blog:', error);
         return res.status(500).json({ 
             message: 'Error creating blog',
             error: error.message 
@@ -217,7 +217,7 @@ exports.updateBlog = async (req, res) => {
 
         return res.status(200).json({ message: 'Blog updated successfully', blog: blogData });
     } catch (error) {
-        console.error('Error updating blog:', error);
+        logger.error('Error updating blog:', error);
         return res.status(500).json({ message: 'Error updating blog' });
     }
 };
@@ -257,7 +257,7 @@ exports.getAllBlogs = async (req, res) => {
             data: blogsWithFullImageUrl
         });
     } catch (error) {
-        console.error('Error fetching blogs:', error);
+        logger.error('Error fetching blogs:', error);
         return res.status(500).json({
             status: false,
             message: 'Error fetching blogs',
@@ -284,7 +284,7 @@ exports.getBlogById = async (req, res) => {
 
         return res.status(200).json(blogData);
     } catch (error) {
-        console.error('Error fetching blog:', error);
+        logger.error('Error fetching blog:', error);
         return res.status(500).json({ message: 'Error fetching blog' });
     }
 };

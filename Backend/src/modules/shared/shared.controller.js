@@ -68,6 +68,7 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const logger = require("../../config/logger");
 
 exports.downloadFile = async (req, res) => {
     try {
@@ -82,24 +83,24 @@ exports.downloadFile = async (req, res) => {
         }
 
         const filename = safeName;
-        console.log('📥 [DOWNLOAD] Request for file:', filename);
+        logger.debug('📥 [DOWNLOAD] Request for file:', filename);
 
         // Check if the file exists (use fsSync for synchronous check)
         if (fsSync.existsSync(filePath)) {
-            console.log('📥 [DOWNLOAD] File found, sending download...');
+            logger.debug('📥 [DOWNLOAD] File found, sending download...');
             // Set the headers to force download
             res.download(filePath, filename, (err) => {
                 if (err) {
-                    console.error('📥 [DOWNLOAD] Error downloading file:', err);
+                    logger.error('📥 [DOWNLOAD] Error downloading file:', err);
                     res.status(500).send('Error downloading file');
                 }
             });
         } else {
-            console.log('📥 [DOWNLOAD] File not found at path:', filePath);
+            logger.debug('📥 [DOWNLOAD] File not found at path:', filePath);
             res.status(404).send('File not found');
         }
     } catch (error) {
-        console.error('📥 [DOWNLOAD] Error:', error);
+        logger.error('📥 [DOWNLOAD] Error:', error);
         res.status(500).send({
             message: "Error downloading file",
             error: error.message,
@@ -109,7 +110,7 @@ exports.downloadFile = async (req, res) => {
 };
 
 exports.addCodeDetails = async (req, res) => {
-    console.log(req.body);
+    logger.debug(req.body);
 
     let user = await codeDetail.findOne({
         where: {
@@ -149,13 +150,13 @@ exports.getAllCodes = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
 
 exports.addCompanyTypeDetails = async (req, res) => {
-    console.log(req.body);
+    logger.debug(req.body);
 
     let user = await companyType.findOne({
         where: {
@@ -195,7 +196,7 @@ exports.getAllCompanyTypes = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -211,13 +212,13 @@ exports.getAllLoanConfiguration = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "inquery user error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
 
 exports.addPolicyplanDetails = async (req, res) => {
-    console.log(req.body);
+    logger.debug(req.body);
 
     let user = await db.policyPlan.findOne({
         where: {
@@ -246,7 +247,7 @@ exports.addPolicyplanDetails = async (req, res) => {
 
 
 exports.addPolicyTypeDetails = async (req, res) => {
-    console.log(req.body);
+    logger.debug(req.body);
 
     let user = await db.policyType.findOne({
         where: {
@@ -286,7 +287,7 @@ exports.getAllPolicyPlans = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -303,7 +304,7 @@ exports.getAllPolicyTypes = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -320,7 +321,7 @@ exports.getAllVehicles = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -337,7 +338,7 @@ exports.getAllReferences = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -354,7 +355,7 @@ exports.getAllDocuments = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "code error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -373,13 +374,13 @@ exports.getAllUnitCatergory = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
 
     exports.addVehicleDetails = async (req, res) => {
-        console.log(req.body);
+        logger.debug(req.body);
     
         let user = await vehicles.findOne({
             where: {

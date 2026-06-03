@@ -79,9 +79,9 @@ exports.getAllMediclaimUser = async (req, res) => {
         'Expires': '0'
     });
     
-    console.log('🔍 [MEDICLAIM API] User making request:', req.user);
-    console.log('🔍 [MEDICLAIM API] User Role:', req.user.Role);
-    console.log('🔍 [MEDICLAIM API] User ID:', req.user.id);
+    logger.debug('🔍 [MEDICLAIM API] User making request:', req.user);
+    logger.debug('🔍 [MEDICLAIM API] User Role:', req.user.Role);
+    logger.debug('🔍 [MEDICLAIM API] User ID:', req.user.id);
     
     let whereObj = {};
 
@@ -89,13 +89,13 @@ exports.getAllMediclaimUser = async (req, res) => {
     // Only apply role-based filtering if the user doesn't have mediclaim category access
     if (req.user.Role === 4 && !req.user.categoryIds?.includes(4)) {
         whereObj.user_role_id = req.user.id;
-        console.log('🔍 [MEDICLAIM API] Setting user_role_id filter:', req.user.id);
+        logger.debug('🔍 [MEDICLAIM API] Setting user_role_id filter:', req.user.id);
     } else {
-        console.log('🔍 [MEDICLAIM API] User has mediclaim category access - showing all mediclaim consumers');
+        logger.debug('🔍 [MEDICLAIM API] User has mediclaim category access - showing all mediclaim consumers');
     }
     whereObj.category_id = 4;
     
-    console.log('🔍 [MEDICLAIM API] Final whereObj:', whereObj);
+    logger.debug('🔍 [MEDICLAIM API] Final whereObj:', whereObj);
     await consumerRoleMapping
         .findAll({
             where: whereObj,
@@ -117,7 +117,7 @@ exports.getAllMediclaimUser = async (req, res) => {
             raw: true,
         })
         .then((articles) => {
-            console.log(articles);
+            logger.debug(articles);
             res.status(200).send({
                 message: "catergory unit get success",
                 data: articles,
@@ -126,7 +126,7 @@ exports.getAllMediclaimUser = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -207,7 +207,7 @@ exports.getAllMediclaimProduct = async (req, res) => {
             })
             .catch((e) => {
                 res.status(400).send({ message: "get error", status: false });
-                console.log(e);
+                logger.debug(e);
             });
     } else {
         res.status(400).send({ message: "id not found error", status: false });
@@ -291,7 +291,7 @@ exports.addMediclaimProductData = async (req, res) => {
             data: newProduct,
         });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).send({ message: "Server error", status: false });
     }
 };
@@ -359,7 +359,7 @@ exports.updateMediclaimProductData = async (req, res) => {
 
                 if (fsSync.existsSync(fullFilePath)) {
                     fsSync.unlinkSync(fullFilePath);
-                    console.log(`🗑️ Deleted PDF file: ${fileName}`);
+                    logger.debug(`🗑️ Deleted PDF file: ${fileName}`);
                 }
             }
 
@@ -370,7 +370,7 @@ exports.updateMediclaimProductData = async (req, res) => {
                     mediclaim_product_pdf_id: removedPdfIds
                 },
             });
-            console.log(`🗑️ Removed ${removedPdfIds.length} PDF(s) from database`);
+            logger.debug(`🗑️ Removed ${removedPdfIds.length} PDF(s) from database`);
         }
 
         // Handle new PDF uploads
@@ -404,7 +404,7 @@ exports.updateMediclaimProductData = async (req, res) => {
                     pdf_name: file.name,
                     pdf_path: virtualPath,
                 });
-                console.log(`📄 Added new PDF: ${file.name}`);
+                logger.debug(`📄 Added new PDF: ${file.name}`);
             }
 
             // Save new PDF details to the database
@@ -416,7 +416,7 @@ exports.updateMediclaimProductData = async (req, res) => {
             status: true,
         });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).send({ message: "Server error", status: false });
     }
 };
@@ -439,8 +439,8 @@ exports.addMediclaimUserData = async (req, res) => {
     } = Data;
 
     // Debug: Log the received data to identify the issue
-    console.log('🔍 [ADD MEDICLAIM] Received runningPolicy:', runningPolicy);
-    console.log('🔍 [ADD MEDICLAIM] Received previousPolicy:', previousPolicy);
+    logger.debug('🔍 [ADD MEDICLAIM] Received runningPolicy:', runningPolicy);
+    logger.debug('🔍 [ADD MEDICLAIM] Received previousPolicy:', previousPolicy);
 
     try {
         // Check if user with this mobile number already exists
@@ -449,7 +449,7 @@ exports.addMediclaimUserData = async (req, res) => {
         });
 
         if (user) {
-            console.log('🔍 [ADD MEDICLAIM] User found with mobile number:', MobileNumber, 'User ID:', user.user_id);
+            logger.debug('🔍 [ADD MEDICLAIM] User found with mobile number:', MobileNumber, 'User ID:', user.user_id);
             
             // Check if user is already assigned to mediclaim category
             const existingMapping = await consumerRoleMapping.findOne({
@@ -461,7 +461,7 @@ exports.addMediclaimUserData = async (req, res) => {
 
             if (!existingMapping) {
                 // User exists but not assigned to mediclaim category, add the mapping
-                console.log('🔍 [ADD MEDICLAIM] Adding user to mediclaim category');
+                logger.debug('🔍 [ADD MEDICLAIM] Adding user to mediclaim category');
                 await consumerRoleMapping.create({
                     user_role_id: req.user.id,
                     user_consumer_id: user.user_id,
@@ -469,7 +469,7 @@ exports.addMediclaimUserData = async (req, res) => {
                 });
             }
         } else {
-            console.log('🔍 [ADD MEDICLAIM] User not found, creating new user');
+            logger.debug('🔍 [ADD MEDICLAIM] User not found, creating new user');
             
             // Create new user
             user = await User.create({
@@ -532,7 +532,7 @@ exports.addMediclaimUserData = async (req, res) => {
             GstFileName: null
         };
         
-        console.log('🔍 [ADD MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
+        logger.debug('🔍 [ADD MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
         
         // Handle Aadhar
         if (req.files && req.files.aadhar) {
@@ -547,7 +547,7 @@ exports.addMediclaimUserData = async (req, res) => {
             }
             
             documentFiles.AadharFileName = uniqueName;
-            console.log(`📁 [ADD MEDICLAIM] Aadhar saved: ${uniqueName}`);
+            logger.debug(`📁 [ADD MEDICLAIM] Aadhar saved: ${uniqueName}`);
         }
         
         // Handle PAN
@@ -563,7 +563,7 @@ exports.addMediclaimUserData = async (req, res) => {
             }
             
             documentFiles.PanFileName = uniqueName;
-            console.log(`📁 [ADD MEDICLAIM] PAN saved: ${uniqueName}`);
+            logger.debug(`📁 [ADD MEDICLAIM] PAN saved: ${uniqueName}`);
         }
         
         // Handle GST
@@ -579,7 +579,7 @@ exports.addMediclaimUserData = async (req, res) => {
             }
             
             documentFiles.GstFileName = uniqueName;
-            console.log(`📁 [ADD MEDICLAIM] GST saved: ${uniqueName}`);
+            logger.debug(`📁 [ADD MEDICLAIM] GST saved: ${uniqueName}`);
         }
         
         // Handle custom documents
@@ -598,7 +598,7 @@ exports.addMediclaimUserData = async (req, res) => {
                 }
                 
                 doc.file = uniqueName;
-                console.log(`📁 [ADD MEDICLAIM] Custom document ${doc.name} saved: ${uniqueName}`);
+                logger.debug(`📁 [ADD MEDICLAIM] Custom document ${doc.name} saved: ${uniqueName}`);
             }
         });
         
@@ -637,7 +637,7 @@ exports.addMediclaimUserData = async (req, res) => {
                     : (runningPolicy.PdfFile || null)
             };
             
-            console.log('🔍 [RUNNING POLICY] Cleaned data:', cleanedRunningPolicy);
+            logger.debug('🔍 [RUNNING POLICY] Cleaned data:', cleanedRunningPolicy);
             
             await RunningPolicies.create(cleanedRunningPolicy);
         }
@@ -671,8 +671,8 @@ exports.addMediclaimUserData = async (req, res) => {
                 
             };
             
-            console.log('🔍 [PREVIOUS POLICY] Cleaned data:', cleanedPreviousPolicy);
-            console.log('🔍 [PREVIOUS POLICY] Previous Agent Details:', {
+            logger.debug('🔍 [PREVIOUS POLICY] Cleaned data:', cleanedPreviousPolicy);
+            logger.debug('🔍 [PREVIOUS POLICY] Previous Agent Details:', {
                 PreviousAgentName: cleanedPreviousPolicy.PreviousAgentName,
                 PreviousAgentCode: cleanedPreviousPolicy.PreviousAgentCode,
                 PreviousAgentContactNumber: cleanedPreviousPolicy.PreviousAgentContactNumber
@@ -680,7 +680,7 @@ exports.addMediclaimUserData = async (req, res) => {
             
             await PreviousPolicies.create(cleanedPreviousPolicy);
         } else {
-            console.log('ℹ️ [PREVIOUS POLICY] No meaningful previous policy data provided - skipping creation.');
+            logger.debug('ℹ️ [PREVIOUS POLICY] No meaningful previous policy data provided - skipping creation.');
         }
 
         // Save family members if any
@@ -749,7 +749,7 @@ exports.addMediclaimUserData = async (req, res) => {
             status: true
         });
     } catch (error) {
-        console.error('Error in addMediclaimUserData:', error);
+        logger.error('Error in addMediclaimUserData:', error);
         res.status(500).json({
             message: 'Error saving mediclaim data',
             error: error.message
@@ -759,17 +759,17 @@ exports.addMediclaimUserData = async (req, res) => {
 
 
 exports.updateMediclaimUserData = async (req, res) => {
-    console.log('🔍 [UPDATE MEDICLAIM] Request received:', req.body);
-    console.log('🔍 [UPDATE MEDICLAIM] Request params:', req.params);
+    logger.debug('🔍 [UPDATE MEDICLAIM] Request received:', req.body);
+    logger.debug('🔍 [UPDATE MEDICLAIM] Request params:', req.params);
     
     if (!req?.body?.data) {
-        console.log('❌ [UPDATE MEDICLAIM] No data found in request body');
+        logger.debug('❌ [UPDATE MEDICLAIM] No data found in request body');
         res.status(404).json({ error: 'Data not found' });
         return;
     }
     
     let Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
-    console.log('🔍 [UPDATE MEDICLAIM] Parsed data:', Data);
+    logger.debug('🔍 [UPDATE MEDICLAIM] Parsed data:', Data);
 
     const {
         Name, Email, MobileNumber, RadioButton, policyRadio, DateOfBirth, Age, Gender, RelationshipWithPolicyHolder,
@@ -780,7 +780,7 @@ exports.updateMediclaimUserData = async (req, res) => {
         InsuredPersonGender, InsuredPersonDateOfJoining, InsuredPersonPreExistingIllness
     } = Data;
 
-    console.log('🔍 [UPDATE MEDICLAIM] Extracted fields:', {
+    logger.debug('🔍 [UPDATE MEDICLAIM] Extracted fields:', {
         Name, Email, MobileNumber, RadioButton, policyRadio, DateOfBirth, Age, Gender, 
         RelationshipWithPolicyHolder, SumInsured, NoClaimBonus, PreExistingIllness, 
         ProductName, CompanyName, AgentName, AgentCode, AgentContactNumber, 
@@ -820,7 +820,7 @@ exports.updateMediclaimUserData = async (req, res) => {
         
         // Update user table with basic information (Name, Email, MobileNumber, ReferenceName)
         if (user_id) {
-            console.log('🔍 [UPDATE MEDICLAIM] Updating User table with:', {
+            logger.debug('🔍 [UPDATE MEDICLAIM] Updating User table with:', {
                 username: Name || null,
                 email: Email || null,
                 mobileNumber: MobileNumber || null,
@@ -837,7 +837,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 { where: { user_id: user_id } }
             );
             
-            console.log('🔍 [UPDATE MEDICLAIM] User table update result:', userUpdateResult);
+            logger.debug('🔍 [UPDATE MEDICLAIM] User table update result:', userUpdateResult);
         }
 
         // Handle document uploads (aadhar, pan, gst, custom documents)
@@ -847,11 +847,11 @@ exports.updateMediclaimUserData = async (req, res) => {
         // Get existing mediclaim data to check for old files
         const existingMediclaim = await db.medicliamuser.findOne({ where: { id: id } });
         
-        console.log('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
+        logger.debug('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
         
         // Handle document removal (if specified)
         const removedDocuments = Data.removedDocuments || [];
-        console.log('🗑️ [UPDATE MEDICLAIM] Documents marked for removal:', removedDocuments);
+        logger.debug('🗑️ [UPDATE MEDICLAIM] Documents marked for removal:', removedDocuments);
         
         if (removedDocuments.length > 0) {
             // Remove Aadhar if marked
@@ -859,7 +859,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const filePath = path.join(uploadsDir, existingMediclaim.AadharFileName);
                 if (fsSync.existsSync(filePath)) {
                     fsSync.unlinkSync(filePath);
-                    console.log(`🗑️ [UPDATE MEDICLAIM] Deleted Aadhar file: ${existingMediclaim.AadharFileName}`);
+                    logger.debug(`🗑️ [UPDATE MEDICLAIM] Deleted Aadhar file: ${existingMediclaim.AadharFileName}`);
                 }
                 documentFiles.AadharFileName = null;
             }
@@ -869,7 +869,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const filePath = path.join(uploadsDir, existingMediclaim.PanFileName);
                 if (fsSync.existsSync(filePath)) {
                     fsSync.unlinkSync(filePath);
-                    console.log(`🗑️ [UPDATE MEDICLAIM] Deleted PAN file: ${existingMediclaim.PanFileName}`);
+                    logger.debug(`🗑️ [UPDATE MEDICLAIM] Deleted PAN file: ${existingMediclaim.PanFileName}`);
                 }
                 documentFiles.PanFileName = null;
             }
@@ -879,7 +879,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const filePath = path.join(uploadsDir, existingMediclaim.GstFileName);
                 if (fsSync.existsSync(filePath)) {
                     fsSync.unlinkSync(filePath);
-                    console.log(`🗑️ [UPDATE MEDICLAIM] Deleted GST file: ${existingMediclaim.GstFileName}`);
+                    logger.debug(`🗑️ [UPDATE MEDICLAIM] Deleted GST file: ${existingMediclaim.GstFileName}`);
                 }
                 documentFiles.GstFileName = null;
             }
@@ -892,7 +892,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const oldFilePath = path.join(uploadsDir, existingMediclaim.AadharFileName);
                 if (fsSync.existsSync(oldFilePath)) {
                     fsSync.unlinkSync(oldFilePath);
-                    console.log(`📁 [UPDATE MEDICLAIM] Deleted old Aadhar: ${existingMediclaim.AadharFileName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old Aadhar: ${existingMediclaim.AadharFileName}`);
                 }
             }
             
@@ -907,7 +907,7 @@ exports.updateMediclaimUserData = async (req, res) => {
             }
             
             documentFiles.AadharFileName = uniqueName;
-            console.log(`📁 [UPDATE MEDICLAIM] Aadhar saved: ${uniqueName}`);
+            logger.debug(`📁 [UPDATE MEDICLAIM] Aadhar saved: ${uniqueName}`);
         }
         
         // Handle PAN
@@ -917,7 +917,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const oldFilePath = path.join(uploadsDir, existingMediclaim.PanFileName);
                 if (fsSync.existsSync(oldFilePath)) {
                     fsSync.unlinkSync(oldFilePath);
-                    console.log(`📁 [UPDATE MEDICLAIM] Deleted old PAN: ${existingMediclaim.PanFileName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old PAN: ${existingMediclaim.PanFileName}`);
                 }
             }
             
@@ -932,7 +932,7 @@ exports.updateMediclaimUserData = async (req, res) => {
             }
             
             documentFiles.PanFileName = uniqueName;
-            console.log(`📁 [UPDATE MEDICLAIM] PAN saved: ${uniqueName}`);
+            logger.debug(`📁 [UPDATE MEDICLAIM] PAN saved: ${uniqueName}`);
         }
         
         // Handle GST
@@ -942,7 +942,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const oldFilePath = path.join(uploadsDir, existingMediclaim.GstFileName);
                 if (fsSync.existsSync(oldFilePath)) {
                     fsSync.unlinkSync(oldFilePath);
-                    console.log(`📁 [UPDATE MEDICLAIM] Deleted old GST: ${existingMediclaim.GstFileName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old GST: ${existingMediclaim.GstFileName}`);
                 }
             }
             
@@ -957,7 +957,7 @@ exports.updateMediclaimUserData = async (req, res) => {
             }
             
             documentFiles.GstFileName = uniqueName;
-            console.log(`📁 [UPDATE MEDICLAIM] GST saved: ${uniqueName}`);
+            logger.debug(`📁 [UPDATE MEDICLAIM] GST saved: ${uniqueName}`);
         }
         
         // Handle custom documents
@@ -977,7 +977,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 }
                 
                 doc.file = uniqueName;
-                console.log(`📁 [UPDATE MEDICLAIM] Custom document ${doc.name} saved: ${uniqueName}`);
+                logger.debug(`📁 [UPDATE MEDICLAIM] Custom document ${doc.name} saved: ${uniqueName}`);
             }
         }
         
@@ -995,11 +995,11 @@ exports.updateMediclaimUserData = async (req, res) => {
         }
 
         // Handle Renewal Logic - Transfer running policy to previous policy
-        console.log('🔍 [UPDATE MEDICLAIM] Policy type:', policyRadio);
+        logger.debug('🔍 [UPDATE MEDICLAIM] Policy type:', policyRadio);
         
         if (policyRadio === "Renew" && runningPolicy && typeof runningPolicy === 'object') {
             try {
-                console.log('🔄 [RENEWAL] Processing renewal - transferring running policy to previous policy');
+                logger.debug('🔄 [RENEWAL] Processing renewal - transferring running policy to previous policy');
                 
                 // Get existing running policy to transfer to previous
                 const existingRunningPolicy = await db.runningPolicyMediclaim.findOne({
@@ -1008,14 +1008,14 @@ exports.updateMediclaimUserData = async (req, res) => {
                 });
 
                 if (existingRunningPolicy) {
-                    console.log('🔄 [RENEWAL] Found existing running policy, transferring to previous policy');
+                    logger.debug('🔄 [RENEWAL] Found existing running policy, transferring to previous policy');
                     
                     // Mark all existing previous policies as inactive
                     await db.previousPolicyMediclaim.update(
                         { status: "notActive" },
                         { where: { mediclaim_id: id } }
                     );
-                    console.log('🔄 [RENEWAL] Marked existing previous policies as notActive');
+                    logger.debug('🔄 [RENEWAL] Marked existing previous policies as notActive');
 
                     // Transfer existing running policy to previous policy
                     const transferData = {
@@ -1043,13 +1043,13 @@ exports.updateMediclaimUserData = async (req, res) => {
 
                     // Create new previous policy record with transferred data
                     await db.previousPolicyMediclaim.create(transferData);
-                    console.log('🔄 [RENEWAL] Successfully transferred running policy to previous policy');
+                    logger.debug('🔄 [RENEWAL] Successfully transferred running policy to previous policy');
                 }
 
                 // Now update running policy with new renewal data
                 const uploadsDir = path.join(CTRL_DIR, "../../uploads");
-                console.log('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
-                console.log('🔍 [UPDATE MEDICLAIM] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
+                logger.debug('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
+                logger.debug('🔍 [UPDATE MEDICLAIM] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
                 
                 if (req.files && req.files.CurrentPolicyFile) {
                     let CurrentPolicyFile = req.files.CurrentPolicyFile;
@@ -1060,17 +1060,17 @@ exports.updateMediclaimUserData = async (req, res) => {
                     
                     // Handle file movement
                     if (CurrentPolicyFile.mv) {
-                        console.log(`📁 [UPDATE MEDICLAIM] Using file.mv() for CurrentPolicyFile`);
+                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.mv() for CurrentPolicyFile`);
                         await CurrentPolicyFile.mv(uploadPath);
                     } else if (CurrentPolicyFile.data) {
-                        console.log(`📁 [UPDATE MEDICLAIM] Using file.data for CurrentPolicyFile`);
+                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.data for CurrentPolicyFile`);
                         await fs.writeFile(uploadPath, CurrentPolicyFile.data);
                     } else {
                         throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
                     }
                     
                     runningPolicy.CurrentPolicyFile = uniqueName;
-                    console.log(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
                 }
 
                 // Update running policy with new renewal data
@@ -1078,16 +1078,16 @@ exports.updateMediclaimUserData = async (req, res) => {
                     await db.runningPolicyMediclaim.update(runningPolicy, {
                         where: { mediclaim_id: id }
                     });
-                    console.log('🔄 [RENEWAL] Updated running policy with new renewal data');
+                    logger.debug('🔄 [RENEWAL] Updated running policy with new renewal data');
                 } else {
                     await db.runningPolicyMediclaim.create({
                         ...runningPolicy,
                         mediclaim_id: id
                     });
-                    console.log('🔄 [RENEWAL] Created new running policy with renewal data');
+                    logger.debug('🔄 [RENEWAL] Created new running policy with renewal data');
                 }
             } catch (renewalError) {
-                console.error('❌ [RENEWAL] Error processing renewal:', renewalError);
+                logger.error('❌ [RENEWAL] Error processing renewal:', renewalError);
                 throw renewalError;
             }
         } 
@@ -1101,8 +1101,8 @@ exports.updateMediclaimUserData = async (req, res) => {
 
                 // Handle CurrentPolicyFile upload if provided
                 const uploadsDir = path.join(CTRL_DIR, "../../uploads");
-                console.log('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
-                console.log('🔍 [UPDATE MEDICLAIM] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
+                logger.debug('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
+                logger.debug('🔍 [UPDATE MEDICLAIM] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
                 
                 if (req.files && req.files.CurrentPolicyFile) {
                     let CurrentPolicyFile = req.files.CurrentPolicyFile;
@@ -1114,23 +1114,23 @@ exports.updateMediclaimUserData = async (req, res) => {
                         const oldFilePath = path.join(uploadsDir, existingRunningPolicy.CurrentPolicyFile);
                         if (fsSync.existsSync(oldFilePath)) {
                             fsSync.unlinkSync(oldFilePath);
-                            console.log(`📁 [UPDATE MEDICLAIM] Deleted old CurrentPolicyFile: ${existingRunningPolicy.CurrentPolicyFile}`);
+                            logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old CurrentPolicyFile: ${existingRunningPolicy.CurrentPolicyFile}`);
                         }
                     }
                     
                     // Handle file movement
                     if (CurrentPolicyFile.mv) {
-                        console.log(`📁 [UPDATE MEDICLAIM] Using file.mv() for CurrentPolicyFile`);
+                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.mv() for CurrentPolicyFile`);
                         await CurrentPolicyFile.mv(uploadPath);
                     } else if (CurrentPolicyFile.data) {
-                        console.log(`📁 [UPDATE MEDICLAIM] Using file.data for CurrentPolicyFile`);
+                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.data for CurrentPolicyFile`);
                         await fs.writeFile(uploadPath, CurrentPolicyFile.data);
                     } else {
                         throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
                     }
                     
                     runningPolicy.CurrentPolicyFile = uniqueName;
-                    console.log(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
                 } else if (existingRunningPolicy && !runningPolicy.CurrentPolicyFile) {
                     // Keep existing file if no new file uploaded and no file in payload
                     runningPolicy.CurrentPolicyFile = existingRunningPolicy.CurrentPolicyFile;
@@ -1149,7 +1149,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                     });
                 }
             } catch (runningPolicyError) {
-                console.error('Error updating running policy:', runningPolicyError);
+                logger.error('Error updating running policy:', runningPolicyError);
                 // Continue with other updates even if running policy fails
             }
         }
@@ -1164,8 +1164,8 @@ exports.updateMediclaimUserData = async (req, res) => {
 
                 // Handle PdfFile upload if provided
                 const uploadsDir = path.join(CTRL_DIR, "../../uploads");
-                console.log('🔍 [UPDATE MEDICLAIM] PdfFile exists:', !!(req.files && req.files.PdfFile));
-                console.log('🔍 [UPDATE MEDICLAIM] ClaimStatementPDFfile exists:', !!(req.files && req.files.ClaimStatementPDFfile));
+                logger.debug('🔍 [UPDATE MEDICLAIM] PdfFile exists:', !!(req.files && req.files.PdfFile));
+                logger.debug('🔍 [UPDATE MEDICLAIM] ClaimStatementPDFfile exists:', !!(req.files && req.files.ClaimStatementPDFfile));
                 
                 if (req.files && req.files.PdfFile) {
                     let PdfFile = req.files.PdfFile;
@@ -1177,7 +1177,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                         const oldFilePath = path.join(uploadsDir, existingPreviousPolicy.PdfFile);
                         if (fsSync.existsSync(oldFilePath)) {
                             fsSync.unlinkSync(oldFilePath);
-                            console.log(`📁 [UPDATE MEDICLAIM] Deleted old PdfFile: ${existingPreviousPolicy.PdfFile}`);
+                            logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old PdfFile: ${existingPreviousPolicy.PdfFile}`);
                         }
                     }
                     
@@ -1190,7 +1190,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                     
                     previousPolicy.PdfFile = uniqueName;
                     previousPolicy.PdfFileName = PdfFile.name;
-                    console.log(`📁 [UPDATE MEDICLAIM] PdfFile saved: ${uniqueName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] PdfFile saved: ${uniqueName}`);
                 } else if (existingPreviousPolicy && !previousPolicy.PdfFile) {
                     // Keep existing file if no new file uploaded
                     previousPolicy.PdfFile = existingPreviousPolicy.PdfFile;
@@ -1207,7 +1207,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                         const oldFilePath = path.join(uploadsDir, existingPreviousPolicy.ClaimStatementPDFfile);
                         if (fsSync.existsSync(oldFilePath)) {
                             fsSync.unlinkSync(oldFilePath);
-                            console.log(`📁 [UPDATE MEDICLAIM] Deleted old ClaimStatementPDFfile: ${existingPreviousPolicy.ClaimStatementPDFfile}`);
+                            logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old ClaimStatementPDFfile: ${existingPreviousPolicy.ClaimStatementPDFfile}`);
                         }
                     }
                     
@@ -1220,7 +1220,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                     
                     previousPolicy.ClaimStatementPDFfile = uniqueName;
                     previousPolicy.ClaimStatementPDFfileName = ClaimStatementPDFfile.name;
-                    console.log(`📁 [UPDATE MEDICLAIM] ClaimStatementPDFfile saved: ${uniqueName}`);
+                    logger.debug(`📁 [UPDATE MEDICLAIM] ClaimStatementPDFfile saved: ${uniqueName}`);
                 } else if (existingPreviousPolicy && !previousPolicy.ClaimStatementPDFfile) {
                     // Keep existing file if no new file uploaded
                     previousPolicy.ClaimStatementPDFfile = existingPreviousPolicy.ClaimStatementPDFfile;
@@ -1244,7 +1244,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                     PreviousAgentContactNumber: previousPolicy.PreviousAgentContactNumber || null
                 };
                 
-                console.log('🔍 [UPDATE PREVIOUS POLICY] Previous Agent Details:', {
+                logger.debug('🔍 [UPDATE PREVIOUS POLICY] Previous Agent Details:', {
                     PreviousAgentName: cleanedPreviousPolicy.PreviousAgentName,
                     PreviousAgentCode: cleanedPreviousPolicy.PreviousAgentCode,
                     PreviousAgentContactNumber: cleanedPreviousPolicy.PreviousAgentContactNumber
@@ -1260,11 +1260,11 @@ exports.updateMediclaimUserData = async (req, res) => {
                     await db.previousPolicyMediclaim.create(cleanedPreviousPolicy);
                 }
             } catch (previousPolicyError) {
-                console.error('Error updating previous policy:', previousPolicyError);
+                logger.error('Error updating previous policy:', previousPolicyError);
                 // Continue with other updates even if previous policy fails
             }
         } else if (policyRadio !== "Renew") {
-            console.log('ℹ️ [UPDATE MEDICLAIM] No meaningful previous policy data provided - skipping previous policy update.');
+            logger.debug('ℹ️ [UPDATE MEDICLAIM] No meaningful previous policy data provided - skipping previous policy update.');
         }
 
         // Delete existing family members and employees
@@ -1298,7 +1298,7 @@ exports.updateMediclaimUserData = async (req, res) => {
             status: true
         });
     } catch (error) {
-        console.error('Error in updateMediclaimUserData:', error);
+        logger.error('Error in updateMediclaimUserData:', error);
         res.status(500).json({
             message: 'Error updating mediclaim data',
             error: error.message
@@ -1315,10 +1315,10 @@ exports.geteMediclaimUserData = async (req, res) => {
         'Expires': '0'
     });
     
-    console.log('🔍 [MEDICLAIM USER DATA API] User making request:', req.user);
-    console.log('🔍 [MEDICLAIM USER DATA API] User Role:', req.user.Role);
-    console.log('🔍 [MEDICLAIM USER DATA API] User ID:', req.user.id);
-    console.log('🔍 [MEDICLAIM USER DATA API] User categoryIds:', req.user.categoryIds);
+    logger.debug('🔍 [MEDICLAIM USER DATA API] User making request:', req.user);
+    logger.debug('🔍 [MEDICLAIM USER DATA API] User Role:', req.user.Role);
+    logger.debug('🔍 [MEDICLAIM USER DATA API] User ID:', req.user.id);
+    logger.debug('🔍 [MEDICLAIM USER DATA API] User categoryIds:', req.user.categoryIds);
 
     // Show all mediclaim data for Super Admin OR users with mediclaim category access
     if (req.user.Role == 1 || req.user.categoryIds?.includes(4)) {
@@ -1328,7 +1328,7 @@ exports.geteMediclaimUserData = async (req, res) => {
         })
             .then(async (mediclaimData) => {
                 const mediclaimIds = mediclaimData.map((item) => item.id); // Extract mediclaim IDs
-                console.log('🔍 [BACKEND] Admin/Mediclaim Category Role - Mediclaim IDs being searched:', mediclaimIds);
+                logger.debug('🔍 [BACKEND] Admin/Mediclaim Category Role - Mediclaim IDs being searched:', mediclaimIds);
                 const familyMembers = await FamilyMember.findAll({
                     where: { mediclaim_id: mediclaimIds },
                     raw: true,
@@ -1345,10 +1345,10 @@ exports.geteMediclaimUserData = async (req, res) => {
                     where: { mediclaim_id: mediclaimIds },
                     raw: true,
                 });
-                console.log('🔍 [BACKEND] Admin/Mediclaim Category Role - Previous policies found:', previousPolicies.length);
-                console.log('🔍 [BACKEND] Admin/Mediclaim Category Role - Previous policies data:', JSON.stringify(previousPolicies, null, 2));
-                console.log(familyMembers)
-                console.log(runningPolicies)
+                logger.debug('🔍 [BACKEND] Admin/Mediclaim Category Role - Previous policies found:', previousPolicies.length);
+                logger.debug('🔍 [BACKEND] Admin/Mediclaim Category Role - Previous policies data:', JSON.stringify(previousPolicies, null, 2));
+                logger.debug(familyMembers)
+                logger.debug(runningPolicies)
 
                 // Step 3: Attach family members, employees to the corresponding mediclaim records
                 const mediclaimWithFamily = mediclaimData.map((mediclaim) => {
@@ -1366,7 +1366,7 @@ exports.geteMediclaimUserData = async (req, res) => {
                         previousPolicies: filteredPrevious // Return previous policies with real data
                     };
                 });
-                console.log('API response for mediclaim user data:', JSON.stringify(mediclaimWithFamily, null, 2));
+                logger.debug('API response for mediclaim user data:', JSON.stringify(mediclaimWithFamily, null, 2));
                 res.status(200).send({
                     message: "mediclaim get success",
                     data: mediclaimWithFamily,
@@ -1375,7 +1375,7 @@ exports.geteMediclaimUserData = async (req, res) => {
             })
             .catch((e) => {
                 res.status(400).send({ message: "role error", status: false });
-                console.log(e);
+                logger.debug(e);
             });
     } else {
 
@@ -1404,7 +1404,7 @@ exports.geteMediclaimUserData = async (req, res) => {
         })
             .then(async (mediclaimData) => {
                 const mediclaimIds = mediclaimData.map((item) => item.id); // Extract mediclaim IDs
-                console.log('🔍 [BACKEND] User Role - Mediclaim IDs being searched:', mediclaimIds);
+                logger.debug('🔍 [BACKEND] User Role - Mediclaim IDs being searched:', mediclaimIds);
                 const familyMembers = await FamilyMember.findAll({
                     where: { mediclaim_id: mediclaimIds },
                     raw: true,
@@ -1421,10 +1421,10 @@ exports.geteMediclaimUserData = async (req, res) => {
                     where: { mediclaim_id: mediclaimIds },
                     raw: true,
                 });
-                console.log('🔍 [BACKEND] User Role - Previous policies found:', previousPolicies.length);
-                console.log('🔍 [BACKEND] User Role - Previous policies data:', JSON.stringify(previousPolicies, null, 2));
-                console.log(familyMembers)
-                console.log(runningPolicies)
+                logger.debug('🔍 [BACKEND] User Role - Previous policies found:', previousPolicies.length);
+                logger.debug('🔍 [BACKEND] User Role - Previous policies data:', JSON.stringify(previousPolicies, null, 2));
+                logger.debug(familyMembers)
+                logger.debug(runningPolicies)
 
                 // Step 3: Attach family members, employees to the corresponding mediclaim records
                 const mediclaimWithFamily = mediclaimData.map((mediclaim) => {
@@ -1442,7 +1442,7 @@ exports.geteMediclaimUserData = async (req, res) => {
                         previousPolicies: filteredPrevious // Return previous policies with real data
                     };
                 });
-                console.log('API response for mediclaim user data:', JSON.stringify(mediclaimWithFamily, null, 2));
+                logger.debug('API response for mediclaim user data:', JSON.stringify(mediclaimWithFamily, null, 2));
                 res.status(200).send({
                     message: "mediclaim get success",
                     data: mediclaimWithFamily,
@@ -1451,7 +1451,7 @@ exports.geteMediclaimUserData = async (req, res) => {
             })
             .catch((e) => {
                 res.status(400).send({ message: "role error", status: false });
-                console.log(e);
+                logger.debug(e);
             });
     }
 
@@ -1490,7 +1490,7 @@ exports.geteMediclaimUserRenewalData = async (req, res) => {
 
         const startOfDay = new Date(startDay.setHours(0, 0, 0, 0));
         const endOfDay = new Date(endDay.setHours(23, 59, 59, 999));
-        console.log(startDay, endOfDay)
+        logger.debug(startDay, endOfDay)
 
         const [familyMembers, runningPolicies, previousPolicies] = await Promise.all([
             FamilyMember.findAll({ where: { mediclaim_id: mediclaimIds }, raw: true }),
@@ -1537,7 +1537,7 @@ exports.geteMediclaimUserRenewalData = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error fetching mediclaim data:", error);
+        logger.error("Error fetching mediclaim data:", error);
         return res.status(500).send({ message: "Internal Server Error", status: false });
     }
 };
@@ -1557,7 +1557,7 @@ exports.geteMediclaimProductData = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 
 };
@@ -1577,7 +1577,7 @@ exports.geteMediclaimCompanyData = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 
 };
@@ -1623,7 +1623,7 @@ const getMediclaimConsumerData = async (req, res) => {
             data: mediclaimData
         });
     } catch (error) {
-        console.error('Error in getMediclaimConsumerData:', error);
+        logger.error('Error in getMediclaimConsumerData:', error);
         res.status(500).json({
             message: 'Error retrieving mediclaim data',
             error: error.message

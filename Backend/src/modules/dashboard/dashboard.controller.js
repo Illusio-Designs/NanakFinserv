@@ -115,7 +115,7 @@ exports.getUserCounts = async (req, res) => {
             raw: true
         });
         const buildingManagerUserIds = buildingManagerUsers.map(bm => bm.user_id);
-        console.log('🔍 [USER COUNTS] Building manager user IDs to exclude:', buildingManagerUserIds);
+        logger.debug('🔍 [USER COUNTS] Building manager user IDs to exclude:', buildingManagerUserIds);
 
         // Exclude building managers from all loan user where objects
         if (buildingManagerUserIds.length > 0) {
@@ -171,9 +171,9 @@ exports.getUserCounts = async (req, res) => {
         // Check if user is Super Admin (role_id === 1 OR has Super Admin category access)
         const isSuperAdmin = req.user.Role === 1 || (req.user.categoryIds && req.user.categoryIds.includes(1));
         
-        console.log('🔍 [USER COUNTS] User Role:', req.user.Role);
-        console.log('🔍 [USER COUNTS] User categoryIds:', req.user.categoryIds);
-        console.log('🔍 [USER COUNTS] Is Super Admin:', isSuperAdmin);
+        logger.debug('🔍 [USER COUNTS] User Role:', req.user.Role);
+        logger.debug('🔍 [USER COUNTS] User categoryIds:', req.user.categoryIds);
+        logger.debug('🔍 [USER COUNTS] Is Super Admin:', isSuperAdmin);
         
         if (isSuperAdmin) {
             const [
@@ -262,27 +262,27 @@ exports.getUserCounts = async (req, res) => {
                 consumerRoleMapping.count({ where: { category_id: 5 } }) // <-- count all life insurance users
             ]);
 
-            console.log('🔍 [COUNTS DEBUG] ===== USER COUNTS RESULTS =====');
-            console.log('🔍 [COUNTS DEBUG] Total Consumer Count:', consumerCount);
-            console.log('🔍 [COUNTS DEBUG] Mediclaim Consumer Count:', mediclaimUserCount);
-            console.log('🔍 [COUNTS DEBUG] Vehicle Consumer Count:', vehicleUserCount);
-            console.log('🔍 [COUNTS DEBUG] Life Insurance Consumer Count:', lifeUserCount);
-            console.log('🔍 [COUNTS DEBUG] Loan Consumer Count:', loanUserCount);
-            console.log('🔍 [COUNTS DEBUG] Loan Interested Count:', loanInterstedUserCount);
-            console.log('🔍 [COUNTS DEBUG] Loan Not Interested Count:', loanNotInterstedUserCount);
-            console.log('🔍 [COUNTS DEBUG] Loan Completed Count:', loanCompletedUserCount);
-            console.log('🔍 [COUNTS DEBUG] Loan Not Assigned Count:', loanNotAssignUserCount);
-            console.log('🔍 [COUNTS DEBUG] ===== AMOUNT VALUES =====');
-            console.log('🔍 [COUNTS DEBUG] Today - Total Loan Amount:', totalLoandAmount);
-            console.log('🔍 [COUNTS DEBUG] Today - Total Disbursed Amount:', totalDisbursedAmount);
-            console.log('🔍 [COUNTS DEBUG] Today - Total Part Payment Amount:', totalPartPaymentAmount);
-            console.log('🔍 [COUNTS DEBUG] All-time - Total Loan Amount:', allTimeLoandAmount);
-            console.log('🔍 [COUNTS DEBUG] All-time - Total Disbursed Amount:', allTimeDisbursedAmount);
-            console.log('🔍 [COUNTS DEBUG] All-time - Total Part Payment Amount:', allTimePartPaymentAmount);
-            console.log('🔍 [COUNTS DEBUG] Final - Total Loan Amount:', totalLoandAmount || allTimeLoandAmount || 0);
-            console.log('🔍 [COUNTS DEBUG] Final - Total Disbursed Amount:', totalDisbursedAmount || allTimeDisbursedAmount || 0);
-            console.log('🔍 [COUNTS DEBUG] Final - Total Part Payment Amount:', totalPartPaymentAmount || allTimePartPaymentAmount || 0);
-            console.log('🔍 [COUNTS DEBUG] ======================================');
+            logger.debug('🔍 [COUNTS DEBUG] ===== USER COUNTS RESULTS =====');
+            logger.debug('🔍 [COUNTS DEBUG] Total Consumer Count:', consumerCount);
+            logger.debug('🔍 [COUNTS DEBUG] Mediclaim Consumer Count:', mediclaimUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Vehicle Consumer Count:', vehicleUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Life Insurance Consumer Count:', lifeUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Loan Consumer Count:', loanUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Loan Interested Count:', loanInterstedUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Loan Not Interested Count:', loanNotInterstedUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Loan Completed Count:', loanCompletedUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] Loan Not Assigned Count:', loanNotAssignUserCount);
+            logger.debug('🔍 [COUNTS DEBUG] ===== AMOUNT VALUES =====');
+            logger.debug('🔍 [COUNTS DEBUG] Today - Total Loan Amount:', totalLoandAmount);
+            logger.debug('🔍 [COUNTS DEBUG] Today - Total Disbursed Amount:', totalDisbursedAmount);
+            logger.debug('🔍 [COUNTS DEBUG] Today - Total Part Payment Amount:', totalPartPaymentAmount);
+            logger.debug('🔍 [COUNTS DEBUG] All-time - Total Loan Amount:', allTimeLoandAmount);
+            logger.debug('🔍 [COUNTS DEBUG] All-time - Total Disbursed Amount:', allTimeDisbursedAmount);
+            logger.debug('🔍 [COUNTS DEBUG] All-time - Total Part Payment Amount:', allTimePartPaymentAmount);
+            logger.debug('🔍 [COUNTS DEBUG] Final - Total Loan Amount:', totalLoandAmount || allTimeLoandAmount || 0);
+            logger.debug('🔍 [COUNTS DEBUG] Final - Total Disbursed Amount:', totalDisbursedAmount || allTimeDisbursedAmount || 0);
+            logger.debug('🔍 [COUNTS DEBUG] Final - Total Part Payment Amount:', totalPartPaymentAmount || allTimePartPaymentAmount || 0);
+            logger.debug('🔍 [COUNTS DEBUG] ======================================');
 
             const responseData = {
                 message: "Counts fetched successfully",
@@ -321,9 +321,9 @@ exports.getUserCounts = async (req, res) => {
                 }
             };
 
-            console.log('🔍 [COUNTS DEBUG] ===== CATEGORY COUNTS SENT TO FRONTEND =====');
-            console.log('🔍 [COUNTS DEBUG] Category Counts:', responseData.data.categoryCounts);
-            console.log('🔍 [COUNTS DEBUG] ===============================================');
+            logger.debug('🔍 [COUNTS DEBUG] ===== CATEGORY COUNTS SENT TO FRONTEND =====');
+            logger.debug('🔍 [COUNTS DEBUG] Category Counts:', responseData.data.categoryCounts);
+            logger.debug('🔍 [COUNTS DEBUG] ===============================================');
 
             res.status(200).send(responseData);
         } else if (req.user.Role === 2) {
@@ -450,7 +450,7 @@ exports.getUserCounts = async (req, res) => {
 
 
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).send({
             message: "Error fetching counts",
             error: error.message,
@@ -494,7 +494,7 @@ exports.getLoanAmounFilterDate = async (req, res) => {
         }
 
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).send({
             message: "Error fetching counts",
             error: error.message,
@@ -508,8 +508,8 @@ exports.getLoanAmounFilterDate = async (req, res) => {
 exports.getConsumerDashboardData = async (req, res) => {
     try {
         const userId = req.user.id; // Get user_id from authenticated user (from JWT)
-        console.log('🔍 [CONSUMER DASHBOARD] Fetching data for user_id:', userId);
-        console.log('🔍 [CONSUMER DASHBOARD] User Role from JWT:', req.user.Role);
+        logger.debug('🔍 [CONSUMER DASHBOARD] Fetching data for user_id:', userId);
+        logger.debug('🔍 [CONSUMER DASHBOARD] User Role from JWT:', req.user.Role);
 
         // Check if user is a consumer (role_id 3) - check both JWT and database
         if (req.user.Role !== 3) {
@@ -669,7 +669,7 @@ exports.getConsumerDashboardData = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ [CONSUMER DASHBOARD] Error:', error);
+        logger.error('❌ [CONSUMER DASHBOARD] Error:', error);
         return res.status(500).json({
             message: "Error fetching consumer dashboard data",
             status: false,

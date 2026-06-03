@@ -113,7 +113,7 @@ exports.getNotifications = async (req, res) => {
             categoryName = categoryMap[categoryId] || null;
           }
         } catch (err) {
-          console.log("Metadata parse error:", err);
+          logger.debug("Metadata parse error:", err);
         }
   
         return {
@@ -136,7 +136,7 @@ exports.getNotifications = async (req, res) => {
         },
       });
     } catch (error) {
-      console.error("Error fetching notifications:", error);
+      logger.error("Error fetching notifications:", error);
       res.status(500).json({
         message: "Error fetching notifications",
         status: false,
@@ -173,7 +173,7 @@ exports.markAllNotificationsAsRead = async (req, res) => {
             status: true
         });
     } catch (error) {
-        console.error('Error marking all notifications as read:', error);
+        logger.error('Error marking all notifications as read:', error);
         res.status(500).json({
             message: 'Error marking all notifications as read',
             status: false,
@@ -215,7 +215,7 @@ exports.markAllNotificationsAsRead = async (req, res) => {
 //             data: notification
 //         });
 //     } catch (error) {
-//         console.error('Error marking notification as read:', error);
+//         logger.error('Error marking notification as read:', error);
 //         res.status(500).json({
 //             message: 'Error marking notification as read',
 //             status: false,
@@ -244,7 +244,7 @@ exports.markAllNotificationsAsRead = async (req, res) => {
 //             status: true
 //         });
 //     } catch (error) {
-//         console.error('Error marking all notifications as read:', error);
+//         logger.error('Error marking all notifications as read:', error);
 //         res.status(500).json({
 //             message: 'Error marking all notifications as read',
 //             status: false,
@@ -386,7 +386,7 @@ exports.getNotificationCount = async (req, res) => {
 
 //         return res.status(200).json({ status: true, message: 'Policy renewed: running policy moved to previous', previousPolicy: createdPrev });
 //     } catch (error) {
-//         console.error('❌ [RENEW VEHICLE POLICY] Error:', error);
+//         logger.error('❌ [RENEW VEHICLE POLICY] Error:', error);
 //         return res.status(500).json({ status: false, message: 'Error renewing policy', error: error.message });
 //     }
 // };

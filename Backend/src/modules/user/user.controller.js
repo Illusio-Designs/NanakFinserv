@@ -94,7 +94,7 @@ exports.getAllUsers = async (req, res) => {
             
             if (buildingManagerAssignments.length > 0) {
                 const unitIds = buildingManagerAssignments.map(assignment => assignment.unit_id);
-                console.log('🔍 [CONSUMER API] Building Manager assigned unit IDs:', unitIds);
+                logger.debug('🔍 [CONSUMER API] Building Manager assigned unit IDs:', unitIds);
                 
                 // Get all consumer user IDs from these units
                 const consumersInBuildings = await builderConsumer.findAll({
@@ -106,7 +106,7 @@ exports.getAllUsers = async (req, res) => {
                 });
                 
                 const consumerUserIds = [...new Set(consumersInBuildings.map(c => c.user_id).filter(id => id !== null))];
-                console.log('🔍 [CONSUMER API] Consumer user IDs in assigned buildings:', consumerUserIds);
+                logger.debug('🔍 [CONSUMER API] Consumer user IDs in assigned buildings:', consumerUserIds);
                 
                 if (consumerUserIds.length > 0) {
                     whereObj.user_id = { [Op.in]: consumerUserIds };
@@ -170,7 +170,7 @@ exports.getAllUsers = async (req, res) => {
             raw: true,
         });
         const excludedUserIds = [...new Set(excludedLoanUsers.map(u => u.user_id).filter(id => id !== null))];
-        console.log('🔍 [CONSUMER API] Excluding user_ids with loan status interested/notInterested:', excludedUserIds);
+        logger.debug('🔍 [CONSUMER API] Excluding user_ids with loan status interested/notInterested:', excludedUserIds);
 
         // ⚡ Add category mapping for ALL users
         const finalData = await Promise.all(
@@ -224,7 +224,7 @@ exports.getAllUsers = async (req, res) => {
         });
 
     } catch (err) {
-        console.log("❌ getAllUsers Failed:", err);
+        logger.debug("❌ getAllUsers Failed:", err);
         return res.status(500).send({status:false,message:err.message});
     }
 };
@@ -256,13 +256,13 @@ exports.getAllBuilderUsers = async (req, res) => {
         })
         .catch((e) => {
             res.send({ message: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
 
 exports.getAllBuilderListUsers = async (req, res) => {
-    console.log(req.user, 'req.user')
+    logger.debug(req.user, 'req.user')
     wherObj = {};
     wherObj.role_id = 2;
 
@@ -282,7 +282,7 @@ exports.getAllBuilderListUsers = async (req, res) => {
         })
         .catch((e) => {
             res.send({ message: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -298,11 +298,11 @@ exports.getCategoryById = async (req, res) => {
 };
 
 exports.getAllRolesUsers = async (req, res) => {
-    console.log('🔍 [ROLE MANAGER] Filtering users with role_id:', [1, 2, 3]);
+    logger.debug('🔍 [ROLE MANAGER] Filtering users with role_id:', [1, 2, 3]);
     
     // Auto-fix super admin categories when loading role management page
     try {
-        console.log('🔍 [AUTO FIX] Checking super admin categories...');
+        logger.debug('🔍 [AUTO FIX] Checking super admin categories...');
         
         // Find all users with role_id = 1 (super admin)
         const superAdmins = await User.findAll({
@@ -323,7 +323,7 @@ exports.getAllRolesUsers = async (req, res) => {
             const missingCategories = requiredCategories.filter(catId => !existingCategoryIds.includes(catId));
             
             if (missingCategories.length > 0) {
-                console.log(`🔍 [AUTO FIX] User ${admin.username} missing categories:`, missingCategories);
+                logger.debug(`🔍 [AUTO FIX] User ${admin.username} missing categories:`, missingCategories);
                 
                 // Add missing categories
                 const categoryData = missingCategories.map(categoryId => ({
@@ -332,11 +332,11 @@ exports.getAllRolesUsers = async (req, res) => {
                 }));
                 
                 await userCatergory.bulkCreate(categoryData);
-                console.log(`✅ [AUTO FIX] Added missing categories for ${admin.username}:`, categoryData);
+                logger.debug(`✅ [AUTO FIX] Added missing categories for ${admin.username}:`, categoryData);
             }
         }
     } catch (error) {
-        console.error('❌ [AUTO FIX] Error fixing super admin categories:', error);
+        logger.error('❌ [AUTO FIX] Error fixing super admin categories:', error);
         // Don't fail the main request, just log the error
     }
     
@@ -387,7 +387,7 @@ exports.getAllRolesUsers = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -404,7 +404,7 @@ exports.getAllRoles = async (req, res) => {
 
 
 exports.addRoleWiseUser = (req, res) => {
-    console.log(req.body);
+    logger.debug(req.body);
     User.findOne({
         where: {
             [Op.or]: [
@@ -414,7 +414,7 @@ exports.addRoleWiseUser = (req, res) => {
         },
     })
         .then(async (user) => {
-            console.log(user);
+            logger.debug(user);
             if (user) {
                 return res
                     .status(400)
@@ -441,7 +441,7 @@ exports.addRoleWiseUser = (req, res) => {
                         if (req.body.role == 1) {
                             // Super admin gets access to all categories: 2, 4, 5, 6 (Loan, Mediclaim, Life Insurance, Vehicle)
                             roles = [2, 4, 5, 6];
-                            console.log('🔍 [SUPER ADMIN] Assigning all categories to super admin:', roles);
+                            logger.debug('🔍 [SUPER ADMIN] Assigning all categories to super admin:', roles);
                         }
                         
                         let categoryData = roles.map((roleId) => ({
@@ -451,7 +451,7 @@ exports.addRoleWiseUser = (req, res) => {
 
                         // Bulk insert into userCategory table
                         await userCatergory.bulkCreate(categoryData);
-                        console.log('🔍 [ROLE ASSIGNMENT] Categories assigned:', categoryData);
+                        logger.debug('🔍 [ROLE ASSIGNMENT] Categories assigned:', categoryData);
                         // Create notification for admin
                         await createNotification({
                             title: "New User Added",
@@ -490,7 +490,7 @@ exports.addRoleWiseUser = (req, res) => {
 
 
 exports.updateRoleWiseUser = async (req, res) => {
-    console.log(req.body);
+    logger.debug(req.body);
     let user = await User.findOne({
         where: {
             user_id: { [Op.ne]: req.body.user_id },
@@ -528,7 +528,7 @@ exports.updateRoleWiseUser = async (req, res) => {
             if (req.body.role == 1) {
                 // Super admin gets access to all categories: 2, 4, 5, 6 (Loan, Mediclaim, Life Insurance, Vehicle)
                 roles = [2, 4, 5, 6];
-                console.log('🔍 [SUPER ADMIN UPDATE] Assigning all categories to super admin:', roles);
+                logger.debug('🔍 [SUPER ADMIN UPDATE] Assigning all categories to super admin:', roles);
             }
 
             // Clear existing categories for the user
@@ -543,7 +543,7 @@ exports.updateRoleWiseUser = async (req, res) => {
             }));
 
             await userCatergory.bulkCreate(categoryData);
-            console.log('🔍 [ROLE UPDATE] Categories assigned:', categoryData);
+            logger.debug('🔍 [ROLE UPDATE] Categories assigned:', categoryData);
             return res.status(200).send({
                 message: "user successfully updated!.",
                 status: true,
@@ -566,7 +566,7 @@ exports.addData = (req, res) => {
         nest: true,
     })
         .then(async (user) => {
-            console.log(user);
+            logger.debug(user);
             if (user) {
                 // return res.send({ error: "User already exist." });
                 res
@@ -610,7 +610,7 @@ exports.addData = (req, res) => {
                     })
                     .catch((e) => {
                         res.status(500).send({ message: e.message });
-                        // console.log(e.message)
+                        // logger.debug(e.message)
                     });
             }
         })
@@ -660,7 +660,7 @@ exports.updateData = async (req, res) => {
         })
         .catch((e) => {
             res.send({ message: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -680,8 +680,8 @@ exports.getAllVerticleUser = async (req, res) => {
     try {
         const categories = req.body?.category || [];
         
-        console.log('🔍 [getAllVerticleUser] Request body:', req.body);
-        console.log('🔍 [getAllVerticleUser] Categories:', categories);
+        logger.debug('🔍 [getAllVerticleUser] Request body:', req.body);
+        logger.debug('🔍 [getAllVerticleUser] Categories:', categories);
         
         if (!categories || categories.length === 0) {
             return res.status(400).send({ 
@@ -704,8 +704,8 @@ exports.getAllVerticleUser = async (req, res) => {
         raw: true,
         });
 
-        console.log('🔍 [getAllVerticleUser] Query result:', articles);
-        console.log('🔍 [getAllVerticleUser] Number of users found:', articles.length);
+        logger.debug('🔍 [getAllVerticleUser] Query result:', articles);
+        logger.debug('🔍 [getAllVerticleUser] Number of users found:', articles.length);
 
             res.status(200).send({
             message: "category unit get success",
@@ -713,7 +713,7 @@ exports.getAllVerticleUser = async (req, res) => {
                 status: true,
             });
     } catch (e) {
-        console.error("Error in getAllVerticleUser:", e);
+        logger.error("Error in getAllVerticleUser:", e);
         res.status(400).send({ 
             message: "Error fetching verticle users", 
             status: false 
