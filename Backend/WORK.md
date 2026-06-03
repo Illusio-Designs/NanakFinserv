@@ -17,14 +17,14 @@
 | 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
 | 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
 | 5 | Input validation | 8 | 3 / 10 | 2.4 | 🟡 auth validated; per-module validators pending |
-| 6 | Dependency security | 8 | 3 / 10 | 2.4 | 🟠 Known-vulnerable versions |
+| 6 | Dependency security | 8 | 6 / 10 | 4.8 | 🟢 Bogus deps removed, axios/jwt upgraded, vulns 41→20 (majors pending) |
 | 7 | Error handling & resilience | 8 | 6 / 10 | 4.8 | 🟢 helmet + rate-limit + CORS fix + error handlers reordered (DB fail-fast pending) |
 | 8 | Logging & monitoring | 7 | 2 / 10 | 1.4 | 🟠 ~590 console.logs, leaks PII |
 | 9 | Code structure / maintainability | 7 | 6 / 10 | 4.2 | 🟢 Monolith split into 14 per-domain modules (services/validators pending) |
 | 10 | Testing | 5 | 3 / 10 | 1.5 | 🟡 Jest+supertest; auth + shared (download) covered (11 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 42.1 / 100** | **Not production ready (auth + module split + Phase 0 + helmet/rate-limit/CORS)** |
+| | **TOTAL** | **100** | | **🟠 44.5 / 100** | **Not production ready (Phase 0 + most of Phase 1 done)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -62,8 +62,9 @@
 | ☑ | Add `express-rate-limit` (esp. on login) | Global 1000/15min + login 20/15min → 429 (smoke-tested) |
 | 🟡 | Add input validation (`express-validator` or `zod`) | Done for `auth`; per-module validators still pending |
 | ☑ | Fix CORS | Single options object reused for preflight; wildcard removed; CORS rejections → 403 |
-| ☐ | `npm audit fix` + upgrade deps | `axios@0.21.4`, old `jsonwebtoken` |
-| ☐ | Remove bogus/duplicate deps | `fs`, `path` npm packages; drop one of `mysql`/`mysql2` |
+| ☑ | `npm audit fix` + upgrade deps | axios 0.21→1.17, jwt 8→9, nodemon 2→3, `npm audit fix`; vulns 41 → 20 |
+| ☑ | Remove bogus/duplicate deps | Removed `fs`, `path` (core wins) and unused `mysql` (kept `mysql2`) |
+| 🟡 | Major upgrades needing integration tests | 20 vulns remain behind breaking majors: `firebase`/`firebase-admin`, `mysql2@3`, `nodemailer@8`, `bcrypt@6` — upgrade with a DB/Firebase test pass, not blindly |
 
 ---
 
