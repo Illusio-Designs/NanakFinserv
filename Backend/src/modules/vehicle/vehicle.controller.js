@@ -134,20 +134,20 @@ exports.getAllVehicleInsUser = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "role error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
 
 exports.addVehicleUserData = async (req, res) => {
-    console.log('--- [addVehicleUserData] ---');
-    console.log('req.user:', req.user);
-    console.log('req.headers:', req.headers);
-    console.log('req.body:', req.body);
-    console.log('req.files:', req.files);
+    logger.debug('--- [addVehicleUserData] ---');
+    logger.debug('req.user:', req.user);
+    logger.debug('req.headers:', req.headers);
+    logger.debug('req.body:', req.body);
+    logger.debug('req.files:', req.files);
 
     if (!req.user || !req.user.id) {
-        console.log('Unauthorized: req.user is not defined.');
+        logger.debug('Unauthorized: req.user is not defined.');
         return res.status(401).json({ error: 'Unauthorized: req.user is not defined. Check your token and authentication.' });
     }
 
@@ -155,20 +155,20 @@ exports.addVehicleUserData = async (req, res) => {
     if (req.body.data) {
         // JSON request - data is nested under 'data' property
         Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
-        console.log('[addVehicleUserData] Processing JSON request');
+        logger.debug('[addVehicleUserData] Processing JSON request');
     } else if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
         // FormData request - data is directly in req.body
         Data = req.body;
-        console.log('[addVehicleUserData] Processing FormData request');
-        console.log('🔍 [ADD] req.files object:', req.files);
-        console.log('🔍 [ADD] req.files keys:', Object.keys(req.files || {}));
+        logger.debug('[addVehicleUserData] Processing FormData request');
+        logger.debug('🔍 [ADD] req.files object:', req.files);
+        logger.debug('🔍 [ADD] req.files keys:', Object.keys(req.files || {}));
 
         // Parse JSON strings in FormData
         if (Data.runningPolicy && typeof Data.runningPolicy === 'string') {
             try {
                 Data.runningPolicy = JSON.parse(Data.runningPolicy);
             } catch (e) {
-                console.log('🔍 [ADD] Error parsing runningPolicy:', e.message);
+                logger.debug('🔍 [ADD] Error parsing runningPolicy:', e.message);
                 Data.runningPolicy = {};
             }
         }
@@ -176,25 +176,25 @@ exports.addVehicleUserData = async (req, res) => {
             try {
                 Data.previousPolicy = JSON.parse(Data.previousPolicy);
             } catch (e) {
-                console.log('🔍 [ADD] Error parsing previousPolicy:', e.message);
+                logger.debug('🔍 [ADD] Error parsing previousPolicy:', e.message);
                 Data.previousPolicy = {};
             }
         }
-        console.log("📌 Previous Policy RAW DATA:", Data.previousPolicy);
+        logger.debug("📌 Previous Policy RAW DATA:", Data.previousPolicy);
         if (Data.documentsData && typeof Data.documentsData === 'string') {
             try {
                 Data.documentsData = JSON.parse(Data.documentsData);
             } catch (e) {
-                console.log('🔍 [ADD] Error parsing documentsData:', e.message);
+                logger.debug('🔍 [ADD] Error parsing documentsData:', e.message);
                 Data.documentsData = [];
             }
         }
     } else {
-        console.warn('[addVehicleUserData] No data found in request body');
+        logger.warn('[addVehicleUserData] No data found in request body');
         return res.status(400).json({ error: 'Data not found in request body' });
     }
-    console.log('Parsed Data:', Data);
-    console.log('🔧 [addVehicleUserData] Policy fields received:', {
+    logger.debug('Parsed Data:', Data);
+    logger.debug('🔧 [addVehicleUserData] Policy fields received:', {
         policyRadio: Data.policyRadio,
         policy_type: Data.policy_type,
         vehicle_policy_type: Data.vehicle_policy_type,
@@ -202,7 +202,7 @@ exports.addVehicleUserData = async (req, res) => {
         nominee_type: Data.nominee_type,
         type: Data.type
     });
-    console.log('🔧 [addVehicleUserData] Engine and Chassis fields:', {
+    logger.debug('🔧 [addVehicleUserData] Engine and Chassis fields:', {
         engine_number: Data.engine_number,
         chassis_number: Data.chassis_number,
         EngineNumber: Data.EngineNumber,
@@ -268,7 +268,7 @@ AgentCode || agentCode || Data.agent_code || Data.Agent_Code || '';
 const _AgentContactNumber =
 AgentContactNumber || agentContactNumber || Data.agent_contact_number || Data.Agent_Contact_Number || '';
 
-console.log('🔧 [addVehicleUserData] Agent details extracted:', {
+logger.debug('🔧 [addVehicleUserData] Agent details extracted:', {
 AgentName: _AgentName,
 AgentCode: _AgentCode,
 AgentContactNumber: _AgentContactNumber
@@ -290,15 +290,15 @@ AgentContactNumber: _AgentContactNumber
     const _user_id = user_id || null;
     const _documents = documents || null;
 
-    console.log('🔧 [addVehicleUserData] Extracted values:', {
+    logger.debug('🔧 [addVehicleUserData] Extracted values:', {
         Name: _Name,
         Email: _Email,
         MobileNumber: _MobileNumber,
         EngineNumber: _EngineNumber,
         ChassisNumber: _ChassisNumber
     });
-    console.log('runningPolicy before DB insert:', runningPolicy);
-    console.log('previousPolicy before DB insert:', previousPolicy);
+    logger.debug('runningPolicy before DB insert:', runningPolicy);
+    logger.debug('previousPolicy before DB insert:', previousPolicy);
 
     if (!runningPolicy) {
         return res.status(400).json({ error: "runningPolicy is undefined before DB insert" });
@@ -309,7 +309,7 @@ AgentContactNumber: _AgentContactNumber
 
     try {
         // Debug logging for validation
-        console.log('🔍 [addVehicleUserData] Validation check:', {
+        logger.debug('🔍 [addVehicleUserData] Validation check:', {
             engineNumber: _EngineNumber,
             chassisNumber: _ChassisNumber,
             engineNumberTrimmed: _EngineNumber ? _EngineNumber.trim() : null,
@@ -324,7 +324,7 @@ AgentContactNumber: _AgentContactNumber
 
         if (_EngineNumber && _EngineNumber.trim() !== '') {
             const engineNumberToCheck = _EngineNumber.trim();
-            console.log('🔍 [addVehicleUserData] Checking engine number:', engineNumberToCheck);
+            logger.debug('🔍 [addVehicleUserData] Checking engine number:', engineNumberToCheck);
 
             const existingEngineNumber = await vehicleUser.findOne({
                 where: {
@@ -336,10 +336,10 @@ AgentContactNumber: _AgentContactNumber
                 }
             });
 
-            console.log('🔍 [addVehicleUserData] Existing engine number result:', existingEngineNumber);
+            logger.debug('🔍 [addVehicleUserData] Existing engine number result:', existingEngineNumber);
 
             if (existingEngineNumber) {
-                console.log('❌ [addVehicleUserData] Engine number already exists:', engineNumberToCheck);
+                logger.debug('❌ [addVehicleUserData] Engine number already exists:', engineNumberToCheck);
                 engineNumberExists = true;
                 errorMessages.push("engine number");
             }
@@ -347,7 +347,7 @@ AgentContactNumber: _AgentContactNumber
 
         if (_ChassisNumber && _ChassisNumber.trim() !== '') {
             const chassisNumberToCheck = _ChassisNumber.trim();
-            console.log('🔍 [addVehicleUserData] Checking chassis number:', chassisNumberToCheck);
+            logger.debug('🔍 [addVehicleUserData] Checking chassis number:', chassisNumberToCheck);
 
             const existingChassisNumber = await vehicleUser.findOne({
                 where: {
@@ -359,10 +359,10 @@ AgentContactNumber: _AgentContactNumber
                 }
             });
 
-            console.log('🔍 [addVehicleUserData] Existing chassis number result:', existingChassisNumber);
+            logger.debug('🔍 [addVehicleUserData] Existing chassis number result:', existingChassisNumber);
 
             if (existingChassisNumber) {
-                console.log('❌ [addVehicleUserData] Chassis number already exists:', chassisNumberToCheck);
+                logger.debug('❌ [addVehicleUserData] Chassis number already exists:', chassisNumberToCheck);
                 chassisNumberExists = true;
                 errorMessages.push("chassis number");
             }
@@ -371,7 +371,7 @@ AgentContactNumber: _AgentContactNumber
         // Check for duplicate vehicle number
         if (_VehicleNumber && _VehicleNumber.trim() !== '') {
             const vehicleNumberToCheck = _VehicleNumber.trim();
-            console.log('🔍 [addVehicleUserData] Checking vehicle number:', vehicleNumberToCheck);
+            logger.debug('🔍 [addVehicleUserData] Checking vehicle number:', vehicleNumberToCheck);
 
             const existingVehicleNumber = await vehicleUser.findOne({
                 where: {
@@ -383,10 +383,10 @@ AgentContactNumber: _AgentContactNumber
                 }
             });
 
-            console.log('🔍 [addVehicleUserData] Existing vehicle number result:', existingVehicleNumber);
+            logger.debug('🔍 [addVehicleUserData] Existing vehicle number result:', existingVehicleNumber);
 
             if (existingVehicleNumber) {
-                console.log('❌ [addVehicleUserData] Vehicle number already exists:', vehicleNumberToCheck);
+                logger.debug('❌ [addVehicleUserData] Vehicle number already exists:', vehicleNumberToCheck);
                 vehicleNumberExists = true;
                 errorMessages.push("vehicle number");
             }
@@ -398,14 +398,14 @@ AgentContactNumber: _AgentContactNumber
                 ? `This ${errorMessages[0]} already exists`
                 : `This ${errorMessages.join(" and ")} already exist`;
 
-            console.log('❌ [addVehicleUserData] Validation failed:', message);
+            logger.debug('❌ [addVehicleUserData] Validation failed:', message);
             return res.status(400).json({
                 message: message,
                 status: false
             });
         }
 
-        console.log('✅ [addVehicleUserData] Validation passed, proceeding with user check/creation');
+        logger.debug('✅ [addVehicleUserData] Validation passed, proceeding with user check/creation');
 
         // Check if user with this mobile number already exists
         let userData = await User.findOne({
@@ -413,7 +413,7 @@ AgentContactNumber: _AgentContactNumber
         });
 
         if (userData) {
-            console.log('🔍 [addVehicleUserData] User found with mobile number:', _MobileNumber, 'User ID:', userData.user_id);
+            logger.debug('🔍 [addVehicleUserData] User found with mobile number:', _MobileNumber, 'User ID:', userData.user_id);
 
             // Check if user is already assigned to vehicle category
             const existingMapping = await consumerRoleMapping.findOne({
@@ -425,7 +425,7 @@ AgentContactNumber: _AgentContactNumber
 
             if (!existingMapping) {
                 // User exists but not assigned to vehicle category, add the mapping
-                console.log('🔍 [addVehicleUserData] Adding user to vehicle category');
+                logger.debug('🔍 [addVehicleUserData] Adding user to vehicle category');
                 await consumerRoleMapping.create({
                     user_role_id: req.user.id,
                     user_consumer_id: userData.user_id,
@@ -433,7 +433,7 @@ AgentContactNumber: _AgentContactNumber
                 });
             }
         } else {
-            console.log('🔍 [addVehicleUserData] User not found, creating new user');
+            logger.debug('🔍 [addVehicleUserData] User not found, creating new user');
 
             // Create new user
             userData = await User.create({
@@ -460,7 +460,7 @@ AgentContactNumber: _AgentContactNumber
         }
 
         if (userData && userData.user_id) {
-            console.log('🔧 [addVehicleUserData] Saving to database:', {
+            logger.debug('🔧 [addVehicleUserData] Saving to database:', {
                 vehicle_policy_type: _policyRadio || Data.policyRadio || Data.policy_type || '',
                 nominee_type: _nomineeRadio || Data.Type || Data.nominee_type || Data.type || ''
             });
@@ -519,11 +519,11 @@ AgentContactNumber: _AgentContactNumber
                     // Handle file movement - now using in-memory files
                     if (fileObj.mv) {
                         // When useTempFiles: false, use mv method (in-memory files)
-                        console.log(`📁 [CREATE] Using file.mv() for ${doc.fieldName}`);
+                        logger.debug(`📁 [CREATE] Using file.mv() for ${doc.fieldName}`);
                         await fileObj.mv(uploadPath);
                     } else if (fileObj.data) {
                         // Fallback: write file data directly
-                        console.log(`📁 [CREATE] Using file.data for ${doc.fieldName}`);
+                        logger.debug(`📁 [CREATE] Using file.data for ${doc.fieldName}`);
                         await fs.writeFile(uploadPath, fileObj.data);
                     } else {
                         throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
@@ -536,14 +536,14 @@ AgentContactNumber: _AgentContactNumber
                         categoryId: doc.categoryId,
                         file: uniqueName
                     });
-                    console.log(`[VehicleUserCreate] ${doc.fieldName} document saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
+                    logger.debug(`[VehicleUserCreate] ${doc.fieldName} document saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
                 }
             }
 
             // Handle custom documents
             if (documentsData && Array.isArray(documentsData)) {
                 for (const doc of documentsData) {
-                    console.log('[VehicleUserCreate] Processing custom document:', doc);
+                    logger.debug('[VehicleUserCreate] Processing custom document:', doc);
                     const fieldName = doc.fileFieldName; // e.g., "custom_0", "custom_1"
                     if (req.files && req.files[fieldName]) {
                         const fileObj = req.files[fieldName];
@@ -558,13 +558,13 @@ AgentContactNumber: _AgentContactNumber
                             categoryId: doc.categoryId,
                             file: uniqueName
                         });
-                        console.log(`[VehicleUserCreate] Custom document ${fieldName} saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
+                        logger.debug(`[VehicleUserCreate] Custom document ${fieldName} saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
                     }
                 }
             }
 
-            console.log('🔍 [CREATE] req.files keys:', Object.keys(req.files || {}));
-            console.log('🔍 [CREATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
+            logger.debug('🔍 [CREATE] req.files keys:', Object.keys(req.files || {}));
+            logger.debug('🔍 [CREATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
             if (req.files && req.files.CurrentPolicyFile) {
                 let CurrentPolicyFile = req.files.CurrentPolicyFile;
                 const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
@@ -573,32 +573,32 @@ AgentContactNumber: _AgentContactNumber
                 // Handle file movement - now using in-memory files
                 if (CurrentPolicyFile.mv) {
                     // When useTempFiles: false, use mv method (in-memory files)
-                    console.log(`📁 [CREATE] Using file.mv() for CurrentPolicyFile`);
+                    logger.debug(`📁 [CREATE] Using file.mv() for CurrentPolicyFile`);
                     await CurrentPolicyFile.mv(uploadPath);
                 } else if (CurrentPolicyFile.data) {
                     // Fallback: write file data directly
-                    console.log(`📁 [CREATE] Using file.data for CurrentPolicyFile`);
+                    logger.debug(`📁 [CREATE] Using file.data for CurrentPolicyFile`);
                     await fs.writeFile(uploadPath, CurrentPolicyFile.data);
                 } else {
                     throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
                 }
 
                 runningPolicy.CurrentPolicyFile = uniqueName;
-                console.log(`📁 [CREATE] CurrentPolicyFile saved: ${uniqueName}`);
+                logger.debug(`📁 [CREATE] CurrentPolicyFile saved: ${uniqueName}`);
             }
 
             // Resolve company name to company_id for running policy
             let resolvedRunningCompanyId = runningPolicy.CompanyId || null;
             if (!resolvedRunningCompanyId && runningPolicy.CompanyName) {
-                console.log('🔍 [CREATE] Resolving running policy company name to ID:', runningPolicy.CompanyName);
+                logger.debug('🔍 [CREATE] Resolving running policy company name to ID:', runningPolicy.CompanyName);
                 const runningCompanyRecord = await companyType.findOne({
                     where: { company_name: runningPolicy.CompanyName }
                 });
                 if (runningCompanyRecord) {
                     resolvedRunningCompanyId = runningCompanyRecord.company_id;
-                    console.log('✅ [CREATE] Resolved running policy company name to ID:', resolvedRunningCompanyId);
+                    logger.debug('✅ [CREATE] Resolved running policy company name to ID:', resolvedRunningCompanyId);
                 } else {
-                    console.log('⚠️ [CREATE] Running policy company not found for name:', runningPolicy.CompanyName);
+                    logger.debug('⚠️ [CREATE] Running policy company not found for name:', runningPolicy.CompanyName);
                 }
             }
 
@@ -644,45 +644,45 @@ AgentContactNumber: _AgentContactNumber
                     // Resolve previous policy company id (if company name provided)
                     let resolvedPreviousCompanyId = previousPolicy.CompanyId || null;
                     if (!resolvedPreviousCompanyId && previousPolicy.CompanyName) {
-                        console.log('🔍 [CREATE] Resolving previous policy company name to ID:', previousPolicy.CompanyName);
+                        logger.debug('🔍 [CREATE] Resolving previous policy company name to ID:', previousPolicy.CompanyName);
                         const previousCompanyRecord = await companyType.findOne({
                             where: { company_name: previousPolicy.CompanyName }
                         });
                         if (previousCompanyRecord) {
                             resolvedPreviousCompanyId = previousCompanyRecord.company_id;
-                            console.log('✅ [CREATE] Resolved previous policy company name to ID:', resolvedPreviousCompanyId);
+                            logger.debug('✅ [CREATE] Resolved previous policy company name to ID:', resolvedPreviousCompanyId);
                         } else {
-                            console.log('⚠️ [CREATE] Previous policy company not found for name:', previousPolicy.CompanyName);
+                            logger.debug('⚠️ [CREATE] Previous policy company not found for name:', previousPolicy.CompanyName);
                         }
                     }
     
                     // Resolve previous policy type id (if policy type name provided)
                     let resolvedPreviousPolicyTypeId = previousPolicy.PolicyTypeId || null;
                     if (!resolvedPreviousPolicyTypeId && previousPolicy.PolicyType) {
-                        console.log('🔍 [CREATE] Resolving previous policy type name to ID:', previousPolicy.PolicyType);
+                        logger.debug('🔍 [CREATE] Resolving previous policy type name to ID:', previousPolicy.PolicyType);
                         const previousPolicyTypeRecord = await db.policyType.findOne({
                             where: { policy_type_name: previousPolicy.PolicyType }
                         });
                         if (previousPolicyTypeRecord) {
                             resolvedPreviousPolicyTypeId = previousPolicyTypeRecord.policy_type_id;
-                            console.log('✅ [CREATE] Resolved previous policy type name to ID:', resolvedPreviousPolicyTypeId);
+                            logger.debug('✅ [CREATE] Resolved previous policy type name to ID:', resolvedPreviousPolicyTypeId);
                         } else {
-                            console.log('⚠️ [CREATE] Previous policy type not found for name:', previousPolicy.PolicyType);
+                            logger.debug('⚠️ [CREATE] Previous policy type not found for name:', previousPolicy.PolicyType);
                         }
                     }
     
                     // Resolve previous policy plan id (if policy plan name provided)
                     let resolvedPreviousPolicyPlanId = previousPolicy.PolicyPlanTypeId || null;
                     if (!resolvedPreviousPolicyPlanId && previousPolicy.PolicyPlanType) {
-                        console.log('🔍 [CREATE] Resolving previous policy plan name to ID:', previousPolicy.PolicyPlanType);
+                        logger.debug('🔍 [CREATE] Resolving previous policy plan name to ID:', previousPolicy.PolicyPlanType);
                         const previousPolicyPlanRecord = await db.policyPlan.findOne({
                             where: { policy_name: previousPolicy.PolicyPlanType }
                         });
                         if (previousPolicyPlanRecord) {
                             resolvedPreviousPolicyPlanId = previousPolicyPlanRecord.policy_plan_id;
-                            console.log('✅ [CREATE] Resolved previous policy plan name to ID:', resolvedPreviousPolicyPlanId);
+                            logger.debug('✅ [CREATE] Resolved previous policy plan name to ID:', resolvedPreviousPolicyPlanId);
                         } else {
-                            console.log('⚠️ [CREATE] Previous policy plan not found for name:', previousPolicy.PolicyPlanType);
+                            logger.debug('⚠️ [CREATE] Previous policy plan not found for name:', previousPolicy.PolicyPlanType);
                         }
                     }
     
@@ -728,17 +728,17 @@ AgentContactNumber: _AgentContactNumber
                 }
 
                 if (!alreadyExists) {
-                    console.log("🧾 [CREATE] Inserting previous policy:", historyData);
+                    logger.debug("🧾 [CREATE] Inserting previous policy:", historyData);
                     await vehiclePreviousPolicy.create(historyData);
                     insertedPreviousPolicy = true;
                 } else {
-                    console.log("⚠️ [CREATE] Skipping previous policy insert because a matching previous policy already exists:", alreadyExists && alreadyExists.previous_policy_id ? alreadyExists.previous_policy_id : alreadyExists);
+                    logger.debug("⚠️ [CREATE] Skipping previous policy insert because a matching previous policy already exists:", alreadyExists && alreadyExists.previous_policy_id ? alreadyExists.previous_policy_id : alreadyExists);
                 }
             } else {
                 if (_policyRadio !== "Fresh") {
-                    console.log('⚠️ [CREATE] Skipping previous policy insert — no valid data found to insert.');
+                    logger.debug('⚠️ [CREATE] Skipping previous policy insert — no valid data found to insert.');
                 } else {
-                    console.log('ℹ️ [CREATE] Policy is Fresh — no previous policy insertion required.');
+                    logger.debug('ℹ️ [CREATE] Policy is Fresh — no previous policy insertion required.');
                 }
             }
             // -------------------------------------------------------------------------------
@@ -798,7 +798,7 @@ AgentContactNumber: _AgentContactNumber
             });
         }
     } catch (error) {
-        console.error('❌ [addVehicleUserData] Error:', error);
+        logger.error('❌ [addVehicleUserData] Error:', error);
 
         if (error.name === 'SequelizeValidationError') {
             const errors = error.errors.map(err => err.message);
@@ -828,7 +828,7 @@ AgentContactNumber: _AgentContactNumber
 
 exports.updateVehicleUserData = async (req, res) => {
     // --- Clean, focused debug log for incoming request ---
-    console.log('[VehicleUserUpdate] Incoming request:', {
+    logger.debug('[VehicleUserUpdate] Incoming request:', {
         params: req.params,
         user: req.user && req.user.id,
         hasData: !!req?.body?.data,
@@ -839,20 +839,20 @@ exports.updateVehicleUserData = async (req, res) => {
     if (req.body.data) {
         // JSON request - data is nested under 'data' property
         Data = typeof req.body.data === "string" ? JSON.parse(req.body.data) : req.body.data;
-        console.log('[VehicleUserUpdate] Processing JSON request');
+        logger.debug('[VehicleUserUpdate] Processing JSON request');
     } else if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
         // FormData request - data is directly in req.body
         Data = req.body;
-        console.log('[VehicleUserUpdate] Processing FormData request');
-        console.log('🔍 [UPDATE] req.files object:', req.files);
-        console.log('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
+        logger.debug('[VehicleUserUpdate] Processing FormData request');
+        logger.debug('🔍 [UPDATE] req.files object:', req.files);
+        logger.debug('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
         
         // Parse JSON strings in FormData
         if (Data.runningPolicy && typeof Data.runningPolicy === 'string') {
             try {
                 Data.runningPolicy = JSON.parse(Data.runningPolicy);
             } catch (e) {
-                console.log('🔍 [UPDATE] Error parsing runningPolicy:', e.message);
+                logger.debug('🔍 [UPDATE] Error parsing runningPolicy:', e.message);
                 Data.runningPolicy = {};
             }
         }
@@ -860,17 +860,17 @@ exports.updateVehicleUserData = async (req, res) => {
             try {
                 Data.previousPolicy = JSON.parse(Data.previousPolicy);
             } catch (e) {
-                console.log('🔍 [UPDATE] Error parsing previousPolicy:', e.message);
+                logger.debug('🔍 [UPDATE] Error parsing previousPolicy:', e.message);
                 Data.previousPolicy = {};
             }
         }
     } else {
-        console.warn('[VehicleUserUpdate] No data found in request body');
+        logger.warn('[VehicleUserUpdate] No data found in request body');
         return res.status(400).json({ error: 'Data not found in request body' });
     }
     // --- Log the parsed data keys only (not full data for privacy) ---
-    console.log('[VehicleUserUpdate] Parsed data keys:', Object.keys(Data));
-    console.log('🔧 [updateVehicleUserData] All Policy Fields received:', {
+    logger.debug('[VehicleUserUpdate] Parsed data keys:', Object.keys(Data));
+    logger.debug('🔧 [updateVehicleUserData] All Policy Fields received:', {
         policy_type: Data.policy_type,           // Fresh/Renewal/Portability → vehicle_policy_type
         type: Data.type,                         // Individual/Corporate → nominee_type
         policy_plan_type: Data.policy_plan_type, // COMPREHENSIVE/SAOD/THIRD PARTY → policy_plan_type
@@ -879,13 +879,13 @@ exports.updateVehicleUserData = async (req, res) => {
         PolicyType: Data.PolicyType              // Alternative field name
     });
     
-    console.log('🔧 [updateVehicleUserData] Agent Fields received:', {
+    logger.debug('🔧 [updateVehicleUserData] Agent Fields received:', {
         agent_name: Data.agent_name,
         agent_code: Data.agent_code,
         agent_contact_number: Data.agent_contact_number
     });
     
-    console.log('🔧 [updateVehicleUserData] RunningPolicy Fields received:', {
+    logger.debug('🔧 [updateVehicleUserData] RunningPolicy Fields received:', {
         PremiumAmount: Data.runningPolicy?.PremiumAmount,
         PolicyTenure: Data.runningPolicy?.PolicyTenure,
         NomineeAge: Data.runningPolicy?.NomineeAge,
@@ -893,7 +893,7 @@ exports.updateVehicleUserData = async (req, res) => {
         PolicyFrom: Data.runningPolicy?.PolicyFrom,
         PolicyTo: Data.runningPolicy?.PolicyTo
     });
-    console.log('🔧 [updateVehicleUserData] Full Data object keys:', Object.keys(Data));
+    logger.debug('🔧 [updateVehicleUserData] Full Data object keys:', Object.keys(Data));
 
     const {
         Name, Email, MobileNumber, 
@@ -917,7 +917,7 @@ exports.updateVehicleUserData = async (req, res) => {
     } = Data;
 
     // Debug logging for Name, Email, Mobile fields
-    console.log('🔍 [updateVehicleUserData] Name/Email/Mobile fields received:', {
+    logger.debug('🔍 [updateVehicleUserData] Name/Email/Mobile fields received:', {
         Name: Name,
         Email: Email,
         MobileNumber: MobileNumber
@@ -932,20 +932,20 @@ exports.updateVehicleUserData = async (req, res) => {
             }
         }
         if (!resolvedUserId) {
-            console.warn('[VehicleUserUpdate] User ID not provided and could not be resolved');
+            logger.warn('[VehicleUserUpdate] User ID not provided and could not be resolved');
             return res.status(400).json({ error: "User ID not provided" });
         }
         
         // Debug logging for resolvedUserId after it's defined
-        console.log('🔍 [updateVehicleUserData] resolvedUserId:', resolvedUserId);
+        logger.debug('🔍 [updateVehicleUserData] resolvedUserId:', resolvedUserId);
         if (!req.params.vehicle_user_id) {
-            console.warn('[VehicleUserUpdate] Vehicle user ID not provided');
+            logger.warn('[VehicleUserUpdate] Vehicle user ID not provided');
             return res.status(400).json({ error: "Vehicle user ID not provided" });
         }
         // Fetch the vehicle user record before using it
         const vehicleUserRecord = await vehicleUser.findByPk(req.params.vehicle_user_id);
         if (!vehicleUserRecord) {
-            console.warn('[VehicleUserUpdate] Vehicle not found with ID:', req.params.vehicle_user_id);
+            logger.warn('[VehicleUserUpdate] Vehicle not found with ID:', req.params.vehicle_user_id);
             return res.status(404).json({ error: "Vehicle not found" });
         }
         // Now construct the update object
@@ -974,10 +974,10 @@ exports.updateVehicleUserData = async (req, res) => {
             vehicle_type: vehicle_type || Data.vehicle_type,
             vendor: vendor || Data.vendor,
         };
-        console.log('[VehicleUserUpdate] Updating vehicleUser with:', vehicleUserUpdateObj);
+        logger.debug('[VehicleUserUpdate] Updating vehicleUser with:', vehicleUserUpdateObj);
         
         // Debug logging for validation
-        console.log('🔍 [updateVehicleUserData] Validation check:', {
+        logger.debug('🔍 [updateVehicleUserData] Validation check:', {
             engineNumber: engine_number,
             chassisNumber: chassis_number,
             vehicleUserId: req.params.vehicle_user_id,
@@ -993,7 +993,7 @@ exports.updateVehicleUserData = async (req, res) => {
 
         if (engine_number && engine_number.trim() !== '') {
             const engineNumberToCheck = engine_number.trim();
-            console.log('🔍 [updateVehicleUserData] Checking engine number:', engineNumberToCheck);
+            logger.debug('🔍 [updateVehicleUserData] Checking engine number:', engineNumberToCheck);
             
             const existingEngineNumber = await vehicleUser.findOne({
                 where: {
@@ -1010,10 +1010,10 @@ exports.updateVehicleUserData = async (req, res) => {
                 }
             });
             
-            console.log('🔍 [updateVehicleUserData] Existing engine number result:', existingEngineNumber);
+            logger.debug('🔍 [updateVehicleUserData] Existing engine number result:', existingEngineNumber);
             
             if (existingEngineNumber) {
-                console.log('❌ [updateVehicleUserData] Engine number already exists:', engineNumberToCheck);
+                logger.debug('❌ [updateVehicleUserData] Engine number already exists:', engineNumberToCheck);
                 engineNumberExists = true;
                 errorMessages.push("engine number");
             }
@@ -1021,7 +1021,7 @@ exports.updateVehicleUserData = async (req, res) => {
 
         if (chassis_number && chassis_number.trim() !== '') {
             const chassisNumberToCheck = chassis_number.trim();
-            console.log('🔍 [updateVehicleUserData] Checking chassis number:', chassisNumberToCheck);
+            logger.debug('🔍 [updateVehicleUserData] Checking chassis number:', chassisNumberToCheck);
             
             const existingChassisNumber = await vehicleUser.findOne({
                 where: {
@@ -1038,10 +1038,10 @@ exports.updateVehicleUserData = async (req, res) => {
                 }
             });
             
-            console.log('🔍 [updateVehicleUserData] Existing chassis number result:', existingChassisNumber);
+            logger.debug('🔍 [updateVehicleUserData] Existing chassis number result:', existingChassisNumber);
             
             if (existingChassisNumber) {
-                console.log('❌ [updateVehicleUserData] Chassis number already exists:', chassisNumberToCheck);
+                logger.debug('❌ [updateVehicleUserData] Chassis number already exists:', chassisNumberToCheck);
                 chassisNumberExists = true;
                 errorMessages.push("chassis number");
             }
@@ -1050,7 +1050,7 @@ exports.updateVehicleUserData = async (req, res) => {
         // Check for duplicate vehicle number (excluding current record)
         if (vehicle_number && vehicle_number.trim() !== '') {
             const vehicleNumberToCheck = vehicle_number.trim();
-            console.log('🔍 [updateVehicleUserData] Checking vehicle number:', vehicleNumberToCheck);
+            logger.debug('🔍 [updateVehicleUserData] Checking vehicle number:', vehicleNumberToCheck);
             
             const existingVehicleNumber = await vehicleUser.findOne({
                 where: {
@@ -1067,10 +1067,10 @@ exports.updateVehicleUserData = async (req, res) => {
                 }
             });
             
-            console.log('🔍 [updateVehicleUserData] Existing vehicle number result:', existingVehicleNumber);
+            logger.debug('🔍 [updateVehicleUserData] Existing vehicle number result:', existingVehicleNumber);
             
             if (existingVehicleNumber) {
-                console.log('❌ [updateVehicleUserData] Vehicle number already exists:', vehicleNumberToCheck);
+                logger.debug('❌ [updateVehicleUserData] Vehicle number already exists:', vehicleNumberToCheck);
                 vehicleNumberExists = true;
                 errorMessages.push("vehicle number");
             }
@@ -1082,14 +1082,14 @@ exports.updateVehicleUserData = async (req, res) => {
                 ? `This ${errorMessages[0]} already exists`
                 : `This ${errorMessages.join(" and ")} already exist`;
             
-            console.log('❌ [updateVehicleUserData] Validation failed:', message);
+            logger.debug('❌ [updateVehicleUserData] Validation failed:', message);
             return res.status(400).json({ 
                 message: message, 
                 status: false 
             });
         }
 
-        console.log('✅ [updateVehicleUserData] Validation passed, proceeding with update');
+        logger.debug('✅ [updateVehicleUserData] Validation passed, proceeding with update');
 
         // First, update the User table with basic user information
         if (Name || Email || MobileNumber) {
@@ -1099,21 +1099,21 @@ exports.updateVehicleUserData = async (req, res) => {
                 if (Email) userUpdateData.email = Email;
                 if (MobileNumber) userUpdateData.mobileNumber = MobileNumber;
                 
-                console.log('🔍 [updateVehicleUserData] Updating User table with:', userUpdateData);
-                console.log('🔍 [updateVehicleUserData] User ID to update:', resolvedUserId);
+                logger.debug('🔍 [updateVehicleUserData] Updating User table with:', userUpdateData);
+                logger.debug('🔍 [updateVehicleUserData] User ID to update:', resolvedUserId);
                 
                 const userUpdateResult = await User.update(userUpdateData, {
                     where: { user_id: resolvedUserId }
                 });
-                console.log('✅ [updateVehicleUserData] User table updated:', userUpdateResult);
+                logger.debug('✅ [updateVehicleUserData] User table updated:', userUpdateResult);
             } catch (userUpdateError) {
-                console.error('❌ [updateVehicleUserData] Error updating User table:', userUpdateError);
+                logger.error('❌ [updateVehicleUserData] Error updating User table:', userUpdateError);
             }
         } else {
-            console.log('🔍 [updateVehicleUserData] No Name/Email/Mobile fields to update in User table');
+            logger.debug('🔍 [updateVehicleUserData] No Name/Email/Mobile fields to update in User table');
         }
 
-        console.log('🚗 [updateVehicleUserData] Database fields to update:', {
+        logger.debug('🚗 [updateVehicleUserData] Database fields to update:', {
             vehicle_policy_type: vehicleUserUpdateObj.vehicle_policy_type,  // From policyRadio (Fresh/Renewal/Portability)
             nominee_type: vehicleUserUpdateObj.nominee_type,                // From Type (Individual/Corporate)
             policy_plan_type: vehicleUserUpdateObj.policy_plan_type         // From PolicyPlanType (COMPREHENSIVE/SAOD/THIRD PARTY)
@@ -1144,12 +1144,12 @@ exports.updateVehicleUserData = async (req, res) => {
             vehicle_type: vehicleUserUpdateObj.vehicle_type || vehicleUserRecord.vehicle_type,
             vendor: vehicleUserUpdateObj.vendor || vehicleUserRecord.vendor,
         });
-        console.log('[VehicleUserUpdate] vehicleUser update successful for ID:', req.params.vehicle_user_id);
+        logger.debug('[VehicleUserUpdate] vehicleUser update successful for ID:', req.params.vehicle_user_id);
 
         // --- RENEWAL FLOW: Transfer Running Policy to Previous Policy FIRST (before updating running policy) ---
         const isRenewalOrPortability = policy_type === 'Renewal' || policy_type === 'Portability';
         if (isRenewalOrPortability && runningPolicy && typeof runningPolicy === 'object') {
-            console.log('🔄 [RENEWAL] Starting renewal process - transferring current running policy to previous');
+            logger.debug('🔄 [RENEWAL] Starting renewal process - transferring current running policy to previous');
             
             // Fetch the CURRENT running policy before we overwrite it
             const currentRunningPolicy = await vehcileRunningPolicy.findOne({
@@ -1162,7 +1162,7 @@ exports.updateVehicleUserData = async (req, res) => {
             });
             
             if (currentRunningPolicy) {
-                console.log('🔄 [RENEWAL] Found current running policy to transfer:', {
+                logger.debug('🔄 [RENEWAL] Found current running policy to transfer:', {
                     PolicyNumber: currentRunningPolicy.PolicyNumber,
                     PolicyFrom: currentRunningPolicy.PolicyFrom,
                     PolicyTo: currentRunningPolicy.PolicyTo,
@@ -1208,13 +1208,13 @@ exports.updateVehicleUserData = async (req, res) => {
                     status: "active",
                 };
                 
-                console.log('🔄 [RENEWAL] Transferring policy with company_id:', currentRunningPolicy.company_id);
+                logger.debug('🔄 [RENEWAL] Transferring policy with company_id:', currentRunningPolicy.company_id);
                 
                 const createdPreviousPolicy = await vehiclePreviousPolicy.create(transferredPolicy);
-                console.log('✅ [RENEWAL] Successfully transferred running policy to previous policy');
-                console.log('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
+                logger.debug('✅ [RENEWAL] Successfully transferred running policy to previous policy');
+                logger.debug('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
             } else {
-                console.log('⚠️ [RENEWAL] No existing running policy found to transfer');
+                logger.debug('⚠️ [RENEWAL] No existing running policy found to transfer');
             }
         }
 
@@ -1229,19 +1229,19 @@ exports.updateVehicleUserData = async (req, res) => {
             let resolvedCompanyId = runningPolicy.company_id || runningPolicy.CompanyId || Data.company_id || null;
             if (!resolvedCompanyId && (runningPolicy.CompanyName || company_name)) {
                 const companyNameToLookup = runningPolicy.CompanyName || company_name;
-                console.log('🔍 [RENEWAL] Resolving company name to ID:', companyNameToLookup);
+                logger.debug('🔍 [RENEWAL] Resolving company name to ID:', companyNameToLookup);
                 const companyRecord = await companyType.findOne({
                     where: { company_name: companyNameToLookup }
                 });
                 if (companyRecord) {
                     resolvedCompanyId = companyRecord.company_id;
-                    console.log('✅ [RENEWAL] Resolved company name to ID:', resolvedCompanyId);
+                    logger.debug('✅ [RENEWAL] Resolved company name to ID:', resolvedCompanyId);
                 } else {
-                    console.log('⚠️ [RENEWAL] Company not found for name:', companyNameToLookup);
+                    logger.debug('⚠️ [RENEWAL] Company not found for name:', companyNameToLookup);
                 }
             }
-            console.log('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
-            console.log('🔍 [UPDATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
+            logger.debug('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
+            logger.debug('🔍 [UPDATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
             if (req.files && req.files.CurrentPolicyFile) {
                 let CurrentPolicyFile = req.files.CurrentPolicyFile;
                 const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
@@ -1252,25 +1252,25 @@ exports.updateVehicleUserData = async (req, res) => {
                     const oldFilePath = path.join(uploadsDir, findPolicy.CurrentPolicyFile);
                     if (fsSync.existsSync(oldFilePath)) {
                         fsSync.unlinkSync(oldFilePath);
-                        console.log(`📁 [UPDATE] Deleted old CurrentPolicyFile: ${findPolicy.CurrentPolicyFile}`);
+                        logger.debug(`📁 [UPDATE] Deleted old CurrentPolicyFile: ${findPolicy.CurrentPolicyFile}`);
                     }
                 }
                 
                 // Handle file movement - now using in-memory files
                 if (CurrentPolicyFile.mv) {
                     // When useTempFiles: false, use mv method (in-memory files)
-                    console.log(`📁 [UPDATE] Using file.mv() for CurrentPolicyFile`);
+                    logger.debug(`📁 [UPDATE] Using file.mv() for CurrentPolicyFile`);
                 await CurrentPolicyFile.mv(uploadPath);
                 } else if (CurrentPolicyFile.data) {
                     // Fallback: write file data directly
-                    console.log(`📁 [UPDATE] Using file.data for CurrentPolicyFile`);
+                    logger.debug(`📁 [UPDATE] Using file.data for CurrentPolicyFile`);
                     await fs.writeFile(uploadPath, CurrentPolicyFile.data);
                 } else {
                     throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
                 }
                 
                 runningPolicy.CurrentPolicyFile = uniqueName;
-                console.log(`📁 [UPDATE] CurrentPolicyFile saved: ${uniqueName}`);
+                logger.debug(`📁 [UPDATE] CurrentPolicyFile saved: ${uniqueName}`);
             }
             const runningPolicyData = {
                 policy_type_id: runningPolicy.policy_type_id || runningPolicy.PolicyTypeId || Data.policy_type_id || null,
@@ -1294,20 +1294,20 @@ exports.updateVehicleUserData = async (req, res) => {
                     )
                 ),
             };
-            console.log('[VehicleUserUpdate] RunningPolicy update object:', runningPolicyData);
+            logger.debug('[VehicleUserUpdate] RunningPolicy update object:', runningPolicyData);
             if (findPolicy) {
                 await vehcileRunningPolicy.update(runningPolicyData, { where: { vehicle_user_id: req.params.vehicle_user_id } });
-                console.log('[VehicleUserUpdate] RunningPolicy updated for vehicle_user_id:', req.params.vehicle_user_id);
+                logger.debug('[VehicleUserUpdate] RunningPolicy updated for vehicle_user_id:', req.params.vehicle_user_id);
             } else {
                 runningPolicyData.vehicle_user_id = req.params.vehicle_user_id;
                 await vehcileRunningPolicy.create(runningPolicyData);
-                console.log('[VehicleUserUpdate] RunningPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
+                logger.debug('[VehicleUserUpdate] RunningPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
             }
         }
         // --- Previous Policy Update (for Portability when user manually enters previous policy data) ---
         // Note: Renewal flow is already handled above, so skip this for Renewal
         if (previousPolicy && typeof previousPolicy === 'object' && policy_type === 'Portability') {
-            console.log('🔄 [PORTABILITY] Handling manually entered previous policy data');
+            logger.debug('🔄 [PORTABILITY] Handling manually entered previous policy data');
             
             // Check if previous policy has actual data (not empty object)
             const hasPreviousPolicyData = previousPolicy.PolicyNumber || previousPolicy.CompanyName || 
@@ -1346,12 +1346,12 @@ exports.updateVehicleUserData = async (req, res) => {
                 if (historyData.id) delete historyData.id;
                 
                 await vehiclePreviousPolicy.create(historyData);
-                console.log('✅ [PORTABILITY] PreviousPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
+                logger.debug('✅ [PORTABILITY] PreviousPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
             } else {
-                console.log('⚠️ [PORTABILITY] No previous policy data provided, skipping');
+                logger.debug('⚠️ [PORTABILITY] No previous policy data provided, skipping');
             }
         }
-        console.log('[VehicleUserUpdate] Update process completed successfully for vehicle_user_id:', req.params.vehicle_user_id);
+        logger.debug('[VehicleUserUpdate] Update process completed successfully for vehicle_user_id:', req.params.vehicle_user_id);
         
         // --- Document Upload Handling (aadhar, pan, gst, custom) ---
         const uploadsDir = path.join(CTRL_DIR, "../../uploads");
@@ -1373,11 +1373,11 @@ exports.updateVehicleUserData = async (req, res) => {
                 // Handle file movement - now using in-memory files
                 if (fileObj.mv) {
                     // When useTempFiles: false, use mv method (in-memory files)
-                    console.log(`📁 [UPDATE] Using file.mv() for ${doc.fieldName}`);
+                    logger.debug(`📁 [UPDATE] Using file.mv() for ${doc.fieldName}`);
                 await fileObj.mv(uploadPath);
                 } else if (fileObj.data) {
                     // Fallback: write file data directly
-                    console.log(`📁 [UPDATE] Using file.data for ${doc.fieldName}`);
+                    logger.debug(`📁 [UPDATE] Using file.data for ${doc.fieldName}`);
                     await fs.writeFile(uploadPath, fileObj.data);
                 } else {
                     throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
@@ -1398,7 +1398,7 @@ exports.updateVehicleUserData = async (req, res) => {
                     categoryId: doc.categoryId,
                     file: uniqueName
                 });
-                console.log(`[VehicleUserUpdate] ${doc.fieldName} document saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
+                logger.debug(`[VehicleUserUpdate] ${doc.fieldName} document saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
             }
         }
         
@@ -1433,7 +1433,7 @@ exports.updateVehicleUserData = async (req, res) => {
                         categoryId: doc.categoryId,
                         file: uniqueName
                     });
-                    console.log(`[VehicleUserUpdate] Custom document ${fieldName} saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
+                    logger.debug(`[VehicleUserUpdate] Custom document ${fieldName} saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
                 }
             }
         }
@@ -1465,7 +1465,7 @@ exports.updateVehicleUserData = async (req, res) => {
             documents: vehicleDocuments
         });
     } catch (error) {
-        console.error("[VehicleUserUpdate] Error updating vehicle user data:", error);
+        logger.error("[VehicleUserUpdate] Error updating vehicle user data:", error);
         if (error.name === 'SequelizeValidationError') {
             const errors = error.errors.map(err => err.message);
             return res.status(400).json({ 
@@ -1500,7 +1500,7 @@ exports.getVehicleUserData = async (req, res) => {
     const startDay = startDate ? new Date(startDate) : null;
     const endDay = endDate ? new Date(endDate) : null;
 
-    console.log('🔍 [getVehicleUserData] User info:', {
+    logger.debug('🔍 [getVehicleUserData] User info:', {
         id: req.user.id,
         Role: req.user.Role,
         username: req.user.username
@@ -1517,7 +1517,7 @@ exports.getVehicleUserData = async (req, res) => {
                 // Convert to plain objects
                 vehicleData = vehicleData.map(item => item.get({ plain: true }));
                 
-                console.log('🔍 [getVehicleUserData] Found vehicle data count:', vehicleData.length);
+                logger.debug('🔍 [getVehicleUserData] Found vehicle data count:', vehicleData.length);
                 
                 // If no data found, return empty array
                 if (!vehicleData || vehicleData.length === 0) {
@@ -1557,8 +1557,8 @@ exports.getVehicleUserData = async (req, res) => {
                 const runningPoliciesPlain = runningPolicies.map(item => item.get({ plain: true }));
                 const previousPoliciesPlain = previousPolicies.map(item => item.get({ plain: true }));
                 
-                console.log(documnets_user)
-                console.log('Fetched runningPolicies:', JSON.stringify(runningPoliciesPlain, null, 2));
+                logger.debug(documnets_user)
+                logger.debug('Fetched runningPolicies:', JSON.stringify(runningPoliciesPlain, null, 2));
 
                 // Step 3: Attach family members to the corresponding mediclaim records
                 const mediclaimWithFamily = vehicleData.map((mediclaim) => {
@@ -1607,9 +1607,9 @@ exports.getVehicleUserData = async (req, res) => {
                 });
             })
             .catch((e) => {
-                console.log('🔍 [getVehicleUserData] Error:', e);
-                console.log('🔍 [getVehicleUserData] Error Message:', e.message);
-                console.log('🔍 [getVehicleUserData] Error Stack:', e.stack);
+                logger.debug('🔍 [getVehicleUserData] Error:', e);
+                logger.debug('🔍 [getVehicleUserData] Error Message:', e.message);
+                logger.debug('🔍 [getVehicleUserData] Error Stack:', e.stack);
                 res.status(400).send({ 
                     message: "Error fetching vehicle data", 
                     error: e.message,
@@ -1626,7 +1626,7 @@ exports.getVehicleUserData = async (req, res) => {
         
 //         // If no dates provided, get all vehicle category users (including those without vehicle records)
 //         if (!startDate || !endDate) {
-//             console.log('🔍 getVehicleUserRenewalData: No dates provided, fetching all vehicle category users');
+//             logger.debug('🔍 getVehicleUserRenewalData: No dates provided, fetching all vehicle category users');
             
 //             // Get all users assigned to Vehicle category (category_id: 6)
 //             const vehicleCategoryUsers = await db.consumerRoleMapping.findAll({
@@ -1641,7 +1641,7 @@ exports.getVehicleUserData = async (req, res) => {
 //                 raw: true
 //             });
 
-//             console.log('🔍 getVehicleUserRenewalData: Found vehicle category users:', vehicleCategoryUsers.length);
+//             logger.debug('🔍 getVehicleUserRenewalData: Found vehicle category users:', vehicleCategoryUsers.length);
 
 //             // Get all vehicle user data directly (not per user mapping)
 //             const vehicleUserData = await vehicleUser.findAll({
@@ -1721,7 +1721,7 @@ exports.getVehicleUserData = async (req, res) => {
 //                     ]
 //                 });
 
-//             console.log('🔍 getVehicleUserRenewalData: Found vehicle records:', vehicleUserData.length);
+//             logger.debug('🔍 getVehicleUserRenewalData: Found vehicle records:', vehicleUserData.length);
 
 //             // Process the vehicle data
 //             const result = vehicleUserData.map(vehicleRecord => {
@@ -1729,7 +1729,7 @@ exports.getVehicleUserData = async (req, res) => {
                 
 //                 // Debug: Log previous policies count
 //                 if (item.previousPolicies) {
-//                     console.log(`🔍 Vehicle ${item.vehicle_user_id}: Found ${item.previousPolicies.length} previous policies`);
+//                     logger.debug(`🔍 Vehicle ${item.vehicle_user_id}: Found ${item.previousPolicies.length} previous policies`);
 //                 }
                 
 //                 // Fix previous policies (now an array) - maintain backwards compatibility
@@ -1787,7 +1787,7 @@ exports.getVehicleUserData = async (req, res) => {
 //                     return item;
 //             });
 
-//             console.log('🔍 getVehicleUserRenewalData: Final result count:', result.length);
+//             logger.debug('🔍 getVehicleUserRenewalData: Final result count:', result.length);
             
 //             return res.status(200).send({
 //                 success: true,
@@ -1855,7 +1855,7 @@ exports.getVehicleUserData = async (req, res) => {
 //             ]
 //         });
 
-//         console.log('🔍 getVehicleUserRenewalData: vehicleData.length before filtering:', vehicleData.length);
+//         logger.debug('🔍 getVehicleUserRenewalData: vehicleData.length before filtering:', vehicleData.length);
 
 //         // Apply date filtering after fetching data - but only if dates are provided
 //         let filteredVehicleData = vehicleData;
@@ -1887,7 +1887,7 @@ exports.getVehicleUserData = async (req, res) => {
 //         });
 //         }
 
-//         console.log('🔍 getVehicleUserRenewalData: vehicleData.length after filtering:', filteredVehicleData.length);
+//         logger.debug('🔍 getVehicleUserRenewalData: vehicleData.length after filtering:', filteredVehicleData.length);
 
 //         if (!filteredVehicleData.length) {
 //             return res.status(200).send({ success: true, data: [], message: "No vehicle renewal data found for the selected dates." });
@@ -1943,7 +1943,7 @@ exports.getVehicleUserData = async (req, res) => {
 //         });
 
 //     } catch (error) {
-//         console.error("Error fetching vehicle renewal data:", error);
+//         logger.error("Error fetching vehicle renewal data:", error);
 //         return res.status(500).send({ success: false, message: "Internal server error." });
 //     }
 // };
@@ -2187,7 +2187,7 @@ exports.getVehicleUserData = async (req, res) => {
 //       status: true,
 //     });
 //   } catch (error) {
-//     console.error("❌ Error in getVehicleUserRenewalData:", error);
+//     logger.error("❌ Error in getVehicleUserRenewalData:", error);
 //     res.status(500).json({
 //       message: "Server error while fetching Vehicle Insurance users",
 //       error: error.message,
@@ -2436,7 +2436,7 @@ exports.getVehicleUserData = async (req, res) => {
 //         }
 //       }
   
-//       console.log(`✅ Total vehicle records found: ${allVehicleRecords.length}`);
+//       logger.debug(`✅ Total vehicle records found: ${allVehicleRecords.length}`);
   
 //       res.status(200).json({
 //         message: "Vehicle Insurance consumer get success",
@@ -2444,7 +2444,7 @@ exports.getVehicleUserData = async (req, res) => {
 //         status: true,
 //       });
 //     } catch (error) {
-//       console.error("❌ Error in getVehicleUserRenewalData:", error);
+//       logger.error("❌ Error in getVehicleUserRenewalData:", error);
 //       res.status(500).json({
 //         message: "Server error while fetching Vehicle Insurance users",
 //         error: error.message,
@@ -2525,12 +2525,12 @@ exports.getVehicleUserRenewalData = async (req, res) => {
           (m) => m["category.category_name"] === "Vehicle Insurance"
         );
         if (!hasVehicle) {
-            console.log("Skipping Non-Vehicle User:", user.username);
+            logger.debug("Skipping Non-Vehicle User:", user.username);
             continue;
           }
         // ❌ Remove ONLY if Mediclaim exists AND Vehicle DOES NOT exist
         if (hasMediclaim && !hasVehicle) {
-          console.log("Skipping Mediclaim-only user:", user.username);
+          logger.debug("Skipping Mediclaim-only user:", user.username);
           continue;
         }
   
@@ -2745,7 +2745,7 @@ exports.getVehicleUserRenewalData = async (req, res) => {
         }
       }
   
-      console.log(`✅ Total vehicle records found: ${allVehicleRecords.length}`);
+      logger.debug(`✅ Total vehicle records found: ${allVehicleRecords.length}`);
   
       res.status(200).json({
         message: "Vehicle Insurance consumer get success",
@@ -2753,7 +2753,7 @@ exports.getVehicleUserRenewalData = async (req, res) => {
         status: true,
       });
     } catch (error) {
-      console.error("❌ Error in getVehicleUserRenewalData:", error);
+      logger.error("❌ Error in getVehicleUserRenewalData:", error);
       res.status(500).json({
         message: "Server error while fetching Vehicle Insurance users",
         error: error.message,
@@ -2795,7 +2795,7 @@ exports.updateVehicleUserRemarkData = async (req, res) => {
 
 exports.getVehicleRenewalStats = async (req, res) => {
     try {
-        console.log('📊 getVehicleRenewalStats: Fetching statistics');
+        logger.debug('📊 getVehicleRenewalStats: Fetching statistics');
 
         // Fetch all vehicle data with running policies
         const vehicleData = await vehicleUser.findAll({
@@ -2813,7 +2813,7 @@ exports.getVehicleRenewalStats = async (req, res) => {
             ]
         });
 
-        console.log('📊 getVehicleRenewalStats: Total vehicle records:', vehicleData.length);
+        logger.debug('📊 getVehicleRenewalStats: Total vehicle records:', vehicleData.length);
 
         // Calculate statistics
         const now = new Date();
@@ -2885,7 +2885,7 @@ exports.getVehicleRenewalStats = async (req, res) => {
             yearCount
         };
 
-        console.log('📊 getVehicleRenewalStats: Statistics calculated:', stats);
+        logger.debug('📊 getVehicleRenewalStats: Statistics calculated:', stats);
 
         return res.status(200).send({
             success: true,
@@ -2894,7 +2894,7 @@ exports.getVehicleRenewalStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("💥 Error fetching vehicle renewal statistics:", error);
+        logger.error("💥 Error fetching vehicle renewal statistics:", error);
         return res.status(500).send({ 
             success: false, 
             message: "Internal server error.",
@@ -2956,7 +2956,7 @@ exports.getVehicleRenewalSheet = async (req, res) => {
         });
         return res.status(200).send({ success: true, message: "Vehicle renewal data retrieved successfully.", data: plainVehicleData });
     } catch (error) {
-        console.error("Error fetching vehicle renewal data:", error);
+        logger.error("Error fetching vehicle renewal data:", error);
         return res.status(500).send({ success: false, message: "Internal server error." });
     }
 };
@@ -2989,11 +2989,11 @@ exports.listAllVehicleUsersDebug = async (req, res) => {
 
 
 exports.getVehicleUserById = async (req, res) => {
-    console.log('🔍 [getVehicleUserById] Function called!');
-    console.log('🔍 [getVehicleUserById] Request params:', req.params);
-    console.log('🔍 [getVehicleUserById] Request headers:', req.headers);
-    console.log('🔍 [getVehicleUserById] Request method:', req.method);
-    console.log('🔍 [getVehicleUserById] Request URL:', req.url);
+    logger.debug('🔍 [getVehicleUserById] Function called!');
+    logger.debug('🔍 [getVehicleUserById] Request params:', req.params);
+    logger.debug('🔍 [getVehicleUserById] Request headers:', req.headers);
+    logger.debug('🔍 [getVehicleUserById] Request method:', req.method);
+    logger.debug('🔍 [getVehicleUserById] Request URL:', req.url);
     
     try {
         const vehicle = await vehicleUser.findOne({
@@ -3042,28 +3042,28 @@ exports.getVehicleUserById = async (req, res) => {
         }
         
         // Fetch vehicle documents with comprehensive debugging
-        console.log('🔍 [getVehicleUserById] Fetching documents for vehicle_user_id:', req.params.vehicle_user_id);
+        logger.debug('🔍 [getVehicleUserById] Fetching documents for vehicle_user_id:', req.params.vehicle_user_id);
         
         // First, let's check if there are ANY documents in the vehicle_documents table
         const totalDocumentsCount = await vehicle_document.count();
-        console.log('🔍 [getVehicleUserById] Total documents in vehicle_documents table:', totalDocumentsCount);
+        logger.debug('🔍 [getVehicleUserById] Total documents in vehicle_documents table:', totalDocumentsCount);
         
         // Check if there are documents for this specific vehicle_user_id
         const documentsForThisVehicle = await vehicle_document.count({ 
             where: { vehicle_user_id: req.params.vehicle_user_id } 
         });
-        console.log('🔍 [getVehicleUserById] Documents count for this vehicle_user_id:', documentsForThisVehicle);
+        logger.debug('🔍 [getVehicleUserById] Documents count for this vehicle_user_id:', documentsForThisVehicle);
         
         const vehicleDocuments = await vehicle_document.findAll({ 
             where: { vehicle_user_id: req.params.vehicle_user_id } 
         });
         
-        console.log('🔍 [getVehicleUserById] Raw vehicle_document query result:', vehicleDocuments);
-        console.log('🔍 [getVehicleUserById] Number of documents found:', vehicleDocuments.length);
+        logger.debug('🔍 [getVehicleUserById] Raw vehicle_document query result:', vehicleDocuments);
+        logger.debug('🔍 [getVehicleUserById] Number of documents found:', vehicleDocuments.length);
         
         // Log each document individually
         vehicleDocuments.forEach((doc, index) => {
-            console.log(`🔍 [getVehicleUserById] Document ${index + 1}:`, {
+            logger.debug(`🔍 [getVehicleUserById] Document ${index + 1}:`, {
                 id: doc.id,
                 user_id: doc.user_id,
                 vehicle_user_id: doc.vehicle_user_id,
@@ -3079,12 +3079,12 @@ exports.getVehicleUserById = async (req, res) => {
                  vehicleData.documents = vehicleDocuments;
         
         // Debug logging to see what data is being fetched
-        console.log('🔍 [getVehicleUserById] Final vehicle data structure:', {
+        logger.debug('🔍 [getVehicleUserById] Final vehicle data structure:', {
             vehicle_user_id: vehicleData.vehicle_user_id,
             documents_count: vehicleData.documents.length,
             documents: vehicleData.documents
         });
-        console.log('🔍 [getVehicleUserById] Agent fields:', {
+        logger.debug('🔍 [getVehicleUserById] Agent fields:', {
             agentName: vehicle.agentName,
             agentCode: vehicle.agentCode,
             agentContactNumber: vehicle.agentContactNumber
@@ -3167,7 +3167,7 @@ const saveDocument = async (lifeInsuranceId, fieldName, file, uploadDir, userId)
         const document = await LifeInsuranceDocument.create(documentData);
         return document;
     } catch (error) {
-        console.error('Error saving document:', error);
+        logger.error('Error saving document:', error);
         return null;
     }
 };
@@ -3257,11 +3257,11 @@ exports.renewVehiclePolicy = async (req, res) => {
 
     let createdPrev;
     if (existingPrev) {
-      console.log("⚠️ Existing previous policy found — updating instead of creating new.");
+      logger.debug("⚠️ Existing previous policy found — updating instead of creating new.");
       createdPrev = await existingPrev.update(previousPayload);
     } else {
       createdPrev = await vehiclePreviousPolicy.create(previousPayload);
-      console.log("✅ Previous policy created:", createdPrev.PolicyNumber);
+      logger.debug("✅ Previous policy created:", createdPrev.PolicyNumber);
     }
 
     // 🧹 Reset the running policy after successful move
@@ -3289,7 +3289,7 @@ exports.renewVehiclePolicy = async (req, res) => {
       previousPolicy: createdPrev,
     });
   } catch (error) {
-    console.error("❌ [RENEW VEHICLE POLICY] Error:", error);
+    logger.error("❌ [RENEW VEHICLE POLICY] Error:", error);
     return res.status(500).json({
       status: false,
       message: "Error renewing policy",

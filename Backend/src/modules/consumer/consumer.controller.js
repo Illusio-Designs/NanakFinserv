@@ -72,20 +72,20 @@ const consumerService = require("./consumer.service");
 const logger = require("../../config/logger");
 
 exports.addConsumerData = async (req, res) => {
-    console.log('🔍 [ADD CONSUMER] Starting consumer creation...');
-    console.log('🔍 [ADD CONSUMER] Request body:', req.body);
-    console.log('🔍 [ADD CONSUMER] User role:', req.user.Role);
-    console.log('🔍 [ADD CONSUMER] Categories:', req.body?.category);
+    logger.debug('🔍 [ADD CONSUMER] Starting consumer creation...');
+    logger.debug('🔍 [ADD CONSUMER] Request body:', req.body);
+    logger.debug('🔍 [ADD CONSUMER] User role:', req.user.Role);
+    logger.debug('🔍 [ADD CONSUMER] Categories:', req.body?.category);
     
     try {
     let buildeUser;
     if (req.user.Role == 1) {
         buildeUser = req.body.builderType;
-        console.log('🔍 [ADD CONSUMER] Admin user - Builder Type:', buildeUser);
+        logger.debug('🔍 [ADD CONSUMER] Admin user - Builder Type:', buildeUser);
     } else {
         if (req.user.Role == 2) {
             buildeUser = req.user.id;
-            console.log('🔍 [ADD CONSUMER] Builder user - Builder ID:', buildeUser);
+            logger.debug('🔍 [ADD CONSUMER] Builder user - Builder ID:', buildeUser);
         }
     }
 
@@ -100,7 +100,7 @@ exports.addConsumerData = async (req, res) => {
 
         let userData;
         if (user) {
-            console.log('🔍 [ADD CONSUMER] User found with mobile number:', req.body.phone_number, 'User ID:', user.user_id);
+            logger.debug('🔍 [ADD CONSUMER] User found with mobile number:', req.body.phone_number, 'User ID:', user.user_id);
             
             // Check if user is already assigned to any of the requested categories
             const existingMappings = await consumerRoleMapping.findAll({
@@ -110,7 +110,7 @@ exports.addConsumerData = async (req, res) => {
                 }
             });
 
-            console.log('🔍 [ADD CONSUMER] Existing mappings:', existingMappings);
+            logger.debug('🔍 [ADD CONSUMER] Existing mappings:', existingMappings);
 
             // Filter out categories that are already assigned
             const newCategories = req.body?.category?.filter(cat => 
@@ -118,7 +118,7 @@ exports.addConsumerData = async (req, res) => {
             ) || [];
 
             if (newCategories.length > 0) {
-                console.log('🔍 [ADD CONSUMER] Adding new category mappings for existing user');
+                logger.debug('🔍 [ADD CONSUMER] Adding new category mappings for existing user');
                 const newMappings = newCategories.map(cat => ({
                     user_role_id: cat.user_role_id,
                     user_consumer_id: user.user_id,
@@ -126,14 +126,14 @@ exports.addConsumerData = async (req, res) => {
                 }));
 
                 await consumerRoleMapping.bulkCreate(newMappings);
-                console.log('✅ [ADD CONSUMER] New category mappings created for existing user');
+                logger.debug('✅ [ADD CONSUMER] New category mappings created for existing user');
             } else {
-                console.log('ℹ️ [ADD CONSUMER] User already assigned to all requested categories');
+                logger.debug('ℹ️ [ADD CONSUMER] User already assigned to all requested categories');
             }
 
             userData = user;
         } else {
-            console.log('➕ [ADD CONSUMER] User not found, creating new user...');
+            logger.debug('➕ [ADD CONSUMER] User not found, creating new user...');
             userData = await User.create({
                 username: req.body.username,
                 email: req.body.email,
@@ -147,12 +147,12 @@ exports.addConsumerData = async (req, res) => {
                 token: "",
             });
 
-            console.log('🔍 [ADD CONSUMER] User created successfully:', userData);
+            logger.debug('🔍 [ADD CONSUMER] User created successfully:', userData);
         }
 
-                    console.log('🔍 [ADD CONSUMER] Checking vertical assignment conditions...');
-                    console.log('🔍 [ADD CONSUMER] User Role check:', req.user.Role == 1 || req.user.Role == 4);
-                    console.log('🔍 [ADD CONSUMER] Category check:', req.body?.category && req.body.category.length);
+                    logger.debug('🔍 [ADD CONSUMER] Checking vertical assignment conditions...');
+                    logger.debug('🔍 [ADD CONSUMER] User Role check:', req.user.Role == 1 || req.user.Role == 4);
+                    logger.debug('🔍 [ADD CONSUMER] Category check:', req.body?.category && req.body.category.length);
                     
                     if (
                         // (req.user.Role == 1 || req.user.Role == 4) &&
@@ -160,10 +160,10 @@ exports.addConsumerData = async (req, res) => {
                         // req.body.category.length
                         (req.body?.category && req.body.category.length) 
                     ) {
-                        console.log('🔍 [ADD CONSUMER] Vertical assignment conditions met!');
+                        logger.debug('🔍 [ADD CONSUMER] Vertical assignment conditions met!');
                         let array = [];
                         req.body.category.map((item) => {
-                            console.log('🔍 [ADD CONSUMER] Processing category item:', item);
+                            logger.debug('🔍 [ADD CONSUMER] Processing category item:', item);
                             array.push({
                                 user_role_id: item.user_role_id,
                     user_consumer_id: userData.user_id,
@@ -171,13 +171,13 @@ exports.addConsumerData = async (req, res) => {
                             });
                         });
 
-                        console.log('🔍 [ADD CONSUMER] ConsumerRoleMapping array:', array);
+                        logger.debug('🔍 [ADD CONSUMER] ConsumerRoleMapping array:', array);
                         let Rs = await consumerRoleMapping.bulkCreate(array);
-                        console.log('🔍 [ADD CONSUMER] ConsumerRoleMapping created:', Rs);
+                        logger.debug('🔍 [ADD CONSUMER] ConsumerRoleMapping created:', Rs);
 
                         let findLoan = array.find((item) => item.category_id == 2);
                         if (findLoan) {
-                            console.log('🔍 [ADD CONSUMER] Creating loan user for category 2');
+                            logger.debug('🔍 [ADD CONSUMER] Creating loan user for category 2');
                             const loanUserRecord = await loanUser.create({
                                 user_id: findLoan.user_consumer_id,
                                 role_id: findLoan.user_role_id,
@@ -210,14 +210,14 @@ exports.addConsumerData = async (req, res) => {
                         }
                         let findMediclaim = array.find((item) => item.category_id == 4);
                         if (findMediclaim) {
-                            console.log('🔍 [ADD CONSUMER] Creating mediclaim for category 4');
+                            logger.debug('🔍 [ADD CONSUMER] Creating mediclaim for category 4');
                             await Mediclaim.create({
                                 user_id: findMediclaim.user_consumer_id,
                             });
                         }
             let findLifeInsurance = array.find((item) => item.category_id == 5);
             if (findLifeInsurance) {
-                console.log('🔍 [ADD CONSUMER] Creating life insurance for category 5');
+                logger.debug('🔍 [ADD CONSUMER] Creating life insurance for category 5');
                 const lifeInsuranceRecord = await LifeInsurance.create({
                     user_id: findLifeInsurance.user_consumer_id,
                     // Agent Details - Required fields
@@ -288,11 +288,11 @@ exports.addConsumerData = async (req, res) => {
                 });
             }
                     } else {
-                        console.log('❌ [ADD CONSUMER] Vertical assignment conditions NOT met!');
-                        console.log('❌ [ADD CONSUMER] User Role:', req.user.Role);
-                        console.log('❌ [ADD CONSUMER] Required roles for vertical assignment: 1 or 4');
-                        console.log('❌ [ADD CONSUMER] Categories provided:', req.body?.category);
-                        console.log('❌ [ADD CONSUMER] Categories length:', req.body?.category?.length);
+                        logger.debug('❌ [ADD CONSUMER] Vertical assignment conditions NOT met!');
+                        logger.debug('❌ [ADD CONSUMER] User Role:', req.user.Role);
+                        logger.debug('❌ [ADD CONSUMER] Required roles for vertical assignment: 1 or 4');
+                        logger.debug('❌ [ADD CONSUMER] Categories provided:', req.body?.category);
+                        logger.debug('❌ [ADD CONSUMER] Categories length:', req.body?.category?.length);
                     }
         
             // Create notification for admin about new consumer
@@ -322,7 +322,7 @@ exports.addConsumerData = async (req, res) => {
             })
         );
     } catch (error) {
-        console.error('❌ [ADD CONSUMER] Error:', error);
+        logger.error('❌ [ADD CONSUMER] Error:', error);
         res.status(500).send({ message: error.message });
     }
 };
@@ -549,7 +549,7 @@ exports.updateConsumerData = async (req, res) => {
 
     } catch (e) {
         // Handle errors and send response
-        console.error(e);
+        logger.error(e);
         return res.status(500).send({ response: "An error occurred", status: false });
     }
 };
@@ -616,7 +616,7 @@ exports.addConsumer = async (req, res) => {
             });
 
             if (user) {
-                console.log('🔍 [ADD BUILDER CONSUMER] User found with mobile number:', mobileNumber, 'User ID:', user.user_id);
+                logger.debug('🔍 [ADD BUILDER CONSUMER] User found with mobile number:', mobileNumber, 'User ID:', user.user_id);
                 
                 // User exists, update builder_user if needed
                 if (builder_user_id && user.builder_user !== builder_user_id) {
@@ -630,7 +630,7 @@ exports.addConsumer = async (req, res) => {
                     );
                 }
             } else {
-                console.log('🔍 [ADD BUILDER CONSUMER] User not found, creating new user');
+                logger.debug('🔍 [ADD BUILDER CONSUMER] User not found, creating new user');
                 
                 // Create new user
                 user = await User.create({
@@ -839,7 +839,7 @@ exports.updateConsumer = async (req, res) => {
                 });
 
                 if (user) {
-                    console.log('🔍 [UPDATE BUILDER CONSUMER] User found with mobile number:', mobileNumber, 'User ID:', user.user_id);
+                    logger.debug('🔍 [UPDATE BUILDER CONSUMER] User found with mobile number:', mobileNumber, 'User ID:', user.user_id);
                     
                     // User exists, update their information if needed
                     await User.update(
@@ -853,7 +853,7 @@ exports.updateConsumer = async (req, res) => {
                         { where: { user_id: user.user_id } }
                     );
                 } else {
-                    console.log('🔍 [UPDATE BUILDER CONSUMER] User not found, creating new user');
+                    logger.debug('🔍 [UPDATE BUILDER CONSUMER] User not found, creating new user');
                     
                     // Create new user
                     user = await User.create({
@@ -958,23 +958,23 @@ exports.updateConsumer = async (req, res) => {
 
 exports.updateLoanConsumerData = async (req, res) => {
     try {
-        console.log('🔍 updateLoanConsumerData - Request body:', req.body);
-        console.log('🔍 updateLoanConsumerData - Status:', req.body.status);
-        console.log('🔍 updateLoanConsumerData - Sanction Details:', req.body.sanction_details);
-        console.log('🔍 updateLoanConsumerData - User Consumer ID:', req.body.user_consumer_id);
-        console.log('🔍 updateLoanConsumerData - Loan ID:', req.body.laon_id);
+        logger.debug('🔍 updateLoanConsumerData - Request body:', req.body);
+        logger.debug('🔍 updateLoanConsumerData - Status:', req.body.status);
+        logger.debug('🔍 updateLoanConsumerData - Sanction Details:', req.body.sanction_details);
+        logger.debug('🔍 updateLoanConsumerData - User Consumer ID:', req.body.user_consumer_id);
+        logger.debug('🔍 updateLoanConsumerData - Loan ID:', req.body.laon_id);
         
         // Test loanUser model functionality
         try {
-            console.log('🔍 [TEST] Testing loanUser model...');
+            logger.debug('🔍 [TEST] Testing loanUser model...');
             const testQuery = await loanUser.findOne({ 
                 where: { laon_id: req.body.laon_id },
                 raw: true,
                 attributes: ['laon_id', 'status', 'user_id']
             });
-            console.log('🔍 [TEST] loanUser test query result:', testQuery);
+            logger.debug('🔍 [TEST] loanUser test query result:', testQuery);
         } catch (testError) {
-            console.error('❌ [TEST] Error testing loanUser model:', testError);
+            logger.error('❌ [TEST] Error testing loanUser model:', testError);
             return res.status(500).send({ 
                 response: "Database connection error", 
                 status: false,
@@ -983,34 +983,34 @@ exports.updateLoanConsumerData = async (req, res) => {
         }
         
         // Add comprehensive debugging for all status types
-        console.log('🔍 [DEBUG] All incoming data for status:', req.body.status);
-        console.log('🔍 [DEBUG] Document Details:', req.body.document_details);
-        console.log('🔍 [DEBUG] Pickup Details:', req.body.pickup_details);
-        console.log('🔍 [DEBUG] Query Details:', req.body.query_details);
-        console.log('🔍 [DEBUG] Cancel Details:', req.body.cancel_details);
-        console.log('🔍 [DEBUG] Login Details:', req.body.login_details);
-        console.log('🔍 [DEBUG] Disbursement Details:', req.body.disbursement_details);
-        console.log('🔍 [DEBUG] Part Payment Details:', req.body.part_details);
-        console.log('🔍 [DEBUG] Completed Details:', req.body.completed_details);
-        console.log('🔍 [DEBUG] Property Details:', req.body.property_details);
+        logger.debug('🔍 [DEBUG] All incoming data for status:', req.body.status);
+        logger.debug('🔍 [DEBUG] Document Details:', req.body.document_details);
+        logger.debug('🔍 [DEBUG] Pickup Details:', req.body.pickup_details);
+        logger.debug('🔍 [DEBUG] Query Details:', req.body.query_details);
+        logger.debug('🔍 [DEBUG] Cancel Details:', req.body.cancel_details);
+        logger.debug('🔍 [DEBUG] Login Details:', req.body.login_details);
+        logger.debug('🔍 [DEBUG] Disbursement Details:', req.body.disbursement_details);
+        logger.debug('🔍 [DEBUG] Part Payment Details:', req.body.part_details);
+        logger.debug('🔍 [DEBUG] Completed Details:', req.body.completed_details);
+        logger.debug('🔍 [DEBUG] Property Details:', req.body.property_details);
         
-        console.log('🔍 [DEBUG] About to start status processing...');
+        logger.debug('🔍 [DEBUG] About to start status processing...');
         
         // Check if mobile number already exists for another user
-        console.log('🔍 [DEBUG] Checking mobile number validation...');
-        console.log('🔍 [DEBUG] Current user ID:', req.body.user_consumer_id);
-        console.log('🔍 [DEBUG] Mobile number to check:', req.body.phone_number);
+        logger.debug('🔍 [DEBUG] Checking mobile number validation...');
+        logger.debug('🔍 [DEBUG] Current user ID:', req.body.user_consumer_id);
+        logger.debug('🔍 [DEBUG] Mobile number to check:', req.body.phone_number);
         
         // Get current user's existing mobile number for comparison
         const currentUserMobile = await User.findOne({
             where: { user_id: req.body.user_consumer_id },
             attributes: ['mobileNumber']
         });
-        console.log('🔍 [DEBUG] Current user existing mobile number:', currentUserMobile?.mobileNumber);
+        logger.debug('🔍 [DEBUG] Current user existing mobile number:', currentUserMobile?.mobileNumber);
         
         // Only check for conflicts if the mobile number is different from current user's
         if (currentUserMobile?.mobileNumber !== req.body.phone_number) {
-            console.log('🔍 [DEBUG] Mobile number changed, checking for conflicts...');
+            logger.debug('🔍 [DEBUG] Mobile number changed, checking for conflicts...');
             
         let user = await User.findOne({
             where: {
@@ -1020,16 +1020,16 @@ exports.updateLoanConsumerData = async (req, res) => {
         });
 
         if (user) {
-                console.log('🔍 [DEBUG] Mobile number conflict found with user:', user.user_id);
+                logger.debug('🔍 [DEBUG] Mobile number conflict found with user:', user.user_id);
             return res.status(400).send({ response: "Mobile number already in use", status: false });
         }
 
-            console.log('🔍 [DEBUG] Mobile number validation passed - no conflicts found');
+            logger.debug('🔍 [DEBUG] Mobile number validation passed - no conflicts found');
         } else {
-            console.log('🔍 [DEBUG] Mobile number unchanged - no validation needed');
+            logger.debug('🔍 [DEBUG] Mobile number unchanged - no validation needed');
         }
 
-        console.log('🔍 About to update User table with data:', {
+        logger.debug('🔍 About to update User table with data:', {
             username: req.body.username,
             email: req.body.email,
             mobileNumber: req.body.phone_number,
@@ -1043,8 +1043,8 @@ exports.updateLoanConsumerData = async (req, res) => {
             attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'updated_by']
         });
         
-        console.log('🔍 [BEFORE UPDATE] Current user data:', currentUser?.dataValues);
-        console.log('🔍 [BEFORE UPDATE] Current referenceName:', currentUser?.dataValues?.referenceName);
+        logger.debug('🔍 [BEFORE UPDATE] Current user data:', currentUser?.dataValues);
+        logger.debug('🔍 [BEFORE UPDATE] Current referenceName:', currentUser?.dataValues?.referenceName);
         
         // Check if referenceName column exists in the user table
         try {
@@ -1055,9 +1055,9 @@ exports.updateLoanConsumerData = async (req, res) => {
                 AND TABLE_NAME = 'user' 
                 AND COLUMN_NAME = 'referenceName'
             `);
-            console.log('🔍 [SCHEMA CHECK] referenceName column info:', columns);
+            logger.debug('🔍 [SCHEMA CHECK] referenceName column info:', columns);
         } catch (schemaError) {
-            console.log('🔍 [SCHEMA CHECK] Error checking schema:', schemaError);
+            logger.debug('🔍 [SCHEMA CHECK] Error checking schema:', schemaError);
         }
 
         const updateResult = await User.update(
@@ -1075,8 +1075,8 @@ exports.updateLoanConsumerData = async (req, res) => {
             }
         );
         
-        console.log('🔍 User.update result:', updateResult);
-        console.log('🔍 User table updated successfully');
+        logger.debug('🔍 User.update result:', updateResult);
+        logger.debug('🔍 User table updated successfully');
         
         // Verify the update by fetching the user data
         const updatedUser = await User.findOne({
@@ -1084,18 +1084,18 @@ exports.updateLoanConsumerData = async (req, res) => {
             attributes: ['user_id', 'username', 'email', 'mobileNumber', 'referenceName', 'updated_by']
         });
         
-        console.log('🔍 [VERIFICATION] User data after update:', updatedUser?.dataValues);
-        console.log('🔍 [VERIFICATION] referenceName value:', updatedUser?.dataValues?.referenceName);
+        logger.debug('🔍 [VERIFICATION] User data after update:', updatedUser?.dataValues);
+        logger.debug('🔍 [VERIFICATION] referenceName value:', updatedUser?.dataValues?.referenceName);
 
         let loanUserData = await loanUser.findOne({ where: { laon_id: req.body.laon_id } });
-        console.log('🔍 Found loan user data:', loanUserData);
+        logger.debug('🔍 Found loan user data:', loanUserData);
 
         if (!loanUserData) {
             return res.status(400).send({ response: "loan user not found", status: false });
         } else {
             // Update loan status
             await loanUser.update({ status: req.body.status }, { where: { laon_id: req.body.laon_id } });
-            console.log('🔍 Loan status updated to:', req.body.status);
+            logger.debug('🔍 Loan status updated to:', req.body.status);
 
             // Handle sanction details - store in remarks field as JSON
             if (req.body.status === "sanction") {
@@ -1108,17 +1108,17 @@ exports.updateLoanConsumerData = async (req, res) => {
                         updated_at: new Date().toISOString()
                     };
                     
-                    console.log('🔍 Processing sanction details:', sanctionDetails);
+                    logger.debug('🔍 Processing sanction details:', sanctionDetails);
                     
                     // Store sanction details in remarks field as JSON string
                     const remarksData = {
                         sanction_details: sanctionDetails
                     };
                     
-                    console.log('🔍 About to update loanUser with remarks:', JSON.stringify(remarksData));
-                    console.log('🔍 loanUser model type:', typeof loanUser);
-                    console.log('🔍 loanUser model:', loanUser);
-                    console.log('🔍 Where clause:', { laon_id: req.body.laon_id });
+                    logger.debug('🔍 About to update loanUser with remarks:', JSON.stringify(remarksData));
+                    logger.debug('🔍 loanUser model type:', typeof loanUser);
+                    logger.debug('🔍 loanUser model:', loanUser);
+                    logger.debug('🔍 Where clause:', { laon_id: req.body.laon_id });
                     
                     // Check if the loanUser record exists before updating
                     const existingLoanUser = await loanUser.findOne({ 
@@ -1127,7 +1127,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     });
                     
                     if (!existingLoanUser) {
-                        console.error('❌ LoanUser record not found for laon_id:', req.body.laon_id);
+                        logger.error('❌ LoanUser record not found for laon_id:', req.body.laon_id);
                         return res.status(400).send({ 
                             response: "Loan user record not found", 
                             status: false,
@@ -1135,16 +1135,16 @@ exports.updateLoanConsumerData = async (req, res) => {
                         });
                     }
                     
-                    console.log('🔍 Found existing loanUser record:', existingLoanUser);
+                    logger.debug('🔍 Found existing loanUser record:', existingLoanUser);
                     
                     const updateResult = await loanUser.update({
                         remarks: JSON.stringify(remarksData)
                     }, { where: { laon_id: req.body.laon_id } });
                     
-                    console.log('🔍 Sanction update result:', updateResult);
-                    console.log('🔍 Sanction details stored in remarks field successfully');
+                    logger.debug('🔍 Sanction update result:', updateResult);
+                    logger.debug('🔍 Sanction details stored in remarks field successfully');
                 } catch (sanctionError) {
-                    console.error('❌ Error updating sanction details:', sanctionError);
+                    logger.error('❌ Error updating sanction details:', sanctionError);
                     throw sanctionError; // Re-throw to be caught by outer try-catch
                 }
             } 
@@ -1165,7 +1165,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing login details:', loginDetails);
+                logger.debug('🔍 Processing login details:', loginDetails);
                 
                 // Store login details in remarks field as JSON string
                 const remarksData = {
@@ -1182,12 +1182,12 @@ exports.updateLoanConsumerData = async (req, res) => {
                     };
                 }
                 
-                console.log('🔍 Remarks data to be stored:', remarksData);
+                logger.debug('🔍 Remarks data to be stored:', remarksData);
                 
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Login details stored in remarks field successfully');
+                logger.debug('🔍 Login details stored in remarks field successfully');
                 
                 // Save to loginloan table
                 try {
@@ -1217,20 +1217,20 @@ exports.updateLoanConsumerData = async (req, res) => {
                         await LoginLoan.update(loginLoanData, {
                             where: { laon_id: req.body.laon_id }
                         });
-                        console.log('🔍 Login details updated in loginloan table successfully');
+                        logger.debug('🔍 Login details updated in loginloan table successfully');
                     } else {
                         // Create new record
                         await LoginLoan.create(loginLoanData);
-                        console.log('🔍 Login details saved to loginloan table successfully');
+                        logger.debug('🔍 Login details saved to loginloan table successfully');
                     }
                 } catch (error) {
-                    console.error('🔍 Error saving to loginloan table:', error);
+                    logger.error('🔍 Error saving to loginloan table:', error);
                     // Don't throw error, just log it so the main update can continue
                 }
             }
             // Handle pickup details - store in remarks field as JSON
             else if (req.body.status === "pickup") {
-                console.log('🔍 [PICKUP] Status matched! Starting pickup processing...');
+                logger.debug('🔍 [PICKUP] Status matched! Starting pickup processing...');
                 try {
                     const pickupDetails = {
                         pickupDate: req.body.pickup_details?.pickupDate,
@@ -1238,22 +1238,22 @@ exports.updateLoanConsumerData = async (req, res) => {
                         updated_at: new Date().toISOString()
                     };
                     
-                    console.log('🔍 Processing pickup details:', pickupDetails);
+                    logger.debug('🔍 Processing pickup details:', pickupDetails);
                     
                     const remarksData = {
                         pickup_details: pickupDetails
                     };
                     
-                    console.log('🔍 About to update loanUser with remarks:', JSON.stringify(remarksData));
+                    logger.debug('🔍 About to update loanUser with remarks:', JSON.stringify(remarksData));
                     
                     const updateResult = await loanUser.update({
                         remarks: JSON.stringify(remarksData)
                     }, { where: { laon_id: req.body.laon_id } });
                     
-                    console.log('🔍 Pickup update result:', updateResult);
-                    console.log('🔍 Pickup details stored in remarks field successfully');
+                    logger.debug('🔍 Pickup update result:', updateResult);
+                    logger.debug('🔍 Pickup details stored in remarks field successfully');
                 } catch (pickupError) {
-                    console.error('❌ Error updating pickup details:', pickupError);
+                    logger.error('❌ Error updating pickup details:', pickupError);
                     throw pickupError; // Re-throw to be caught by outer try-catch
                 }
             }
@@ -1264,7 +1264,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing query details:', queryDetails);
+                logger.debug('🔍 Processing query details:', queryDetails);
                 
                 const remarksData = {
                     query_details: queryDetails
@@ -1273,7 +1273,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Query details stored in remarks field successfully');
+                logger.debug('🔍 Query details stored in remarks field successfully');
             }
             // Handle cancel details - store in remarks field as JSON
             else if (req.body.status === "cancel") {
@@ -1282,7 +1282,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing cancel details:', cancelDetails);
+                logger.debug('🔍 Processing cancel details:', cancelDetails);
                 
                 const remarksData = {
                     cancel_details: cancelDetails
@@ -1291,7 +1291,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Cancel details stored in remarks field successfully');
+                logger.debug('🔍 Cancel details stored in remarks field successfully');
             }
             // Handle disbursement details - store in remarks field as JSON
             else if (req.body.status === "disbursement") {
@@ -1308,7 +1308,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing disbursement details:', disbursementDetails);
+                logger.debug('🔍 Processing disbursement details:', disbursementDetails);
                 
                 const remarksData = {
                     disbursement_details: disbursementDetails
@@ -1317,7 +1317,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Disbursement details stored in remarks field successfully');
+                logger.debug('🔍 Disbursement details stored in remarks field successfully');
             }
             // Handle part payment details - store in remarks field as JSON
             else if (req.body.status === "partPayment") {
@@ -1326,7 +1326,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing part payment details:', partPaymentDetails);
+                logger.debug('🔍 Processing part payment details:', partPaymentDetails);
                 
                 const remarksData = {
                     part_details: partPaymentDetails
@@ -1335,7 +1335,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Part payment details stored in remarks field successfully');
+                logger.debug('🔍 Part payment details stored in remarks field successfully');
             }
             // Handle completed details - store in remarks field as JSON
             else if (req.body.status === "completed") {
@@ -1345,7 +1345,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing completed details:', completedDetails);
+                logger.debug('🔍 Processing completed details:', completedDetails);
                 
                 const remarksData = {
                     completed_details: completedDetails
@@ -1354,7 +1354,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Completed details stored in remarks field successfully');
+                logger.debug('🔍 Completed details stored in remarks field successfully');
             }
             // Handle document selected details - store in remarks field as JSON
             else if (req.body.status === "documentselected") {
@@ -1365,7 +1365,7 @@ exports.updateLoanConsumerData = async (req, res) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                console.log('🔍 Processing document details:', documentDetails);
+                logger.debug('🔍 Processing document details:', documentDetails);
                 
                 const remarksData = {
                     document_details: documentDetails
@@ -1374,15 +1374,15 @@ exports.updateLoanConsumerData = async (req, res) => {
                 await loanUser.update({
                     remarks: JSON.stringify(remarksData)
                 }, { where: { laon_id: req.body.laon_id } });
-                console.log('🔍 Document details stored in remarks field successfully');
+                logger.debug('🔍 Document details stored in remarks field successfully');
             }
             else {
-                console.log('🔍 No specific details to process for status:', req.body.status);
+                logger.debug('🔍 No specific details to process for status:', req.body.status);
             }
         }
         return res.status(200).send({ response: "User successfully updated!", status: true });
     } catch (e) {
-        console.error('❌ Error in updateLoanConsumerData:', e);
+        logger.error('❌ Error in updateLoanConsumerData:', e);
         return res.status(500).send({ response: "An error occurred", status: false });
     }
 };

@@ -167,7 +167,7 @@ exports.createBuildingManager = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error creating building manager:', error);
+        logger.error('Error creating building manager:', error);
         res.status(500).json({
             status: false,
             message: 'Error creating building manager',
@@ -236,7 +236,7 @@ exports.assignBuildingManager = async (req, res) => {
             data: buildingManager
         });
     } catch (error) {
-        console.error('Error assigning building manager:', error);
+        logger.error('Error assigning building manager:', error);
         res.status(500).json({
             status: false,
             message: 'Error assigning building manager',
@@ -270,7 +270,7 @@ exports.getAllBuildingManagers = async (req, res) => {
             data: buildingManagers
         });
     } catch (error) {
-        console.error('Error fetching building managers:', error);
+        logger.error('Error fetching building managers:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching building managers',
@@ -309,7 +309,7 @@ exports.getBuildingManagerStats = async (req, res) => {
             data: stats
         });
     } catch (error) {
-        console.error('Error fetching building manager stats:', error);
+        logger.error('Error fetching building manager stats:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching building manager statistics',
@@ -355,7 +355,7 @@ exports.getBuildingManagerDashboardStats = async (req, res) => {
         }
 
         const unitIds = buildingManagerAssignments.map(assignment => assignment.unit_id);
-        console.log('🔍 [BUILDING MANAGER DASHBOARD] Assigned unit IDs:', unitIds);
+        logger.debug('🔍 [BUILDING MANAGER DASHBOARD] Assigned unit IDs:', unitIds);
 
         // Get all consumer user IDs from these units
         const consumersInBuildings = await builderConsumer.findAll({
@@ -367,7 +367,7 @@ exports.getBuildingManagerDashboardStats = async (req, res) => {
         });
 
         const consumerUserIds = [...new Set(consumersInBuildings.map(c => c.user_id).filter(id => id !== null))];
-        console.log('🔍 [BUILDING MANAGER DASHBOARD] Consumer user IDs in assigned buildings:', consumerUserIds);
+        logger.debug('🔍 [BUILDING MANAGER DASHBOARD] Consumer user IDs in assigned buildings:', consumerUserIds);
 
         if (consumerUserIds.length === 0) {
             return res.status(200).json({
@@ -438,7 +438,7 @@ exports.getBuildingManagerDashboardStats = async (req, res) => {
             total: totalCount
         };
 
-        console.log('🔍 [BUILDING MANAGER DASHBOARD] Stats:', stats);
+        logger.debug('🔍 [BUILDING MANAGER DASHBOARD] Stats:', stats);
 
         res.status(200).json({
             status: true,
@@ -446,7 +446,7 @@ exports.getBuildingManagerDashboardStats = async (req, res) => {
             data: stats
         });
     } catch (error) {
-        console.error('Error fetching building manager dashboard stats:', error);
+        logger.error('Error fetching building manager dashboard stats:', error);
         res.status(500).json({
             status: false,
             message: 'Error fetching building manager dashboard statistics',
@@ -481,7 +481,7 @@ exports.updateBuildingManager = async (req, res) => {
             data: buildingManager
         });
     } catch (error) {
-        console.error('Error updating building manager:', error);
+        logger.error('Error updating building manager:', error);
         res.status(500).json({
             status: false,
             message: 'Error updating building manager',
@@ -544,7 +544,7 @@ exports.removeBuildingManager = async (req, res) => {
 //             }
 //         });
 //     } catch (error) {
-//         console.error('Error fetching notifications:', error);
+//         logger.error('Error fetching notifications:', error);
 //         res.status(500).json({
 //             message: 'Error fetching notifications',
 //             status: false,

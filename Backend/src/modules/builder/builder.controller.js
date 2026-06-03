@@ -91,7 +91,7 @@ exports.addBuilderData = async (req, res) => {
 
         let userData;
         if (user) {
-            console.log('🔍 [ADD BUILDER] User found with mobile number:', req.body.phone_number, 'User ID:', user.user_id);
+            logger.debug('🔍 [ADD BUILDER] User found with mobile number:', req.body.phone_number, 'User ID:', user.user_id);
             
             // Check if user is already a builder
             const existingBuilder = await BuilderUser.findOne({
@@ -101,7 +101,7 @@ exports.addBuilderData = async (req, res) => {
             });
 
             if (existingBuilder) {
-                console.log('ℹ️ [ADD BUILDER] User is already a builder');
+                logger.debug('ℹ️ [ADD BUILDER] User is already a builder');
                 return res.send(
                     JSON.stringify({
                         errMessage: "This mobile number is already associated with a builder account.",
@@ -109,7 +109,7 @@ exports.addBuilderData = async (req, res) => {
                     })
                 );
             } else {
-                console.log('🔍 [ADD BUILDER] User exists but not a builder, creating builder profile...');
+                logger.debug('🔍 [ADD BUILDER] User exists but not a builder, creating builder profile...');
                 
                 // Create builder profile for existing user
                 let data = await BuilderUser.create({
@@ -126,7 +126,7 @@ exports.addBuilderData = async (req, res) => {
                 });
             }
         } else {
-            console.log('➕ [ADD BUILDER] User not found, creating new user and builder profile...');
+            logger.debug('➕ [ADD BUILDER] User not found, creating new user and builder profile...');
             
             // Create new user
             userData = await User.create({
@@ -156,7 +156,7 @@ exports.addBuilderData = async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('❌ [ADD BUILDER] Error:', error);
+        logger.error('❌ [ADD BUILDER] Error:', error);
         res.status(500).send({ message: error.message });
     }
 };
@@ -214,7 +214,7 @@ exports.updateBuilderData = async (req, res) => {
         })
         .catch((e) => {
             res.send({ message: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -305,7 +305,7 @@ exports.getUnitsByBuilder = async (req, res) => {
         group: ["unit_id"],
     })
         .then(async (articles) => {
-            // console.log(articles);
+            // logger.debug(articles);
 
             const response = await Promise.all(
                 articles.map(async (element) => {
@@ -421,7 +421,7 @@ exports.getUnitsByBuilder = async (req, res) => {
                             // Convert to plain object to access nested data
                             const bmPlain = buildingManager.get ? buildingManager.get({ plain: true }) : buildingManager;
                             
-                            console.log('Building Manager found for unit_id:', element.unit_id, bmPlain);
+                            logger.debug('Building Manager found for unit_id:', element.unit_id, bmPlain);
                             
                             if (bmPlain && bmPlain.user) {
                                 buildingManagerData = {
@@ -429,15 +429,15 @@ exports.getUnitsByBuilder = async (req, res) => {
                                     building_manager_email: bmPlain.user.email || '',
                                     building_manager_mobile: bmPlain.user.mobileNumber || ''
                                 };
-                                console.log('Building Manager Data set:', buildingManagerData);
+                                logger.debug('Building Manager Data set:', buildingManagerData);
                             } else {
-                                console.log('No user data found in building manager for unit_id:', element.unit_id);
+                                logger.debug('No user data found in building manager for unit_id:', element.unit_id);
                             }
                         } else {
-                            console.log('No building manager found for unit_id:', element.unit_id);
+                            logger.debug('No building manager found for unit_id:', element.unit_id);
                         }
                     } catch (bmError) {
-                        console.error('Error fetching building manager for unit_id:', element.unit_id, bmError);
+                        logger.error('Error fetching building manager for unit_id:', element.unit_id, bmError);
                         // Continue with empty building manager data
                     }
 
@@ -460,7 +460,7 @@ exports.getUnitsByBuilder = async (req, res) => {
             res
                 .status(400)
                 .send({ message: "unit error", status: false, error: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -540,7 +540,7 @@ exports.getUintByConsumer = async (req, res) => {
                     attributes: ["company_name", "user_id"],
                 },
             ],
-            logging: console.log,
+            logging: (msg) => logger.debug(msg),
             group: ["unit_id"],
         });
 
@@ -652,7 +652,7 @@ exports.getUintByConsumer = async (req, res) => {
         });
 
     } catch (e) {
-        console.log(e);
+        logger.debug(e);
         res.status(500).send({
             message: "Internal server error",
             status: false,
@@ -682,7 +682,7 @@ exports.getUnitsByBuilderCategory = async (req, res) => {
         })
         .catch((e) => {
             res.status(400).send({ message: "unit catergory error", status: false });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
@@ -900,7 +900,7 @@ exports.addBuilderUnit = async (req, res) => {
             userData: newUnit,
         });
     } catch (error) {
-        console.log(error);
+        logger.debug(error);
         res.status(500).send({ message: error.message || "Internal server error", status: false });
     }
 };
@@ -1129,7 +1129,7 @@ exports.updateBuilderUnit = async (req, res) => {
             status: true,
         });
     } catch (error) {
-        console.error(error);
+        logger.error(error);
         res.status(500).send({ message: error.message || "Internal server error" });
     }
 };
@@ -1194,7 +1194,7 @@ exports.updateBuilderUnitCategory = async (req, res) => {
         })
         .catch((e) => {
             res.send({ message: e?.message });
-            console.log(e);
+            logger.debug(e);
         });
 };
 
