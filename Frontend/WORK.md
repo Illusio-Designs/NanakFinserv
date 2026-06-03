@@ -19,13 +19,13 @@
 | 3 | Secrets / config hygiene | 10 | 7/10 | 7.0 | 🟢 `.env` untracked; MSG91 creds env-driven |
 | 4 | Dependency security | 12 | 6/10 | 7.2 | 🟢 removed dead firebase/metismenu/gsap; `npm audit fix` → 66→31 (rest are CRA build-time transitive) |
 | 5 | Code structure / maintainability | 10 | 3/10 | 3.0 | 🟠 47k lines; single files up to 6.8k |
-| 6 | Error handling / UX resilience | 8 | 2/10 | 1.6 | 🟠 No ErrorBoundary |
-| 7 | Testing | 7 | 0/10 | 0.0 | 🔴 No tests |
+| 6 | Error handling / UX resilience | 8 | 7/10 | 5.6 | 🟢 top-level ErrorBoundary (no more white-screen) + test |
+| 7 | Testing | 7 | 4/10 | 2.8 | 🟡 jest/RTL wired (`setupTests.js`) + ErrorBoundary tests |
 | 8 | Logging & noise | 6 | 6/10 | 3.6 | 🟢 console.* silenced in prod build; env dump removed |
-| 9 | Performance / bundle | 10 | 4/10 | 4.0 | 🟠 dead deps removed; still no code-splitting (main 537kB gz) |
+| 9 | Performance / bundle | 10 | 8/10 | 8.0 | 🟢 route-based code-splitting → main bundle **537→64kB gz** |
 | 10 | Accessibility / SEO | 5 | 3/10 | 1.5 | 🟠 minimal |
-| 11 | Tooling consistency | 5 | 3/10 | 1.5 | 🟠 CRA + stray vite/webpack configs |
-| | **TOTAL** | **100** | | **🟠 47.0 / 100** | **Phase 0 + dependency cleanup done** |
+| 11 | Tooling consistency | 5 | 7/10 | 3.5 | 🟢 stray vite/webpack configs removed (CRA only) |
+| | **TOTAL** | **100** | | **🟠 59.8 / 100** | **Phase 0–2 + perf code-splitting done** |
 
 ### Targets after each phase
 | Milestone | Projected | Grade |
@@ -66,8 +66,8 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | Add a top-level **ErrorBoundary** | one thrown render error currently white-screens the app |
-| ☐ | Add tests (RTL + jest) | `react-scripts test` exists; 0 tests today |
+| ☑ | Add a top-level **ErrorBoundary** | `src/components/ErrorBoundary.js` wraps the app; render errors show a fallback + reload |
+| 🟡 | Add tests (RTL + jest) | `setupTests.js` + ErrorBoundary tests (2). More component/page tests still to add |
 | ☐ | Consistent loading/error states + 401 handling | redirect to login on token expiry (partially present) |
 | ☐ | Replace `alert()` with the toast system already in use | |
 
@@ -78,8 +78,8 @@
 | ☐ | Task | Notes |
 |---|------|-------|
 | ☐ | Split giant files | `VehicleInsurance.js` 6825, `MediclaimModal.js` 3474, `userAPI.js` 3186, `Mediclaim-popup.js` 2989 |
-| ☐ | Route-based code-splitting (`React.lazy`) | single large bundle today |
-| ☐ | Pick **one** build tool | remove stray `vite.config.js` + `webpack.config.js` (app uses CRA) or migrate off CRA (deprecated) |
+| ☑ | Route-based code-splitting (`React.lazy`) | done — every route lazy-loaded; main bundle 537→64kB gz |
+| ☑ | Pick **one** build tool | removed stray `vite.config.js` + `webpack.config.js` (CRA is canonical) |
 | ☐ | Add ESLint + Prettier config | only the default CRA `eslintConfig` exists |
 | ☐ | Accessibility pass | labels, alt text, focus management, color contrast |
 
