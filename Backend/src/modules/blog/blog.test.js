@@ -1,5 +1,8 @@
 /** Tests for the blog module. */
-jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => next());
+jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
+  req.user = { id: 1, Role: 1 };
+  next();
+});
 jest.mock("../../../app/models", () => ({
   blog: { findByPk: jest.fn(), findAll: jest.fn() },
 }));

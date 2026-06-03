@@ -2,7 +2,10 @@
  * Tests for the user module: service-backed read endpoints (real
  * controller -> real service -> mocked models) and validator rejections.
  */
-jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => next());
+jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
+  req.user = { id: 1, Role: 1 };
+  next();
+});
 jest.mock("../../../app/models", () => ({
   category: { findAll: jest.fn() },
   userCategory: { findAll: jest.fn() },

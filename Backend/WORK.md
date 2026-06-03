@@ -13,7 +13,7 @@
 | # | Category | Weight | Score | Weighted | Status |
 |---|----------|:------:|:-----:|:--------:|--------|
 | 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
-| 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
+| 2 | Authorization (RBAC) | 12 | 5 / 10 | 6.0 | 🟡 `requireRole` middleware + tests; back-office config writes gated to admin/staff. Per-record + remaining-route mapping needs product sign-off |
 | 3 | Secrets management | 12 | 7 / 10 | 8.4 | 🟢 hardcoded JWT/Gmail/DB secrets removed from code; env-driven + prod fail-fast. **You: rotate values + purge git history** |
 | 4 | Data privacy / uploads | 8 | 9 / 10 | 7.2 | 🟢 + /uploads access gate (blog public, customer files need JWT) |
 | 5 | Input validation | 8 | 8 / 10 | 6.4 | 🟢 validators across all 13 domains (mutating endpoints) |
@@ -24,7 +24,7 @@
 | 10 | Testing | 5 | 9 / 10 | 4.5 | 🟢 all 14 modules + middleware/metrics (79 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 6 / 10 | 3.0 | 🟢 Sequelize CLI migrations (boot no longer alters schema); readiness probe (CI/Docker excluded by request) |
-| | **TOTAL** | **100** | | **🟡 69.7 / 100** | **Approaching ready: secrets de-hardcoded, 0 vulns, alerting rules, deeper extraction** |
+| | **TOTAL** | **100** | | **🟡 74.5 / 100** | **Approaching ready: RBAC, secrets de-hardcoded, 0 vulns, alerting, deeper extraction (CI/Docker excluded by request)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -57,7 +57,7 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | Wire role-based authorization into routes | `adminAuth`/`adminUserAuth` middleware exist but are unused |
+| 🟡 | Wire role-based authorization into routes | New `src/middleware/rbac.js` `requireRole(...)` (JWT `Role` is numeric; the legacy `adminAuth` checked `'admin'` strings and never worked). Applied to back-office writes (role mgmt, master-data config, blog authoring, mediclaim company/product). Remaining routes rely on in-handler checks; full per-route matrix needs product sign-off to avoid lockouts. |
 | ☑ | Add `helmet` security headers | `server.js` (CORP cross-origin, CSP/COEP off for a files+JSON API) |
 | ☑ | Add `express-rate-limit` (esp. on login) | Global 1000/15min + login 20/15min → 429 (smoke-tested) |
 | 🟡 | Add input validation (`express-validator` or `zod`) | Done for `auth`; per-module validators still pending |
