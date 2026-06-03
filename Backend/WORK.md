@@ -12,19 +12,19 @@
 
 | # | Category | Weight | Score | Weighted | Status |
 |---|----------|:------:|:-----:|:--------:|--------|
-| 1 | Authentication | 15 | 0 / 10 | 0.0 | 🔴 No password check on login |
+| 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
-| 3 | Secrets management | 12 | 0 / 10 | 0.0 | 🔴 Secrets committed to git |
-| 4 | Data privacy / uploads | 8 | 1 / 10 | 0.8 | 🔴 208 customer PDFs in repo |
+| 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
+| 4 | Data privacy / uploads | 8 | 7 / 10 | 5.6 | 🟢 Uploads untracked & gitignored (history purge pending) |
 | 5 | Input validation | 8 | 1 / 10 | 0.8 | 🟠 Request bodies trusted directly |
 | 6 | Dependency security | 8 | 3 / 10 | 2.4 | 🟠 Known-vulnerable versions |
 | 7 | Error handling & resilience | 8 | 3 / 10 | 2.4 | 🟠 Misordered handlers, starts w/o DB |
 | 8 | Logging & monitoring | 7 | 2 / 10 | 1.4 | 🟠 ~590 console.logs, leaks PII |
 | 9 | Code structure / maintainability | 7 | 2 / 10 | 1.4 | 🟠 13.3k-line single controller |
-| 10 | Testing | 5 | 0 / 10 | 0.0 | 🔴 No tests at all |
+| 10 | Testing | 5 | 2 / 10 | 1.0 | 🟡 Jest+supertest set up; auth module covered |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🔴 11.8 / 100** | **Not production ready** |
+| | **TOTAL** | **100** | | **🟠 34.0 / 100** | **Not production ready (auth module landed)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -43,11 +43,11 @@
 
 | ☐ | Task | File(s) | Why it's critical |
 |---|------|---------|-------------------|
-| ☐ | Implement real password auth (bcrypt hash + compare) on login | `controllers/user.controller.js` → `verifyUser` | Login matches mobile number only → total account takeover |
-| ☐ | Delete the `process.env` dump endpoint | `user.controller.js` → `userChek`, `routes/users.routes.js` | `GET /api/user/check` leaks all secrets to anyone |
-| ☐ | Remove committed secrets from git & rotate them | `.env`, `config/authConfig.js`, `config/db.config.js` | JWT secret, DB password, Gmail app password are in history |
-| ☐ | Untrack the 208 uploaded PDFs | `Backend/uploads/*` | Customer documents (resumes, offers) in source control |
-| ☐ | Fix `.gitignore` (add `.env`, `uploads/`, logs) | `Backend/.gitIgnore` | Only `node_modules/` is ignored today |
+| ☑ | Implement real auth — **MSG91 OTP verified server-side** + JWT | `src/modules/auth/*` (replaces `verifyUser`) | Login matched mobile number only → total account takeover. Now the MSG91 access-token is verified via MSG91's API before any token is issued. |
+| ☑ | Delete the `process.env` dump endpoint | `src/modules/auth/auth.controller.js` `ping`; legacy `userChek` neutralised | `GET /api/user/check` no longer returns env |
+| 🟡 | Remove committed secrets from git & **rotate** them | `.env` untracked; `config/authConfig.js`, `config/db.config.js` still hold constants | `.env` removed from index. **Rotation of JWT secret / DB password / Gmail password is still required by you** (they remain in git history). |
+| ☑ | Untrack the 208 uploaded PDFs | `Backend/uploads/*`, `app/uploads/*` | Removed from git index; now gitignored |
+| ☑ | Fix `.gitignore` (add `.env`, `uploads/`, logs) | `Backend/.gitignore` (new, lowercase) | Old `.gitIgnore` (capital I) was never honoured by git |
 | ☐ | Remove debug route | `routes/users.routes.js` → `/user/list/all-vehicle-users-debug` | Unauthenticated data exposure |
 | ☐ | Add auth + path-traversal guard to file download | `routes/users.routes.js` → `/user/download/:filename` | Unauthenticated, `../` traversal risk |
 
@@ -147,7 +147,7 @@ Each module = its own controller + route + service + validator + **test file**.
 
 | ☐ | Module | Owns these existing endpoints (from `users.routes.js`) | Test file |
 |---|--------|--------------------------------------------------------|-----------|
-| ☐ | `auth` | login, verify, token issue (rewritten w/ bcrypt) | `auth.test.js` |
+| ☑ | `auth` | login, verify, token issue (MSG91 verified server-side) — **DONE, 8 tests passing** | `auth.test.js` ✅ |
 | ☐ | `user` | user list (consumer/builder/roleWise), roles, add/update user | `user.test.js` |
 | ☐ | `vehicle` | vehicle user CRUD, renewal, policies, vehicle/policyplan/policytype | `vehicle.test.js` |
 | ☐ | `loan` | loan lists, detail, interested/disburse/cancel, status, configuration | `loan.test.js` |

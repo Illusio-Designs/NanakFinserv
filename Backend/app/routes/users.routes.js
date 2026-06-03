@@ -5,9 +5,8 @@ const router = express.Router();
 
 
 
-router.post("/user/login", userController.verifyUser);
-router.get("/user/check", userController.userChek);
-router.post("/user/verfiy", userController.verifyUserLogin);
+// Auth routes (login / OTP verification / ping) are handled by the dedicated
+// auth module: src/modules/auth/auth.routes.js (mounted in server.js).
 // router.post("/user/resetPassword", userController.resetPasswordRequest);
 // router.post("/user/updatePassword", userController.updatePasswordByMail);
 router.get("/user/list/consumer", [verifyToken], userController.getAllUsers);

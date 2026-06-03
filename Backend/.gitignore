@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets — never commit these
+.env
+.env.local
+.env.*.local
+
+# User uploads (customer documents must not live in source control)
+uploads/
+app/uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Coverage / test output
+coverage/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
