@@ -1,0 +1,65 @@
+# Prometheus alerting rules for the NanakFinserv API.
+# Load via prometheus.yml `rule_files:` (see prometheus-scrape.example.yml).
+#
+# Relies on metrics exposed at /metrics:
+#   - up                              (scrape target health)
+#   - http_requests_total             (counter; labels: method, route, status_code)
+#   - http_request_duration_seconds   (histogram; same labels)
+#   - process_resident_memory_bytes, nodejs_eventloop_lag_seconds (default metrics)
+groups:
+  - name: nanakfinserv-api
+    rules:
+      - alert: ApiDown
+        expr: up{job="nanakfinserv-api"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "NanakFinserv API target is down"
+          description: "Prometheus cannot scrape {{ $labels.instance }} for >1m."
+
+      - alert: HighErrorRate
+        # >5% of requests are 5xx over the last 5m.
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "High 5xx error rate (>5%)"
+          description: "5xx rate is {{ $value | humanizePercentage }} over 5m."
+
+      - alert: ElevatedAuthFailures
+        # Sustained 401s on the login route can indicate brute-forcing.
+        expr: sum(rate(http_requests_total{route="/user/login",status_code="401"}[5m])) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Elevated login 401s"
+          description: "Login is returning >1 unauthorized/s over 10m."
+
+      - alert: HighRequestLatencyP95
+        # p95 latency above 1s over 5m.
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "High p95 latency (>1s)"
+          description: "p95 request latency is {{ $value }}s over 5m."
+
+      - alert: EventLoopLagHigh
+        expr: nodejs_eventloop_lag_seconds > 0.2
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Node event-loop lag high (>200ms)"
+          description: "Event-loop lag is {{ $value }}s on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes > 1.5e9
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "API RSS memory >1.5GB"
+          description: "Resident memory is {{ $value | humanize1024 }}B."

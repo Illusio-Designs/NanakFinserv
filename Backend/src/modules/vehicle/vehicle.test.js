@@ -60,3 +60,40 @@ describe("PUT /user/vehicle/user/update/remark/:id", () => {
     expect(db.vehicleUser.findByPk).not.toHaveBeenCalled();
   });
 });
+
+describe("service.normalizePayload", () => {
+  const service = require("./vehicle.service");
+
+  it("parses a JSON request nested under `data`", () => {
+    const out = service.normalizePayload({ data: { Name: "Car", runningPolicy: { CompanyId: 1 } } }, "application/json");
+    expect(out.error).toBeUndefined();
+    expect(out.Data.Name).toBe("Car");
+    expect(out.runningPolicy).toEqual({ CompanyId: 1 });
+    // previousPolicy defaulted
+    expect(out.previousPolicy).toEqual({ PolicyTypeId: null, CompanyId: null, PolicyPlanTypeId: null });
+  });
+
+  it("parses multipart FormData with JSON-string sub-objects", () => {
+    const out = service.normalizePayload(
+      { Name: "Car", runningPolicy: '{"CompanyId":2}', documentsData: "[]" },
+      "multipart/form-data; boundary=x"
+    );
+    expect(out.runningPolicy).toEqual({ CompanyId: 2 });
+    expect(out.documentsData).toEqual([]);
+  });
+
+  it("falls back to {} on a malformed JSON string (matches legacy behavior)", () => {
+    const out = service.normalizePayload(
+      { Name: "Car", runningPolicy: "{not-json" },
+      "multipart/form-data"
+    );
+    // malformed -> {} in the catch; {} is already an object so the defensive
+    // check keeps it (it is not replaced by the null-filled default).
+    expect(out.runningPolicy).toEqual({});
+  });
+
+  it("returns an error when no data is present", () => {
+    const out = service.normalizePayload({}, "text/plain");
+    expect(out.error).toMatch(/Data not found/);
+  });
+});

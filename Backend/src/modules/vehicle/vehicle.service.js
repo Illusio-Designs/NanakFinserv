@@ -8,6 +8,53 @@ const db = require("../../../app/models");
 const VehicleUser = db.vehicleUser;
 
 /**
+ * Parse + normalize the add-vehicle request body (JSON under `data`, or
+ * multipart FormData with JSON-string sub-objects), applying defensive defaults
+ * for running/previous policy.
+ * @returns {{error:string}|{Data,documentsData,runningPolicy,previousPolicy}}
+ */
+function normalizePayload(body, contentType) {
+  let Data;
+  if (body && body.data) {
+    Data = typeof body.data === "string" ? JSON.parse(body.data) : body.data;
+  } else if (contentType && contentType.includes("multipart/form-data")) {
+    Data = body || {};
+    for (const field of ["runningPolicy", "previousPolicy", "documentsData"]) {
+      if (Data[field] && typeof Data[field] === "string") {
+        try {
+          Data[field] = JSON.parse(Data[field]);
+        } catch (e) {
+          Data[field] = field === "documentsData" ? [] : {};
+        }
+      }
+    }
+  } else {
+    return { error: "Data not found in request body" };
+  }
+
+  const documentsData =
+    Data.documentsData ||
+    (typeof (body && body.documentsData) === "string"
+      ? JSON.parse(body.documentsData || "[]")
+      : body && body.documentsData);
+
+  const emptyPolicy = () => ({ PolicyTypeId: null, CompanyId: null, PolicyPlanTypeId: null });
+
+  let runningPolicy = Data.runningPolicy;
+  if (!runningPolicy || typeof runningPolicy !== "object") {
+    runningPolicy = emptyPolicy();
+    Data.runningPolicy = runningPolicy;
+  }
+  let previousPolicy = Data.previousPolicy;
+  if (!previousPolicy || typeof previousPolicy !== "object") {
+    previousPolicy = emptyPolicy();
+    Data.previousPolicy = previousPolicy;
+  }
+
+  return { Data, documentsData, runningPolicy, previousPolicy };
+}
+
+/**
  * Update the remark on a vehicle user record.
  * @returns {Promise<object|null>} the updated row, or null if not found.
  */
@@ -18,4 +65,4 @@ async function updateRemark(vehicleUserId, remark) {
   return user;
 }
 
-module.exports = { updateRemark };
+module.exports = { updateRemark, normalizePayload };

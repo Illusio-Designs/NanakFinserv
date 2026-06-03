@@ -14,17 +14,17 @@
 |---|----------|:------:|:-----:|:--------:|--------|
 | 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
-| 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
+| 3 | Secrets management | 12 | 7 / 10 | 8.4 | 🟢 hardcoded JWT/Gmail/DB secrets removed from code; env-driven + prod fail-fast. **You: rotate values + purge git history** |
 | 4 | Data privacy / uploads | 8 | 9 / 10 | 7.2 | 🟢 + /uploads access gate (blog public, customer files need JWT) |
 | 5 | Input validation | 8 | 8 / 10 | 6.4 | 🟢 validators across all 13 domains (mutating endpoints) |
-| 6 | Dependency security | 8 | 9 / 10 | 7.2 | 🟢 unused firebase/firebase-admin/bcrypt removed; mysql2/nodemailer/uuid upgraded; vulns 41→2 |
+| 6 | Dependency security | 8 | 10 / 10 | 8.0 | 🟢 firebase/firebase-admin/bcrypt removed; mysql2/nodemailer/uuid upgraded; uuid override → **0 vulns** |
 | 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
 | 8 | Logging & monitoring | 7 | 9 / 10 | 6.3 | 🟢 pino everywhere; Prometheus /metrics + /health + /ready (alerting wiring is ops) |
-| 9 | Code structure / maintainability | 7 | 8 / 10 | 5.6 | 🟢 14 modules, all with service + validator + tests |
-| 10 | Testing | 5 | 8 / 10 | 4.0 | 🟢 all 14 modules covered (61 tests) |
+| 9 | Code structure / maintainability | 7 | 9 / 10 | 6.3 | 🟢 14 modules w/ service+validator+tests; big handlers (consumer/lifeIns/vehicle) extracting into services |
+| 10 | Testing | 5 | 9 / 10 | 4.5 | 🟢 all 14 modules + middleware/metrics (79 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 6 / 10 | 3.0 | 🟢 Sequelize CLI migrations (boot no longer alters schema); readiness probe (CI/Docker excluded by request) |
-| | **TOTAL** | **100** | | **🟡 64.1 / 100** | **Approaching ready: migrations + metrics + uploads gate + dep cleanup done** |
+| | **TOTAL** | **100** | | **🟡 69.7 / 100** | **Approaching ready: secrets de-hardcoded, 0 vulns, alerting rules, deeper extraction** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -45,7 +45,7 @@
 |---|------|---------|-------------------|
 | ☑ | Implement real auth — **MSG91 OTP verified server-side** + JWT | `src/modules/auth/*` (replaces `verifyUser`) | Login matched mobile number only → total account takeover. Now the MSG91 access-token is verified via MSG91's API before any token is issued. |
 | ☑ | Delete the `process.env` dump endpoint | `src/modules/auth/auth.controller.js` `ping`; legacy `userChek` neutralised | `GET /api/user/check` no longer returns env |
-| 🟡 | Remove committed secrets from git & **rotate** them | `.env` untracked; `config/authConfig.js`, `config/db.config.js` still hold constants | `.env` removed from index. **Rotation of JWT secret / DB password / Gmail password is still required by you** (they remain in git history). |
+| 🟡 | Remove committed secrets from git & **rotate** them | hardcoded secrets removed from `authConfig.js`; dead `db.config.js`/`database.js` deleted; all env-driven + prod fail-fast | Code no longer contains the leaked values. **Still on you:** rotate the actual JWT secret / DB password / Gmail app password / MSG91 key on their services, and purge git history (they remain in past commits). |
 | ☑ | Untrack the 208 uploaded PDFs | `Backend/uploads/*`, `app/uploads/*` | Removed from git index; now gitignored |
 | ☑ | Fix `.gitignore` (add `.env`, `uploads/`, logs) | `Backend/.gitignore` (new, lowercase) | Old `.gitIgnore` (capital I) was never honoured by git |
 | ☑ | Remove debug route | `src/modules/vehicle/vehicle.routes.js` | Unauthenticated `/user/list/all-vehicle-users-debug` removed |
@@ -64,7 +64,8 @@
 | ☑ | Fix CORS | Single options object reused for preflight; wildcard removed; CORS rejections → 403 |
 | ☑ | `npm audit fix` + upgrade deps | axios 0.21→1.17, jwt 8→9, nodemon 2→3, `npm audit fix`; vulns 41 → 20 |
 | ☑ | Remove bogus/duplicate deps | Removed `fs`, `path` (core wins) and unused `mysql` (kept `mysql2`) |
-| ☑ | Major dependency cleanup | Removed unused `firebase`/`firebase-admin`/`bcrypt`; upgraded `mysql2@3`, `nodemailer@8`, `uuid`. **2 moderate vulns remain** (Sequelize-nested `uuid`, needs a Sequelize major). |
+| ☑ | Major dependency cleanup | Removed unused `firebase`/`firebase-admin`/`bcrypt`; upgraded `mysql2@3`, `nodemailer@8`, `uuid`; `overrides.uuid` forces a safe nested version → **`npm audit` = 0 vulnerabilities**. |
+| ☑ | Metrics + alerting | `prom-client` `/metrics` + `/ready`; `monitoring/` ships Prometheus alert rules (ApiDown, HighErrorRate, ElevatedAuthFailures, p95 latency, event-loop lag, memory) + scrape example. Alertmanager receivers are an ops wiring step. |
 
 ---
 

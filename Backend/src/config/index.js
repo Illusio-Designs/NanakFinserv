@@ -1,17 +1,15 @@
 /**
  * Central, environment-driven configuration.
  *
- * No secrets are hardcoded here — everything comes from environment variables.
- * During the migration away from the legacy `app/config/authConfig.js`, the JWT
- * secret falls back to the old constant so existing tokens keep verifying, but
- * `JWT_SECRET` MUST be set (and rotated) before going to production.
+ * No secrets are hardcoded. JWT_SECRET is required; in production the process
+ * refuses to start without it (fail-fast). Generate one with:
+ *   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
  */
-let legacyAuthConfig = {};
-try {
-  // eslint-disable-next-line global-require
-  legacyAuthConfig = require("../../app/config/authConfig");
-} catch (_) {
-  legacyAuthConfig = {};
+const isProd = process.env.NODE_ENV === "production";
+
+if (isProd && !process.env.JWT_SECRET) {
+  // Don't boot a production server that can't securely sign/verify tokens.
+  throw new Error("JWT_SECRET is required in production");
 }
 
 const config = {
@@ -19,7 +17,8 @@ const config = {
   port: process.env.PORT || 5001,
 
   jwt: {
-    secret: process.env.JWT_SECRET || legacyAuthConfig.secret,
+    // No fallback to any previously-committed value.
+    secret: process.env.JWT_SECRET,
     // seconds — 1 day, matching the legacy behaviour
     expiresIn: Number(process.env.JWT_EXPIRES_IN) || 86400,
   },
