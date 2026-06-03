@@ -83,11 +83,105 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | Split the 13,347-line `user.controller.js` | Break into per-domain controllers/services |
-| ☐ | Add tests (unit + a few integration) | `test` script currently `exit 1` |
+| ☐ | Split the 13,347-line `user.controller.js` into per-domain modules | See **Target architecture** below — controller + route + service + validator + test per domain |
+| ☐ | Add a test file for every module | Each module ships its own `*.test.js`; `test` script currently `exit 1` |
 | ☐ | Add Dockerfile + CI workflow | None today |
 | ☐ | Production start + process manager | `start` runs `nodemon` (dev tool); use PM2/systemd |
 | ☐ | Add `Backend/.env.example` | Document required env vars |
+
+---
+
+## 🏛️ Target architecture (modular, per-domain, fully tested)
+
+Goal: break the single 13,347-line `user.controller.js` into **independent feature modules**. Each domain owns its own controller, route, service (business logic), validator, and **its own test file**. No more god-controller.
+
+### Proposed folder structure
+```
+Backend/
+├── src/
+│   ├── app.js                  # express app (middleware, mounts routes) — no listen()
+│   ├── server.js               # imports app, starts listener, graceful shutdown
+│   ├── config/
+│   │   ├── index.js            # central env-driven config (no hardcoded secrets)
+│   │   ├── database.js
+│   │   └── logger.js           # pino/winston
+│   ├── middleware/
+│   │   ├── auth.js             # verifyToken
+│   │   ├── rbac.js             # requireRole(...roles)
+│   │   ├── validate.js         # runs validator schema
+│   │   └── errorHandler.js     # central error handler (registered LAST)
+│   ├── modules/
+│   │   ├── auth/
+│   │   │   ├── auth.controller.js
+│   │   │   ├── auth.service.js
+│   │   │   ├── auth.routes.js
+│   │   │   ├── auth.validator.js
+│   │   │   └── auth.test.js          ✅ own test file
+│   │   ├── user/        { controller, service, routes, validator, user.test.js }
+│   │   ├── vehicle/     { ...vehicle.test.js }
+│   │   ├── loan/        { ...loan.test.js }
+│   │   ├── mediclaim/   { ...mediclaim.test.js }
+│   │   ├── lifeInsurance/ { ...lifeInsurance.test.js }
+│   │   ├── builder/     { ...builder.test.js }
+│   │   ├── unit/        { ...unit.test.js }
+│   │   ├── consumer/    { ...consumer.test.js }
+│   │   ├── buildingManager/ { ...buildingManager.test.js }
+│   │   ├── blog/        { ...blog.test.js }
+│   │   ├── notification/ { ...notification.test.js }
+│   │   ├── inquiry/     { ...inquiry.test.js }
+│   │   ├── dashboard/   { ...dashboard.test.js }
+│   │   └── shared/      { codeDetail, companyType, policyType, config }
+│   ├── models/                 # existing Sequelize models (kept, tidied)
+│   ├── migrations/             # managed Sequelize migrations
+│   └── utils/                  # fileUpload, notifications helper, etc.
+├── tests/
+│   ├── setup.js                # test DB / fixtures
+│   └── integration/            # cross-module API tests
+├── .env.example
+├── Dockerfile
+└── jest.config.js
+```
+
+### Module split — source domains carved out of the monolith
+Each module = its own controller + route + service + validator + **test file**.
+
+| ☐ | Module | Owns these existing endpoints (from `users.routes.js`) | Test file |
+|---|--------|--------------------------------------------------------|-----------|
+| ☐ | `auth` | login, verify, token issue (rewritten w/ bcrypt) | `auth.test.js` |
+| ☐ | `user` | user list (consumer/builder/roleWise), roles, add/update user | `user.test.js` |
+| ☐ | `vehicle` | vehicle user CRUD, renewal, policies, vehicle/policyplan/policytype | `vehicle.test.js` |
+| ☐ | `loan` | loan lists, detail, interested/disburse/cancel, status, configuration | `loan.test.js` |
+| ☐ | `mediclaim` | company, product, user, renewal lists | `mediclaim.test.js` |
+| ☐ | `lifeInsurance` | CRUD, documents, by-consumer, renewal | `lifeInsurance.test.js` |
+| ☐ | `builder` | builder data, units, unit categories, verticals | `builder.test.js` |
+| ☐ | `consumer` | consumer add/update, dashboard | `consumer.test.js` |
+| ☐ | `buildingManager` | create/assign/list/stats/update/remove | `buildingManager.test.js` |
+| ☐ | `blog` | blog CRUD + public list | `blog.test.js` |
+| ☐ | `notification` | list, read, read-all, count | `notification.test.js` |
+| ☐ | `inquiry` | inquiry add/list + public inquiry | `inquiry.test.js` |
+| ☐ | `dashboard` | counts, stats, amount filters | `dashboard.test.js` |
+| ☐ | `shared` | code, company-type, downloads | `shared.test.js` |
+
+### Per-module definition of done
+A module is "done" only when **all** of these are true:
+- ☐ Controller is thin (HTTP only) — business logic lives in the service
+- ☐ Routes mounted via the module's own `*.routes.js`
+- ☐ Input validated by the module's `*.validator.js`
+- ☐ RBAC applied (`requireRole`) where needed
+- ☐ Its `*.test.js` covers happy path + auth failure + validation failure (target ≥70% coverage)
+- ☐ No `console.log` (uses the shared logger)
+
+### Testing & management setup (cross-cutting)
+| ☐ | Task | Notes |
+|---|------|-------|
+| ☐ | Add `jest` + `supertest` | API-level testing |
+| ☐ | `jest.config.js` + coverage thresholds | Fail CI under target coverage |
+| ☐ | `tests/setup.js` with a test DB / fixtures | Isolated from prod data |
+| ☐ | Update `package.json` scripts | `test`, `test:watch`, `test:coverage`, `lint`, `start`, `dev` |
+| ☐ | Add ESLint + Prettier | Consistent style, catch dead code |
+| ☐ | CI workflow runs lint + test + coverage on push | Gate merges |
+
+> **Migration strategy:** carve out one module at a time from `user.controller.js`, mount its new route, write its test, verify, then delete the old code path. The app keeps running throughout — no big-bang rewrite. The `auth` module goes first (it's also Phase 0 #1).
 
 ---
 
