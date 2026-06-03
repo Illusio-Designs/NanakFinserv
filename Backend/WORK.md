@@ -16,15 +16,15 @@
 | 2 | Authorization (RBAC) | 12 | 1 / 10 | 1.2 | 🔴 Token-only, no role checks |
 | 3 | Secrets management | 12 | 4 / 10 | 4.8 | 🟡 `.env` untracked + env-driven config; rotation still pending |
 | 4 | Data privacy / uploads | 8 | 8 / 10 | 6.4 | 🟢 Uploads untracked + download traversal fixed + debug route removed |
-| 5 | Input validation | 8 | 3 / 10 | 2.4 | 🟡 auth validated; per-module validators pending |
+| 5 | Input validation | 8 | 5 / 10 | 4.0 | 🟡 auth + user + loan validated; remaining modules pending |
 | 6 | Dependency security | 8 | 6 / 10 | 4.8 | 🟢 Bogus deps removed, axios/jwt upgraded, vulns 41→20 (majors pending) |
 | 7 | Error handling & resilience | 8 | 8 / 10 | 6.4 | 🟢 helmet + rate-limit + CORS + reordered handlers + DB fail-fast + graceful shutdown |
 | 8 | Logging & monitoring | 7 | 5 / 10 | 3.5 | 🟢 pino logger (redacts secrets); JWTAuth PII logging removed; bulk sweep pending |
 | 9 | Code structure / maintainability | 7 | 6 / 10 | 4.2 | 🟢 Monolith split into 14 per-domain modules (services/validators pending) |
-| 10 | Testing | 5 | 3 / 10 | 1.5 | 🟡 Jest+supertest; auth + shared (download) covered (11 tests) |
+| 10 | Testing | 5 | 5 / 10 | 2.5 | 🟡 auth + shared + user + loan (26 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 2 / 10 | 1.0 | 🟠 Runs via nodemon, schema unmanaged |
-| | **TOTAL** | **100** | | **🟠 48.2 / 100** | **Not production ready (Phase 0 + Phase 1 + logger/DB fail-fast)** |
+| | **TOTAL** | **100** | | **🟠 50.8 / 100** | **Not production ready (Phase 0–2 + user/loan deepened)** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -156,7 +156,7 @@ routes (111 total) load and register. **Remaining per module: extract a `service
 | ☑ | ☑ | ☑ | ☑ | ☑ | `auth` (MSG91 server-side, 8 tests) | 3 |
 | ☑ | ☑ | 🟡 | ☑ | ☑ | `user` — service (reads) + validators + 8 tests | 12 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `vehicle` | 11 |
-| ☑ | ☑ | ☐ | ☐ | ☐ | `loan` | 10 |
+| ☑ | ☑ | 🟡 | ☑ | ☑ | `loan` — service (status update) + validators + 7 tests | 10 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `mediclaim` | 13 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `lifeInsurance` | 12 |
 | ☑ | ☑ | ☐ | ☐ | ☐ | `builder` | 9 |

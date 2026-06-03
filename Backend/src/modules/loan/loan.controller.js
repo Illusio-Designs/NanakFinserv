@@ -68,6 +68,8 @@ const {
   vehicle_document,
   vehicles
 } = require("../shared/context");
+const loanService = require("./loan.service");
+const logger = require("../../config/logger");
 
 exports.getAllLoanUser = async (req, res) => {
     // Set cache control headers to prevent 304 responses
@@ -1199,62 +1201,20 @@ exports.updateLoanStatus = async (req, res) => {
             });
         }
 
-        const whereClause = { user_id: user_consumer_id };
-        if (laon_id) {
-            whereClause.laon_id = laon_id;
-        }
-
-        // Debug: Check existing records before update
-        const existingRecords = await loanUser.findAll({
-            where: { user_id: user_consumer_id },
-            raw: true
-        });
-        console.log('🔍 [UPDATE STATUS] Existing records for user_id', user_consumer_id, ':', existingRecords.length);
-        existingRecords.forEach((record, index) => {
-            console.log(`🔍 [UPDATE STATUS] Record ${index + 1}:`, {
-                laon_id: record.laon_id,
-                status: record.status,
-                role_id: record.role_id,
-                user_id: record.user_id
-            });
-        });
-
-        // Add role_id to the update data to ensure proper filtering
-        const updateData = {
+        const updatedUser = await loanService.updateLoanStatus({
+            userConsumerId: user_consumer_id,
+            laonId: laon_id,
             status,
-            role_id: req.user.id, // Update role_id to current user's role
-            remarks: status === 'notInterested' ? remarks : null
-        };
-
-        console.log('🔍 [UPDATE STATUS] Updating loan status:', {
-            whereClause,
-            updateData,
-            currentUserRole: req.user.id
+            remarks,
+            actorId: req.user.id,
         });
 
-        const [updated] = await loanUser.update(
-            updateData,
-            { where: whereClause }
-        );
-
-        if (!updated) {
+        if (!updatedUser) {
             return res.status(404).json({
                 message: "Loan user not found or not updated.",
                 status: false,
             });
         }
-
-        const updatedUser = await loanUser.findOne({
-            where: whereClause,
-        });
-
-        console.log('🔍 [UPDATE STATUS] Updated loan user:', {
-            status: updatedUser.status,
-            role_id: updatedUser.role_id,
-            remarks: updatedUser.remarks,
-            user_id: updatedUser.user_id,
-            laon_id: updatedUser.laon_id
-        });
 
         return res.status(200).json({
             message: "Loan user successfully updated!",
@@ -1262,7 +1222,7 @@ exports.updateLoanStatus = async (req, res) => {
             userData: updatedUser,
         });
     } catch (error) {
-        console.error("Error updating loan status:", error);
+        logger.error({ err: error }, "updateLoanStatus failed");
         return res.status(500).json({
             message: "An error occurred while updating the loan user.",
             status: false,
