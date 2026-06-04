@@ -12,8 +12,8 @@
 
 | # | Category | Weight | Score | Weighted | Status |
 |---|----------|:------:|:-----:|:--------:|--------|
-| 1 | Authentication | 15 | 8 / 10 | 12.0 | 🟢 MSG91 OTP verified server-side + JWT (auth module + tests) |
-| 2 | Authorization (RBAC) | 12 | 9 / 10 | 10.8 | 🟢 `requireRole` across all routes + `requireSelfOrRoles` object-level guard (consumer sees only own) |
+| 1 | Authentication | 15 | 9 / 10 | 13.5 | 🟢 MSG91 server-side + JWT; httpOnly cookie set/accepted (header still works); /logout |
+| 2 | Authorization (RBAC) | 12 | 10 / 10 | 12.0 | 🟢 role + **category** gates (loan/mediclaim/life/vehicle) matching the frontend model; object-level guard |
 | 3 | Secrets management | 12 | 10 / 10 | 12.0 | 🟢 env-driven + prod fail-fast; **owner rotated values + purged history** |
 | 4 | Data privacy / uploads | 8 | 9 / 10 | 7.2 | 🟢 + /uploads access gate (blog public, customer files need JWT) |
 | 5 | Input validation | 8 | 9 / 10 | 7.2 | 🟢 validators across all domains incl. builder/mediclaim-user/product writes |
@@ -24,7 +24,7 @@
 | 10 | Testing | 5 | 9 / 10 | 4.5 | 🟢 all 14 modules + middleware/metrics (79 tests) |
 | 11 | CI/CD & containerization | 5 | 0 / 10 | 0.0 | 🔴 None |
 | 12 | Config & deploy hygiene | 5 | 9 / 10 | 4.5 | 🟢 migrations run, env set (owner), readiness + runbooks (CI/Docker excluded by request) |
-| | **TOTAL** | **100** | | **🟢 87.4 / 100** | **(≈92% of the 95 non-CI/CD points). Owner ops done; only CI/Docker (excluded) + live-DB integration tests remain** |
+| | **TOTAL** | **100** | | **🟢 90.1 / 100** | **(≈95% of the 95 non-CI/CD points). Category RBAC + httpOnly cookie groundwork added** |
 
 **Overall grade: F (11.8 / 100).** The score is dominated by three zero-scoring, launch-blocking items: broken authentication, leaked secrets, and exposed customer data.
 
@@ -57,7 +57,8 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☑ | Wire role-based authorization into routes | `requireRole(...)` groups applied to **every** route file + `requireSelfOrRoles` **object-level** guard (e.g. a consumer can only read their own life-insurance). Reference reads + public/auth routes left open. |
+| ☑ | Wire role-based authorization into routes | `requireRole` + **`requireCategory`** (vertical access by JWT categoryIds: loan=2/mediclaim=4/life=5/vehicle=6, matching the frontend guards) + `requireSelfOrRoles` object-level. Public/reference/auth routes left open. |
+| ☑ | httpOnly cookie groundwork | login sets an httpOnly `token` cookie (Secure+SameSite); `JWTAuth` accepts cookie OR header (backward compatible); `POST /user/logout` clears it; frontend `logout()` calls it. Full cookie-only switch (drop JS token + CSRF token) is the remaining coordinated step. |
 | ☑ | Deeper service extraction (big handlers) | `consumer.createBuilderConsumer`, `vehicle.normalizePayload`/`parseUpdatePayload`, `lifeInsurance.createPolicy`/`buildCreatePayload` extracted + unit-tested. Remaining mediclaim/vehicle DB-write cores are file+DB heavy — verify in staging (owner has a live DB). |
 | ☑ | Add `helmet` security headers | `server.js` (CORP cross-origin, CSP/COEP off for a files+JSON API) |
 | ☑ | Add `express-rate-limit` (esp. on login) | Global 1000/15min + login 20/15min → 429 (smoke-tested) |

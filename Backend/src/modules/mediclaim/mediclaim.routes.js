@@ -1,15 +1,16 @@
 /**
- * mediclaim routes — mounted under /api. Internal staff only.
+ * mediclaim routes — mounted under /api.
+ * Vertical access: super admin or users with the Mediclaim category.
  */
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
-const { requireRole, ADMIN } = require("../../middleware/rbac");
+const { requireCategory, CATEGORIES } = require("../../middleware/rbac");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./mediclaim.controller"));
 const v = require("./mediclaim.validator");
 
 const router = express.Router();
-const staff = requireRole(...ADMIN);
+const staff = requireCategory(CATEGORIES.MEDICLAIM);
 
 router.get("/user/list/mediclaim", verifyToken, staff, controller.getAllMediclaimUser);
 router.get("/user/mediclaim/company", verifyToken, staff, controller.getAllMediclaimCompany);

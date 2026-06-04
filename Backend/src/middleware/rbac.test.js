@@ -2,7 +2,7 @@
 const express = require("express");
 const request = require("supertest");
 
-const { requireRole, requireSelfOrRoles, ROLES, ADMIN } = require("./rbac");
+const { requireRole, requireCategory, requireSelfOrRoles, ROLES, CATEGORIES, ADMIN } = require("./rbac");
 
 // Build an app where the "auth" step injects a given role.
 function buildApp(role) {
@@ -43,6 +43,38 @@ describe("requireRole", () => {
 
   it("coerces string role ids", async () => {
     const res = await request(buildApp("1")).get("/admin");
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("requireCategory", () => {
+  function appCat(role, categoryIds) {
+    const app = express();
+    app.use((req, res, next) => {
+      req.user = { id: 1, Role: role, categoryIds };
+      next();
+    });
+    app.get("/loan", requireCategory(CATEGORIES.LOAN), (req, res) => res.json({ ok: true }));
+    return app;
+  }
+
+  it("super admin passes without the category", async () => {
+    const res = await request(appCat(ROLES.SUPER_ADMIN, [])).get("/loan");
+    expect(res.status).toBe(200);
+  });
+
+  it("staff with the Loan category passes", async () => {
+    const res = await request(appCat(ROLES.STAFF, [2, 6])).get("/loan");
+    expect(res.status).toBe(200);
+  });
+
+  it("staff without the Loan category is blocked", async () => {
+    const res = await request(appCat(ROLES.STAFF, [4, 5])).get("/loan");
+    expect(res.status).toBe(403);
+  });
+
+  it("handles string category ids", async () => {
+    const res = await request(appCat(ROLES.STAFF, ["2"])).get("/loan");
     expect(res.status).toBe(200);
   });
 });

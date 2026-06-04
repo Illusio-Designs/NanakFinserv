@@ -1,15 +1,17 @@
 /**
- * loan routes — mounted under /api. Loan management is internal staff only.
+ * loan routes — mounted under /api.
+ * Vertical access: super admin or users with the Loan category (mirrors the
+ * frontend's PrivateLoan guard).
  */
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
-const { requireRole, ADMIN } = require("../../middleware/rbac");
+const { requireCategory, CATEGORIES } = require("../../middleware/rbac");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./loan.controller"));
 const v = require("./loan.validator");
 
 const router = express.Router();
-const staff = requireRole(...ADMIN);
+const staff = requireCategory(CATEGORIES.LOAN);
 
 router.get("/user/list/loan", verifyToken, staff, controller.getAllLoanUser);
 router.post("/user/list/loan/detail", verifyToken, staff, controller.getAllLoanUserDetail);
