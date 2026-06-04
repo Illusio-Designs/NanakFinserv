@@ -18,14 +18,14 @@
 | 2 | Auth & token security | 13 | 6/10 | 7.8 | 🟢 cookies now Secure+SameSite=strict (full httpOnly needs backend) |
 | 3 | Secrets / config hygiene | 10 | 7/10 | 7.0 | 🟢 `.env` untracked; MSG91 creds env-driven |
 | 4 | Dependency security | 12 | 9/10 | 10.8 | 🟢 dead deps removed + **CRA→Vite** → **66→8** (rest: xlsx no-npm-fix, dompurify via jspdf, esbuild dev-only) |
-| 5 | Code structure / maintainability | 10 | 3/10 | 3.0 | 🟠 47k lines; single files up to 6.8k |
+| 5 | Code structure / maintainability | 10 | 4/10 | 4.0 | 🟠 auth storage extracted from userAPI; giant page files still to split |
 | 6 | Error handling / UX resilience | 8 | 8/10 | 6.4 | 🟢 ErrorBoundary + 82 blocking `alert()` → non-blocking toasts |
-| 7 | Testing | 7 | 7/10 | 4.9 | 🟡 vitest/RTL; ErrorBoundary + apiConfig + suppressConsole + cn (9) |
+| 7 | Testing | 7 | 7/10 | 4.9 | 🟡 vitest/RTL; ErrorBoundary/apiConfig/suppressConsole/cn/authStorage (12) |
 | 8 | Logging & noise | 6 | 6/10 | 3.6 | 🟢 console.* silenced in prod build; env dump removed |
 | 9 | Performance / bundle | 10 | 9/10 | 9.0 | 🟢 Vite + route code-splitting + granular vendor chunks |
 | 10 | Accessibility / SEO | 5 | 4/10 | 2.0 | 🟠 non-blocking toasts replace alerts; more pending |
 | 11 | Tooling consistency | 5 | 10/10 | 5.0 | 🟢 Vite (modern, single tool); CRA removed |
-| | **TOTAL** | **100** | | **🟢 72.1 / 100** | **CRA→Vite; security headers; ESLint; more tests** |
+| | **TOTAL** | **100** | | **🟢 73.1 / 100** | **CRA→Vite; security headers; ESLint; auth-storage split; tests** |
 
 ### Targets after each phase
 | Milestone | Projected | Grade |
@@ -77,7 +77,7 @@
 
 | ☐ | Task | Notes |
 |---|------|-------|
-| ☐ | Split giant files | `VehicleInsurance.js` 6825, `MediclaimModal.js` 3474, `userAPI.js` 3186, `Mediclaim-popup.js` 2989 |
+| 🟡 | Split giant files | started: auth storage extracted to `authStorage.js`. Remaining: `VehicleInsurance.js` 6825, `MediclaimModal.js` 3474, `userAPI.js` ~3.1k, `Mediclaim-popup.js` 2989 — best split against the running app |
 | ☑ | Route-based code-splitting (`React.lazy`) | done — every route lazy-loaded; main bundle 537→64kB gz |
 | ☑ | Pick **one** build tool | **Migrated CRA → Vite 5**; tests on vitest; build verified |
 | ☑ | Add ESLint + Prettier config | Prettier (`.prettierrc`) + ESLint flat config (`eslint.config.js`) with react/react-hooks; `npm run lint`/`format` |
