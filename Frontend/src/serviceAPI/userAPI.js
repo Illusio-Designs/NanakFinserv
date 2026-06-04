@@ -2,6 +2,15 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import config from '../config/apiConfig';
+import {
+  setToken,
+  setUser,
+  setCategory,
+  getToken,
+  logout,
+  manualLogout,
+  errorHandel,
+} from './authStorage';
 
 // Add axios response interceptor for global 401 handling
 axios.interceptors.response.use(
@@ -2631,77 +2640,10 @@ export const getAllPolicyTypes = async () => {
   return response.data;
 };
 
-// Utility functions
-
-// Cookie options: HTTPS-only + SameSite to reduce token theft / CSRF surface.
-// (Truly httpOnly cookies must be set by the backend; js-cookie cannot.)
-const isLocalhost =
-  typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const COOKIE_OPTS = { expires: 7, sameSite: 'strict', secure: !isLocalhost };
-
-const setToken = (token) => {
-  Cookies.set('token', token, COOKIE_OPTS);
-};
-
-const setUser = (user) => {
-  Cookies.set('user', JSON.stringify(user), COOKIE_OPTS);
-};
-
-const setCategory = (category) => {
-  if (category && category.length) {
-    let categoryData = category.map((item) => item['category.category_id'])
-    Cookies.set('category', categoryData, COOKIE_OPTS);
-  } else {
-    Cookies.set('category', [], COOKIE_OPTS);
-  }
-};
-
-const errorHandel = (error) => {
-  // Show specific error message from backend if available
-  const errorMessage = error?.response?.data?.message || 'Something went wrong';
-  toast.error(errorMessage, {
-    duration: 3000, // 5 seconds
-    style: {
-      background: '#333',
-      color: '#fff',
-    },
-  });
-  // Note: 401 errors are now handled by axios interceptor
-  // No need to call logout here as it's already handled globally
-}
-const getToken = () => {
-  // Get token from cookies
-  return Cookies.get('token');
-};
-
-const logout = (showMessage = true) => {
-  // Clear token from cookies
-  Cookies.remove('token');
-  Cookies.remove('user');
-  Cookies.remove('category');
-  
-  // Show logout message if requested
-  if (showMessage) {
-    toast.success('Session expired. Please login again.', {
-      duration: 3000,
-      style: {
-        background: '#333',
-        color: '#fff',
-      },
-    });
-  }
-  
-  // Redirect to login page instead of reloading
-  window.location.href = '/login';
-};
-
-// Manual logout function for logout buttons
-const manualLogout = () => {
-  logout(true); // Show logout message
-};
-
-export { login, getToken, logout, manualLogout };
+// Auth/session helpers now live in ./authStorage; re-export for compatibility
+// with existing imports from this module.
+export { getToken, logout, manualLogout };
+export { login };
 
 export const getVehicleUserById = async (vehicleUserId) => {
   console.log('🔍 [API] getVehicleUserById called with vehicleUserId:', vehicleUserId);
