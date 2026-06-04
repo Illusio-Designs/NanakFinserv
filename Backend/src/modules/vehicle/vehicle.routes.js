@@ -1,15 +1,16 @@
 /**
- * vehicle routes — mounted under /api. Vehicle-insurance management is internal staff only.
+ * vehicle routes — mounted under /api.
+ * Vertical access: super admin or users with the Vehicle category.
  */
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
-const { requireRole, ADMIN } = require("../../middleware/rbac");
+const { requireCategory, CATEGORIES } = require("../../middleware/rbac");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./vehicle.controller"));
 const v = require("./vehicle.validator");
 
 const router = express.Router();
-const staff = requireRole(...ADMIN);
+const staff = requireCategory(CATEGORIES.VEHICLE);
 
 router.post("/user/vehicle/user/add", verifyToken, staff, controller.addVehicleUserData);
 router.put("/user/vehicle/user/update/:vehicle_user_id", verifyToken, staff, controller.updateVehicleUserData);

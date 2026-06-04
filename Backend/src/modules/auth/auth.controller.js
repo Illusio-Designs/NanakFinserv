@@ -2,6 +2,15 @@
  * Auth controller — thin HTTP layer. All logic lives in auth.service.
  */
 const authService = require("./auth.service");
+const config = require("../../config");
+
+// httpOnly auth cookie options. Secure in production; SameSite=strict limits CSRF.
+const TOKEN_COOKIE_OPTS = {
+  httpOnly: true,
+  secure: config.env === "production",
+  sameSite: "strict",
+  maxAge: config.jwt.expiresIn * 1000, // seconds -> ms
+};
 
 /**
  * POST /api/user/login
@@ -38,6 +47,10 @@ exports.login = async (req, res, next) => {
         .send({ error: "User Not found.", status: false });
     }
 
+    // Set an httpOnly cookie (not JS-readable) AND return the token in the body
+    // for backward compatibility with the current header-based frontend.
+    res.cookie("token", result.token, TOKEN_COOKIE_OPTS);
+
     return res.send({
       token: result.token,
       user: result.user,
@@ -46,6 +59,20 @@ exports.login = async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
+};
+
+/**
+ * POST /api/user/logout
+ * Clears the httpOnly auth cookie. (The header-based flow can simply drop the
+ * token client-side; this exists for the cookie-only flow.)
+ */
+exports.logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: config.env === "production",
+    sameSite: "strict",
+  });
+  return res.send({ message: "Logged out", status: true });
 };
 
 /**

@@ -75,6 +75,10 @@ describe("POST /api/user/login", () => {
       { token: expect.any(String) },
       { where: { user_id: 42 } }
     );
+
+    // and an httpOnly cookie is set
+    const setCookie = res.headers["set-cookie"] || [];
+    expect(setCookie.join(";")).toMatch(/token=.*HttpOnly/i);
   });
 
   it("rejects with 401 when MSG91 does not return success", async () => {
@@ -134,6 +138,16 @@ describe("POST /api/user/verfiy", () => {
       .post("/api/user/verfiy")
       .send({ mobileNumber: VALID_MOBILE });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/user/logout", () => {
+  it("clears the token cookie", async () => {
+    const res = await request(buildApp()).post("/api/user/logout");
+    expect(res.status).toBe(200);
+    const setCookie = (res.headers["set-cookie"] || []).join(";");
+    // clearCookie emits token=; with an expiry in the past
+    expect(setCookie).toMatch(/token=/);
   });
 });
 

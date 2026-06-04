@@ -10,6 +10,7 @@ const { validateLogin, validateMobileOnly } = require("./auth.validator");
 const router = express.Router();
 
 router.post("/user/login", validateLogin, controller.login);
+router.post("/user/logout", controller.logout);
 router.post("/user/verfiy", validateMobileOnly, controller.checkUser);
 router.get("/user/check", controller.ping);
 

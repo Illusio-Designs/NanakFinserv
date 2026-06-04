@@ -10,6 +10,11 @@ module.exports = (req, res, next) => {
     if (authHeader) {
       token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
     }
+    // Also accept the httpOnly cookie (set on login) — enables a cookie-only
+    // frontend without a JS-readable token, while staying backward-compatible.
+    if (!token && req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
 
     if (!token) {
       return res.status(401).json({ ERROR: "Unauthorized!", status: false });

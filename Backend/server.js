@@ -5,6 +5,7 @@ const fileUpload = require("express-fileupload");
 var cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
 const dotenvParseVariables = require("dotenv-parse-variables");
 const { sequelize } = require("./app/models/index");
 const apiRoutes = require("./src/routes");
@@ -100,6 +101,7 @@ app.options("*", cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 // Request logging (debug level so it can be silenced in production via LOG_LEVEL)
 app.use((req, res, next) => {

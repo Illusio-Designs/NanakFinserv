@@ -1,5 +1,6 @@
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
+import config from '../config/apiConfig';
 
 // Auth/session storage helpers (extracted from userAPI.js).
 //
@@ -40,6 +41,16 @@ export const errorHandel = (error) => {
 };
 
 export const logout = (showMessage = true) => {
+  // Best-effort: clear the server-set httpOnly cookie too (no-op if unsupported).
+  try {
+    fetch(`${config.API_URL}/user/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {});
+  } catch (_) {
+    /* ignore */
+  }
+
   Cookies.remove('token');
   Cookies.remove('user');
   Cookies.remove('category');

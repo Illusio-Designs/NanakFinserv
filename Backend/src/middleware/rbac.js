@@ -35,6 +35,15 @@ const CONSUMER_VIEW = [
   ROLES.BUILDER_CONSUMER, ROLES.BUILDING_MANAGER,
 ];
 
+// Business verticals, gated by the JWT `categoryIds` (mirrors the frontend's
+// PrivateLoan/PrivateMediclaim/... route guards). Super admin bypasses.
+const CATEGORIES = {
+  LOAN: 2,
+  MEDICLAIM: 4,
+  LIFE_INSURANCE: 5,
+  VEHICLE: 6,
+};
+
 function requireRole(...allowed) {
   const allow = allowed.map(Number);
   return (req, res, next) => {
@@ -43,6 +52,25 @@ function requireRole(...allowed) {
     return res
       .status(403)
       .json({ message: "Forbidden: insufficient role", status: false });
+  };
+}
+
+/**
+ * Vertical access guard: super admin (role 1) passes; otherwise the caller must
+ * carry the category in their JWT `categoryIds`. Matches the frontend's
+ * category-based route guards.
+ *   requireCategory(CATEGORIES.LOAN)
+ */
+function requireCategory(categoryId) {
+  const cat = Number(categoryId);
+  return (req, res, next) => {
+    const role = req.user && Number(req.user.Role);
+    if (role === ROLES.SUPER_ADMIN) return next();
+    const cats = (req.user && req.user.categoryIds) || [];
+    if (Array.isArray(cats) && cats.map(Number).includes(cat)) return next();
+    return res
+      .status(403)
+      .json({ message: "Forbidden: missing category access", status: false });
   };
 }
 
@@ -72,8 +100,10 @@ function requireSelfOrRoles(paramName, allowedRoles) {
 
 module.exports = {
   requireRole,
+  requireCategory,
   requireSelfOrRoles,
   ROLES,
+  CATEGORIES,
   ADMIN,
   BUILDER_OPS,
   PORTAL,

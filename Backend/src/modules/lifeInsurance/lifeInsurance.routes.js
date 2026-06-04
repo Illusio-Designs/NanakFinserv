@@ -1,15 +1,16 @@
 /**
- * lifeInsurance routes — mounted under /api. Internal staff only.
+ * lifeInsurance routes — mounted under /api.
+ * Vertical access: super admin or users with the Life-Insurance category.
  */
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
-const { requireRole, requireSelfOrRoles, ADMIN } = require("../../middleware/rbac");
+const { requireCategory, requireSelfOrRoles, CATEGORIES, ADMIN } = require("../../middleware/rbac");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./lifeInsurance.controller"));
 const v = require("./lifeInsurance.validator");
 
 const router = express.Router();
-const staff = requireRole(...ADMIN);
+const staff = requireCategory(CATEGORIES.LIFE_INSURANCE);
 
 router.get("/user/list/lifeIns", verifyToken, staff, controller.getAllLifeInsUser);
 router.post("/user/life-insurance/create", verifyToken, staff, controller.createLifeInsurance);
