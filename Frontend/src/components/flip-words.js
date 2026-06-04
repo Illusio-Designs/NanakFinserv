@@ -1,22 +1,12 @@
-"use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, LayoutGroup } from "framer-motion";
-import { cn } from "../styles/utils/cn.ts";
+import React, { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "../styles/utils/cn";
 import '../styles/Colors.css';
 
-export const FlipWords = ({
-  words,
-  duration = 3000,
-  className,
-}: {
-  words: string[];
-  duration?: number;
-  className?: string;
-}) => {
+export const FlipWords = ({ words, duration = 3000, className }) => {
   const [currentWord, setCurrentWord] = useState(words[0]);
-  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
-  // thanks for the fix Julian - https://github.com/Julian-AT
   const startAnimation = useCallback(() => {
     const word = words[words.indexOf(currentWord) + 1] || words[0];
     setCurrentWord(word);
@@ -37,14 +27,8 @@ export const FlipWords = ({
       }}
     >
       <motion.div
-        initial={{
-          opacity: 0,
-          y: 10,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{
           duration: 0.4,
           ease: "easeInOut",
@@ -71,22 +55,19 @@ export const FlipWords = ({
             key={currentWord + index}
             initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{
-              delay: index * 0.08,
-              duration: 0.4,
-            }}
+            transition={{ delay: index * 0.08, duration: 0.4 }}
             className="inline-block"
-            style={{ 
+            style={{
               fontSize: "110px",
-              fontWeight: "bold", 
+              fontWeight: "bold",
               margin: "0px",
-              color: "var(--background-color)", 
-              fontFamily: "var(--font-family-bold)", 
-              position: "relative", 
+              color: "var(--background-color)",
+              fontFamily: "var(--font-family-bold)",
+              position: "relative",
               textTransform: "uppercase",
-              top: "-10px"
+              top: "-10px",
             }}
-            >
+          >
             {letter}
           </motion.span>
         ))}
