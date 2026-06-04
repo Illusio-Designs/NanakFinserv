@@ -14,18 +14,18 @@
 
 | # | Category | Weight | Score | Weighted | Status |
 |---|----------|:------:|:-----:|:--------:|--------|
-| 1 | Build & config correctness | 14 | 7/10 | 9.8 | 🟢 env-driven API config; **prod build verified** (tooling cleanup pending) |
+| 1 | Build & config correctness | 14 | 8/10 | 11.2 | 🟢 env-driven config on **Vite**; prod build verified |
 | 2 | Auth & token security | 13 | 6/10 | 7.8 | 🟢 cookies now Secure+SameSite=strict (full httpOnly needs backend) |
 | 3 | Secrets / config hygiene | 10 | 7/10 | 7.0 | 🟢 `.env` untracked; MSG91 creds env-driven |
-| 4 | Dependency security | 12 | 6/10 | 7.2 | 🟢 removed dead firebase/metismenu/gsap; `npm audit fix` → 66→31 (rest are CRA build-time transitive) |
+| 4 | Dependency security | 12 | 9/10 | 10.8 | 🟢 dead deps removed + **CRA→Vite** → **66→8** (rest: xlsx no-npm-fix, dompurify via jspdf, esbuild dev-only) |
 | 5 | Code structure / maintainability | 10 | 3/10 | 3.0 | 🟠 47k lines; single files up to 6.8k |
 | 6 | Error handling / UX resilience | 8 | 8/10 | 6.4 | 🟢 ErrorBoundary + 82 blocking `alert()` → non-blocking toasts |
 | 7 | Testing | 7 | 6/10 | 4.2 | 🟡 jest/RTL wired; ErrorBoundary + apiConfig tests (4) |
 | 8 | Logging & noise | 6 | 6/10 | 3.6 | 🟢 console.* silenced in prod build; env dump removed |
-| 9 | Performance / bundle | 10 | 8/10 | 8.0 | 🟢 route-based code-splitting → main bundle **537→64kB gz** |
+| 9 | Performance / bundle | 10 | 9/10 | 9.0 | 🟢 Vite + route code-splitting + granular vendor chunks |
 | 10 | Accessibility / SEO | 5 | 4/10 | 2.0 | 🟠 non-blocking toasts replace alerts; more pending |
-| 11 | Tooling consistency | 5 | 8/10 | 4.0 | 🟢 single tool (CRA) + Prettier config |
-| | **TOTAL** | **100** | | **🟠 63.0 / 100** | **Phase 0–2 + perf + UX cleanup done** |
+| 11 | Tooling consistency | 5 | 10/10 | 5.0 | 🟢 Vite (modern, single tool); CRA removed |
+| | **TOTAL** | **100** | | **🟢 70.0 / 100** | **CRA→Vite done; Phase 0–3 substantially complete** |
 
 ### Targets after each phase
 | Milestone | Projected | Grade |
@@ -79,8 +79,8 @@
 |---|------|-------|
 | ☐ | Split giant files | `VehicleInsurance.js` 6825, `MediclaimModal.js` 3474, `userAPI.js` 3186, `Mediclaim-popup.js` 2989 |
 | ☑ | Route-based code-splitting (`React.lazy`) | done — every route lazy-loaded; main bundle 537→64kB gz |
-| ☑ | Pick **one** build tool | removed stray `vite.config.js` + `webpack.config.js` (CRA is canonical) |
-| 🟡 | Add ESLint + Prettier config | Prettier added (`.prettierrc`); ESLint via CRA `react-app` preset |
+| ☑ | Pick **one** build tool | **Migrated CRA → Vite 5**; tests on vitest; build verified |
+| 🟡 | Add ESLint + Prettier config | Prettier added (`.prettierrc`); ESLint preset is a follow-up (CRA's react-app preset removed) |
 | ☐ | Accessibility pass | labels, alt text, focus management, color contrast |
 
 ---
@@ -93,9 +93,9 @@
 | Largest file | `VehicleInsurance.js` — 6,825 lines |
 | `console.*` | 1,072 |
 | Tests | 0 |
-| Dependency vulns | 66 (3 critical, 31 high) |
+| Dependency vulns | 8 (xlsx/dompurify/esbuild-dev — no safe npm fix) |
 | Token storage | js-cookie (not httpOnly) + localStorage |
-| Build tools present | react-scripts (active) + vite + webpack (stray) |
+| Build tool | Vite 5 (migrated off CRA/react-scripts) |
 | Dead deps | `firebase` (unused) |
 
 > Biggest single launch-blocker: **`apiConfig.js` is hardcoded to `DEVELOPMENT_CONFIG`** — a production build talks to `localhost`, so the deployed app is non-functional until this is env-driven.

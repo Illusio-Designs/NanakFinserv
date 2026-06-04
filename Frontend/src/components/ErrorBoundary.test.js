@@ -18,7 +18,7 @@ describe('ErrorBoundary', () => {
 
   it('shows the fallback when a child throws', () => {
     // Silence the expected React error log for this test.
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
       <ErrorBoundary>
         <Boom />
