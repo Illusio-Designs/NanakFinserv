@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
 import Modal from '../../components/common/Modal';
@@ -260,7 +261,7 @@ const Loandisbuss = () => {
 
   const handleSearch = () => {
     if (!startDate || !endDate) {
-      alert("Please select both start and end dates.");
+      toast.error("Please select both start and end dates.");
       return;
     }
     // Save dates to localStorage

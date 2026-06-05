@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import Modal from './common/Modal';
 import Button from './common/Button';
@@ -1393,7 +1394,7 @@ const handleSubmit = async (e) => {
     if (!file) return;
     
     if (file.type !== "application/pdf") {
-      alert("Please upload a valid PDF file.");
+      toast.error("Please upload a valid PDF file.");
       return;
     }
     
@@ -1454,7 +1455,7 @@ const handleSubmit = async (e) => {
     if (file && file.type === "application/pdf") {
       setCustomDocuments(prev => prev.map((doc, i) => i === idx ? { ...doc, file } : doc));
     } else if (file) {
-      alert("Please upload a valid PDF file.");
+      toast.error("Please upload a valid PDF file.");
     }
   };
 
@@ -2621,7 +2622,7 @@ const handleSubmit = async (e) => {
                       handlePreviousPolicyChange('PdfFile', file);
                       handlePreviousPolicyChange('PdfFileName', file.name);
                     } else {
-                      alert("Please upload a valid PDF file.");
+                      toast.error("Please upload a valid PDF file.");
                     }
                   }}
                 />
@@ -2747,7 +2748,7 @@ const handleSubmit = async (e) => {
                         handlePreviousPolicyChange('ClaimStatementPDFfile', file);
                         handlePreviousPolicyChange('ClaimStatementPDFfileName', file.name);
                       } else {
-                        alert("Please upload a valid PDF file.");
+                        toast.error("Please upload a valid PDF file.");
                       }
                     }}
                   />

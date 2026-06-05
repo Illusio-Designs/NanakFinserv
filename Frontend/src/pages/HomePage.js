@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Footer from "../components/Footer.js";
-import { FlipWords } from "../components/flip-words.tsx";
+import { FlipWords } from "../components/flip-words";
 import Slider from "../components/Slider.js";
 import Popup from "../components/popup.js";
 import '../styles/pages/HomePage.css';

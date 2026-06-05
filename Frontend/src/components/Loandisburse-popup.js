@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect } from 'react';
 import './popup-u.css';
 import Cookies from 'js-cookie';
@@ -57,7 +58,7 @@ const LoandisbursePopup = ({ isOpen, onClose, fetchApi, initialData }) => {
         file: file
       }));
     } else {
-      alert('Please upload a PDF file.');
+      toast.error('Please upload a PDF file.');
     }
   };
 
@@ -65,7 +66,7 @@ const LoandisbursePopup = ({ isOpen, onClose, fetchApi, initialData }) => {
     e.preventDefault();
 
     if (!formState.file) {
-      alert('File is required.');
+      toast.error('File is required.');
       return;
     }
     console.log(initialData,'initialData')

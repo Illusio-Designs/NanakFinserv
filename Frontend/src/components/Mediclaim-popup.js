@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import './popup-u.css';
 import { addMediclaimUser, DOWNLOAD_URL, getAllMediclaimCompany, getAllMediclaimProduct, updateMediclaimUser } from '../serviceAPI/userAPI';
@@ -377,7 +378,7 @@ const MediclaimPopup = ({ isOpen, onClose, fetchApi, initialData, view }) => {
         },
       }));
     } else {
-      alert("Please upload a valid PDF file.");
+      toast.error("Please upload a valid PDF file.");
     }
   };
 
@@ -674,7 +675,7 @@ const MediclaimPopup = ({ isOpen, onClose, fetchApi, initialData, view }) => {
         // Validate mobile number format
         const regex = /^\d{10}$/;
         if (!regex.test(formState?.formData?.MobileNumber)) {
-          alert('Mobile number is invalid');
+          toast.error('Mobile number is invalid');
           // setIsSubmitting(false); // Reset the flag
           return;
         }
@@ -2547,7 +2548,7 @@ const MediclaimPopup = ({ isOpen, onClose, fetchApi, initialData, view }) => {
                           },
                         }));
                       } else {
-                        alert("Please upload a valid PDF file.");
+                        toast.error("Please upload a valid PDF file.");
                       }
                     }}
                   />

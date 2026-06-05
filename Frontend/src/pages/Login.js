@@ -5,6 +5,11 @@ import { login } from '../serviceAPI/userAPI';
 import FlagDropdown from './Flag';
 import toast from 'react-hot-toast';
 
+// MSG91 widget credentials — env-driven (fall back to the existing values so
+// local dev keeps working). Set REACT_APP_MSG91_* per environment.
+const MSG91_WIDGET_ID = process.env.REACT_APP_MSG91_WIDGET_ID || '346776667162353937323330';
+const MSG91_TOKEN_AUTH = process.env.REACT_APP_MSG91_TOKEN_AUTH || '426738TclvGmDmM66a8ec44P1';
+
 const Login = () => {
   const navigate = useNavigate();
   const firstOtpInputRef = useRef(Array.from({ length: 6 }).map(() => React.createRef()));
@@ -22,8 +27,8 @@ const Login = () => {
     }
     try {
       window.initSendOTP({
-        widgetId: "346776667162353937323330",
-        tokenAuth: "426738TclvGmDmM66a8ec44P1",
+        widgetId: MSG91_WIDGET_ID,
+        tokenAuth: MSG91_TOKEN_AUTH,
         exposeMethods: true,
         success: () => console.log('[Login] Provider initialized'),
         failure: (e) => console.warn('[Login] Provider init failed', e)
@@ -37,7 +42,7 @@ const Login = () => {
   const handleSendOtp = useCallback(async (isResend = false) => {
     const regex = /^\d{10}$/;
     if (!regex.test(mobileNumber)) {
-      alert('Mobile number invalid');
+      toast.error('Mobile number invalid');
       return;
     }
 
@@ -87,8 +92,8 @@ const Login = () => {
         if (window.initSendOTP) {
           console.warn('[Login] Retrying via initSendOTP after sendOtp error');
           window.initSendOTP({
-            widgetId: "346776667162353937323330",
-            tokenAuth: "426738TclvGmDmM66a8ec44P1",
+            widgetId: MSG91_WIDGET_ID,
+            tokenAuth: MSG91_TOKEN_AUTH,
             exposeMethods: true,
             identifier,
             success: successCb,
@@ -99,8 +104,8 @@ const Login = () => {
     } else if (window.initSendOTP) {
       // Fallback: initialize with identifier if exposed method not present
       window.initSendOTP({
-        widgetId: "346776667162353937323330",
-        tokenAuth: "426738TclvGmDmM66a8ec44P1",
+        widgetId: MSG91_WIDGET_ID,
+        tokenAuth: MSG91_TOKEN_AUTH,
         exposeMethods: true,
         identifier,
         success: successCb,
@@ -118,12 +123,11 @@ const Login = () => {
 
     // Call the verifyOtp method
     window.verifyOtp(code, async (data) => {
-      console.log('OTP verified successfully:', data);
-      console.log('🔍 [LOGIN] Attempting login after OTP verification...');
-      
-      // The OTP provider returns a JWT token, so we can directly call login
-      // Skip loginVerfiy since OTP is already verified by the provider
-      const loggedIn = await login(mobileNumber);
+      // MSG91 returns the access-token on success (in data.message). Pass it to
+      // the backend so the OTP can be verified server-side before login.
+      const accessToken =
+        (data && (data.message || data['access-token'] || data.accessToken)) || '';
+      const loggedIn = await login(mobileNumber, accessToken);
       console.log('🔍 [LOGIN] login result:', loggedIn);
       
       if (loggedIn) {

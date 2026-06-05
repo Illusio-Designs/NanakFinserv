@@ -3,16 +3,38 @@ var bodyParser = require("body-parser");
 const path = require("path");
 const fileUpload = require("express-fileupload");
 var cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
 const dotenvParseVariables = require("dotenv-parse-variables");
 const { sequelize } = require("./app/models/index");
-const userRoutes = require("./app/routes/users.routes");
+const apiRoutes = require("./src/routes");
 const fs = require("fs");
-const alterTables = require("./app/config/db.migration");
+const logger = require("./src/config/logger");
 
 let env = require("dotenv").config();
 env = dotenvParseVariables(env.parsed);
 
 const app = express();
+
+// Security headers. This API serves file downloads to a separate frontend
+// origin, so allow cross-origin resource loading and skip COEP/CSP (this is a
+// JSON+files API, not an HTML app).
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false,
+  })
+);
+
+// Behind a proxy/load balancer (needed for correct client IPs in rate limiting)
+app.set("trust proxy", 1);
+
+// Prometheus metrics: record every request, expose /metrics.
+const { metricsMiddleware, metricsHandler } = require("./src/config/metrics");
+app.use(metricsMiddleware);
+app.get("/metrics", metricsHandler);
 
 // Middleware to handle file uploads
 app.use(
@@ -34,10 +56,13 @@ if (!fs.existsSync(appUploadsDir)) {
   fs.mkdirSync(appUploadsDir);
 }
 
-app.use("/uploads", express.static(uploadsDir));
-app.use("/public/uploads", express.static(uploadsDir));
+// Access control: blog images are public; all other uploaded files (customer
+// documents) require a valid JWT (header or ?token=).
+const uploadsAccess = require("./src/middleware/uploadsAccess");
+app.use("/uploads", uploadsAccess, express.static(uploadsDir));
+app.use("/public/uploads", uploadsAccess, express.static(uploadsDir));
 // Also serve files from app/uploads directory
-app.use("/uploads", express.static(appUploadsDir));
+app.use("/uploads", uploadsAccess, express.static(appUploadsDir));
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -56,102 +81,138 @@ const allowedOrigins = [
   "http://localhost:3005",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      console.log("CORS Request from origin:", origin);
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        console.log("CORS: Origin allowed");
-        return callback(null, true);
-      } else {
-        console.log("CORS: Origin blocked:", origin);
-        console.log("Allowed origins:", allowedOrigins);
-        return callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "token"],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow non-browser clients (no Origin header) and whitelisted origins.
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "token"],
+  credentials: true,
+};
 
-app.options("*", cors());
+// Apply the SAME options to preflight requests (the previous `cors()` wildcard
+// reflected every origin and defeated the allow-list).
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
 
-// Add basic request logging
+// Request logging (debug level so it can be silenced in production via LOG_LEVEL)
 app.use((req, res, next) => {
-  console.log(`📥 [SERVER] ${req.method} ${req.path} - ${new Date().toISOString()}`);
+  logger.debug({ method: req.method, path: req.path }, "request");
   next();
 });
 
-// Error handling for invalid JSON payloads
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
-    console.error("Invalid JSON payload:", err);
-    return res.status(400).json({ message: "Invalid JSON payload" });
-  }
-  next(err);
+// Rate limiting: a general cap for the whole API, and a stricter cap on the
+// login endpoint to blunt OTP/credential brute-forcing.
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts, please try again later.", status: false },
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error("Stack trace:", err.stack);
-  res.status(500).json({ message: "Internal Server Error" });
-});
+app.use("/api/user/login", loginLimiter);
+app.use("/api", apiLimiter);
 
 const db = require("./app/models/index");
 
-// Sync database and run migrations
+// Verify the DB connection. Fail-fast: if the database is unreachable we must
+// NOT start serving traffic. Schema changes are managed by Sequelize CLI
+// migrations (`npm run db:migrate`), run during deploy — not on boot.
 const initializeDatabase = async () => {
-  try {
-    // Skip date fix to avoid errors
-    console.log("Skipping date fix to avoid database errors...");
-    
-    // Sync all models - temporarily disable alter to avoid index issues
-    // await db.sequelize.sync({ alter: false });
-    console.log("Database sync temporarily disabled to avoid date issues");
-
-    // Run table alterations for new fields only
-    console.log("Running table alterations for new fields...");
-    await alterTables();
-    console.log("Table alterations completed successfully");
-  } catch (error) {
-    console.error("Error initializing database:", error);
-    // Continue with server startup even if database sync fails
-    console.log("Continuing with server startup despite database sync issues...");
-  }
+  await db.sequelize.authenticate(); // throws if the DB is unreachable
+  logger.info("Database connection established");
 };
 
-// Date fix function removed to avoid database errors
-
-// Health check route
+// Liveness: process is up.
 app.get("/health", (req, res) => {
-  res.json({ message: "Welcome to NanakFinserv API!" });
+  res.json({ status: "ok", uptime: process.uptime() });
+});
+
+// Readiness: can we reach the database? (for load-balancer / k8s probes)
+app.get("/ready", async (req, res) => {
+  try {
+    await db.sequelize.authenticate();
+    res.json({ status: "ready" });
+  } catch (e) {
+    logger.warn({ err: e }, "Readiness check failed");
+    res.status(503).json({ status: "not-ready" });
+  }
 });
 
 // API routes
 app.get("/api", (req, res) => {
   res.json({ message: "API is running!" });
 });
-app.use("/api", userRoutes);
+// All API routes, split into per-domain modules under src/modules and
+// aggregated in src/routes/index.js (replaces the legacy users.routes.js).
+app.use("/api", apiRoutes);
+
+// Unmatched routes -> JSON 404 (instead of Express' default HTML page).
+app.use((req, res) => {
+  res.status(404).json({ message: "Not found", status: false });
+});
+
+// ── Error handlers (must be registered AFTER all routes) ──────────────────
+// Invalid JSON payloads from body-parser.
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ message: "Invalid JSON payload" });
+  }
+  return next(err);
+});
+
+// CORS rejections -> 403 rather than a generic 500.
+app.use((err, req, res, next) => {
+  if (err && err.message === "Not allowed by CORS") {
+    return res.status(403).json({ message: "Origin not allowed", status: false });
+  }
+  return next(err);
+});
+
+// Catch-all: log server-side, return a safe message to the client.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  logger.error({ err, path: req.path }, "Unhandled error");
+  res.status(500).json({ message: "Internal Server Error" });
+});
+
 const PORT = process.env.PORT;
 
-// Initialize database and start server
-initializeDatabase().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`🔍 API endpoint: http://localhost:${PORT}/api`);
-    console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+// Initialize database, then start the server. Fail-fast on DB errors.
+initializeDatabase()
+  .then(() => {
+    const server = app.listen(PORT, () => {
+      logger.info({ port: PORT }, "Server is running");
+    });
+
+    // Graceful shutdown.
+    const shutdown = (signal) => {
+      logger.info({ signal }, "Shutting down");
+      server.close(() => {
+        db.sequelize.close().finally(() => process.exit(0));
+      });
+      // Force-exit if connections don't drain in time.
+      setTimeout(() => process.exit(1), 10000).unref();
+    };
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+  })
+  .catch((error) => {
+    logger.fatal({ err: error }, "Failed to connect to the database; exiting");
+    process.exit(1);
   });
-}).catch((error) => {
-  console.error("Failed to initialize database:", error);
-  // Start server anyway, even if database initialization fails
-  app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT} (with database issues)`);
-    console.log(`🔍 API endpoint: http://localhost:${PORT}/api`);
-    console.log(`🔍 Health check: http://localhost:${PORT}/health`);
-  });
-});

@@ -3,14 +3,13 @@
   "version": "0.1.0",
   "homepage": "/",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
-    "@metismenu/react": "^0.0.3",
-    "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.2",
@@ -18,12 +17,9 @@
     "chart.js": "^4.4.6",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
-    "firebase": "^9.14.0",
     "framer-motion": "^11.15.0",
-    "gsap": "^3.13.0",
     "js-cookie": "^3.0.5",
     "jspdf": "^2.5.2",
-    "metismenu": "^3.0.7",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.2.0",
     "react-datepicker": "^4.25.0",
@@ -33,23 +29,20 @@
     "react-owl-carousel": "^2.3.3",
     "react-phone-input-2": "^2.15.0",
     "react-router-dom": "^6.23.1",
-    "react-scripts": "5.0.1",
     "react-select": "^5.10.1",
     "tailwind-merge": "^2.3.0",
     "web-vitals": "^2.1.4",
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "react-scripts start --port 3000",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 3000",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --max-warnings=99999",
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\""
   },
   "browserslist": {
     "production": [
@@ -64,6 +57,16 @@
     ]
   },
   "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11"
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@eslint/js": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.6.0",
+    "jsdom": "^25.0.1",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
   }
 }

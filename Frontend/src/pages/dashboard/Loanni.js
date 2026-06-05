@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
 import Table from '../../components/common/Table';
@@ -142,7 +143,7 @@ const Loanni = () => {
 
   const handleStatusUpdate = async () => {
     if (status === 'notInterested' && !remarks.trim()) {
-      alert('Please enter remarks for not interested status');
+      toast.error('Please enter remarks for not interested status');
       return;
     }
 

@@ -1,46 +1,47 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate, Outlet, BrowserRouter } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import HomePage from './pages/HomePage';
-import Services from './pages/Services';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Blog from './pages/Blog';
-import Login from './pages/Login';
-import Dashboard from './pages/dashboard/Dashboard';
-import LifeInsurance from './pages/dashboard/LifeInsurance';
-import LifeInsuranceRenewalSheet from './pages/dashboard/LifeInsuranceRenewalSheet';
-import VehicleInsurance from './pages/dashboard/VehicleInsurance';
-import VehiclePolicies from './pages/dashboard/VehiclePolicies';
-import Mediclaim from './pages/dashboard/Mediclaim';
-import MediclaimAllPolicies from './pages/dashboard/MediclaimAllPolicies';
-import Loan from './pages/dashboard/Loan';
-import LoanI from './pages/dashboard/Loaninterested';
-import LoanNI from './pages/dashboard/Loanni';
-import LoanCancelled from './pages/dashboard/Loancancelled';
-import Consumer from './pages/dashboard/Consumer';
-import Builder from './pages/dashboard/Builder';
-import Unit from './pages/dashboard/Unit';
 import CustomScrollbar from './CustomScrollbar';
 import Popup from './components/popup';
-// import DataComponent from './components/DataComponent';
-import User from './pages/dashboard/User';
 import Cookies from 'js-cookie';
-import Building from './pages/dashboard/Building';
-import Loandisbuss from './pages/dashboard/Loandisbuss';
 import { ToasterProvider } from './components/Toaster';
-import MediclaimCompany from './pages/dashboard/MediclaimCompany';
-import MediclaimProduct from './pages/dashboard/MedicliamProduct';
 import { Toaster } from 'react-hot-toast';
-import LoanConfiguration from './pages/dashboard/LoanConfiguration';
-import RenewalSheet from './pages/dashboard/RenewalSheet';
-import Inquiries from './pages/dashboard/Inquiries';
-import BlogDashboard from './pages/dashboard/Blog';
-import VehicleRenewalSheet from './pages/dashboard/VehicleRenewalSheet';
-import Support from './pages/dashboard/Support';
+import ErrorBoundary from './components/ErrorBoundary';
 
-import BlogDetail from './pages/BlogDetail';
-import WidgetDemo from './pages/WidgetDemo';
+// Route components are lazy-loaded so each page is its own chunk (keeps the
+// initial bundle small instead of shipping every dashboard page up front).
+const HomePage = lazy(() => import('./pages/HomePage'));
+const Services = lazy(() => import('./pages/Services'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Blog = lazy(() => import('./pages/Blog'));
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
+const LifeInsurance = lazy(() => import('./pages/dashboard/LifeInsurance'));
+const LifeInsuranceRenewalSheet = lazy(() => import('./pages/dashboard/LifeInsuranceRenewalSheet'));
+const VehicleInsurance = lazy(() => import('./pages/dashboard/VehicleInsurance'));
+const VehiclePolicies = lazy(() => import('./pages/dashboard/VehiclePolicies'));
+const Mediclaim = lazy(() => import('./pages/dashboard/Mediclaim'));
+const MediclaimAllPolicies = lazy(() => import('./pages/dashboard/MediclaimAllPolicies'));
+const Loan = lazy(() => import('./pages/dashboard/Loan'));
+const LoanI = lazy(() => import('./pages/dashboard/Loaninterested'));
+const LoanNI = lazy(() => import('./pages/dashboard/Loanni'));
+const LoanCancelled = lazy(() => import('./pages/dashboard/Loancancelled'));
+const Consumer = lazy(() => import('./pages/dashboard/Consumer'));
+const Builder = lazy(() => import('./pages/dashboard/Builder'));
+const Unit = lazy(() => import('./pages/dashboard/Unit'));
+const User = lazy(() => import('./pages/dashboard/User'));
+const Building = lazy(() => import('./pages/dashboard/Building'));
+const Loandisbuss = lazy(() => import('./pages/dashboard/Loandisbuss'));
+const MediclaimCompany = lazy(() => import('./pages/dashboard/MediclaimCompany'));
+const MediclaimProduct = lazy(() => import('./pages/dashboard/MedicliamProduct'));
+const LoanConfiguration = lazy(() => import('./pages/dashboard/LoanConfiguration'));
+const RenewalSheet = lazy(() => import('./pages/dashboard/RenewalSheet'));
+const Inquiries = lazy(() => import('./pages/dashboard/Inquiries'));
+const BlogDashboard = lazy(() => import('./pages/dashboard/Blog'));
+const VehicleRenewalSheet = lazy(() => import('./pages/dashboard/VehicleRenewalSheet'));
+const Support = lazy(() => import('./pages/dashboard/Support'));
+const BlogDetail = lazy(() => import('./pages/BlogDetail'));
+const WidgetDemo = lazy(() => import('./pages/WidgetDemo'));
 
 const directories = [
   { "Dashboard": [] },
@@ -248,6 +249,7 @@ const AppContent = () => {
       <Toaster position="top-right" reverseOrder={false} />
       <div className="App">
         {/* Remove global Navbar rendering here */}
+        <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading…</div>}>
         <Routes>
           <Route exact path="/login" element={<Login />} />
           <Route path="/" element={<HomePage />} />
@@ -285,6 +287,7 @@ const AppContent = () => {
           <Route path="/widgets" element={<WidgetDemo />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+        </Suspense>
         <Popup isOpen={location.pathname === ''} onClose={() => { }} />
         <CustomScrollbar />
       </div>
@@ -294,9 +297,11 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

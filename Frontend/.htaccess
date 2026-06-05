@@ -7,18 +7,34 @@
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Redirect all other requests to index.html
+    # SPA fallback: route everything else to index.html
     RewriteRule ^ index.html [L]
 </IfModule>
 
-# Set MIME types for static files
+# MIME types
 AddType application/javascript .js
 AddType text/css .css
 AddType application/json .json
 
-# Enable caching for static assets
 <IfModule mod_headers.c>
-    <FilesMatch "\.(html|css|js|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|otf)$">
-        Header set Cache-Control "public, max-age=31536000"
+    # ── Security headers ──────────────────────────────────────────────
+    # Force HTTPS for 2 years (header only honored over HTTPS).
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # Content Security Policy — allows the CDNs + API this app uses. Tighten the
+    # 'unsafe-inline'/'unsafe-eval' once inline styles/scripts are removed.
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://code.jquery.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://control.msg91.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self' https://api.nanakfinserv.com https://control.msg91.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+
+    # ── Caching ───────────────────────────────────────────────────────
+    # Hashed build assets are immutable -> cache hard.
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|otf)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    # HTML / JSON must revalidate so deploys take effect immediately.
+    <FilesMatch "\.(html|json)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
     </FilesMatch>
 </IfModule>

@@ -661,7 +661,7 @@ const EditVehiclePopup = ({ data, onClose, onSubmit, mode = 'edit', isOpen }) =>
           PolicyPlanType: formData.PolicyPlanType,
           NomineeRelation: formData.NomineeRelation
         });
-            alert('Please fill all required fields: Vehicle Type, Policy Type, Policy Plan Type, Nominee Relation.');
+            toast.error('Please fill all required fields: Vehicle Type, Policy Type, Policy Plan Type, Nominee Relation.');
             return;
         }
         // Map VehicleType (name) to vehicle_id

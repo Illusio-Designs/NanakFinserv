@@ -1,43 +1,36 @@
 var jwt = require('jsonwebtoken');
 var key = require('../config/authConfig');
-const db = require("../models/index");
-const User = db.user;
+const logger = require('../../src/config/logger');
 
 module.exports = (req, res, next) => {
-  console.log('🔍 [JWT] Middleware called for:', req.method, req.path);
-
   try {
     const authHeader = req.headers['authorization'] || req.headers['token']; // accept both
     let token = null;
 
     if (authHeader) {
-      if (authHeader.startsWith('Bearer ')) {
-        token = authHeader.slice(7);
-      } else {
-        token = authHeader;
-      }
+      token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+    }
+    // Also accept the httpOnly cookie (set on login) — enables a cookie-only
+    // frontend without a JS-readable token, while staying backward-compatible.
+    if (!token && req.cookies && req.cookies.token) {
+      token = req.cookies.token;
     }
 
-    if (token) {
-      console.log('🔍 [JWT] Token received:', token.substring(0, 20) + '...');
-      console.log('🔍 [JWT] Token length:', token.length);
-
-      jwt.verify(token, key.secret, (err, decoded) => {
-        if (err) {
-          console.log('❌ [JWT] Token verification failed:', err.message);
-          return res.status(401).json({ ERROR: "Token Expired!", status: false });
-        } else {
-          req.user = decoded;
-          console.log('✅ [JWT] Token verified successfully:', req.user);
-          next();
-        }
-      });
-    } else {
-      console.log('❌ [JWT] No token provided');
+    if (!token) {
       return res.status(401).json({ ERROR: "Unauthorized!", status: false });
     }
+
+    jwt.verify(token, key.secret, (err, decoded) => {
+      if (err) {
+        // Do NOT log the token or decoded payload (PII / secret material).
+        logger.debug({ path: req.path }, 'JWT verification failed');
+        return res.status(401).json({ ERROR: "Token Expired!", status: false });
+      }
+      req.user = decoded;
+      return next();
+    });
   } catch (e) {
-    console.error('❌ [JWT] Exception caught:', e);
+    logger.error({ err: e }, 'JWT middleware exception');
     return res.status(401).json({ ERROR: "Token Expired!", status: false });
   }
 };

@@ -1,18 +1,10 @@
 // Environment Configuration
-// This file handles environment variables properly
-
-// Debug: Log all available environment variables
-console.log('🔍 All process.env variables:', process.env);
-console.log('🔍 REACT_APP_API_URL from process.env:', process.env.REACT_APP_API_URL);
-console.log('🔍 REACT_APP_DOWNLOAD_URL from process.env:', process.env.REACT_APP_DOWNLOAD_URL);
-console.log('🔍 REACT_APP_BASE_URL from process.env:', process.env.REACT_APP_BASE_URL);
+// This file handles environment variables properly.
 
 // Get environment variables with fallbacks
 const getEnvVar = (key, defaultValue = '') => {
   const value = process.env[key];
-  console.log(`🔍 Checking ${key}:`, value);
   if (value === undefined || value === null || value === '') {
-    console.warn(`⚠️ Environment variable ${key} is not defined, using default: ${defaultValue}`);
     return defaultValue;
   }
   return value;
