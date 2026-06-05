@@ -1,7 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
-import config from '../config/apiConfig';
 import {
   setToken,
   setUser,
@@ -11,39 +10,13 @@ import {
   manualLogout,
   errorHandel,
 } from './authStorage';
+import { API_URL, DOWNLOAD_URL, BASE_URL } from './apiBase';
 
-// Add axios response interceptor for global 401 handling
-axios.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    if (error.response?.status === 401) {
-      // User is unauthenticated, logout and redirect to login
-      console.log('🔍 [AXIOS INTERCEPTOR] 401 Unauthorized - Logging out user');
-      logout(false); // Don't show message as errorHandel will show it
-    }
-    return Promise.reject(error);
-  }
-);
-
-// Use direct API configuration
-export const API_URL = config.API_URL;
-export const DOWNLOAD_URL = config.DOWNLOAD_URL;
-export const BASE_URL = config.BASE_URL;
-
-// Debug exported values
-console.log('🔧 API Configuration from apiConfig.js:');
-console.log('API_URL:', API_URL);
-console.log('DOWNLOAD_URL:', DOWNLOAD_URL);
-console.log('BASE_URL:', BASE_URL);
-
-// Additional validation
-if (API_URL.includes('localhost')) {
-  console.log('🔧 [DEV MODE] API_URL is using localhost for development:', API_URL);
-} else {
-  console.log('✅ API_URL is using live URL:', API_URL);
-}
+// API base (constants + 401 interceptor) now lives in ./apiBase; the
+// building-manager calls in ./buildingManagerApi. Re-exported here so existing
+// imports from '../serviceAPI/userAPI' keep working.
+export { API_URL, DOWNLOAD_URL, BASE_URL };
+export * from './buildingManagerApi';
 
 
 const login = async (mobileNumber, accessToken) => {
@@ -1211,118 +1184,6 @@ export const getUserCountList = async () => {
   }
 };
 
-// Building Manager APIs
-export const createBuildingManager = async (data) => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.post(`${API_URL}/user/building-manager/create`, data, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating building manager:', error);
-    errorHandel(error);
-    return false;
-  }
-};
-
-export const assignBuildingManager = async (data) => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.post(`${API_URL}/user/building-manager/assign`, data, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error assigning building manager:', error);
-    errorHandel(error);
-    return false;
-  }
-};
-
-export const getAllBuildingManagers = async () => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.get(`${API_URL}/user/building-manager/list`, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching building managers:', error);
-    errorHandel(error);
-    return false;
-  }
-};
-
-export const getBuildingManagerStats = async () => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.get(`${API_URL}/user/building-manager/stats`, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching building manager stats:', error);
-    errorHandel(error);
-    return false;
-  }
-};
-
-export const getBuildingManagerDashboardStats = async () => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.get(`${API_URL}/user/building-manager/dashboard-stats`, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching building manager dashboard stats:', error);
-    errorHandel(error);
-    return false;
-  }
-};
-
-export const updateBuildingManager = async (id, data) => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.put(`${API_URL}/user/building-manager/update/${id}`, data, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating building manager:', error);
-    errorHandel(error);
-    return false;
-  }
-};
-
-export const removeBuildingManager = async (id) => {
-  const headers = {
-    headers: {
-      'token': Cookies.get('token'),
-    }
-  }
-  try {
-    const response = await axios.put(`${API_URL}/user/building-manager/remove/${id}`, {}, headers);
-    return response.data;
-  } catch (error) {
-    console.error('Error removing building manager:', error);
-    errorHandel(error);
-    return false;
-  }
-};
 
 export const getLoanAmounFilterDate = async (data) => {
   const headers = {
