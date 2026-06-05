@@ -1,70 +1,74 @@
-# Getting Started with Create React App
+# NanakFinserv — Frontend (Web)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React 18 single-page app (built with **Vite 5**) for the NanakFinserv platform —
+public site + role-based dashboards (loan, mediclaim, life/vehicle insurance,
+builder/consumer management). Consumes the backend API.
 
-## Available Scripts
+## Tech stack
+- **React 18** + **react-router-dom 6**, built with **Vite 5**
+- **axios** API layer, **react-hot-toast** notifications, **js-cookie** session
+- **MSG91** OTP login widget
+- **vitest + @testing-library/react** tests, **ESLint (flat) + Prettier**
 
-In the project directory, you can run:
+## Project structure
+```
+Frontend/
+├── index.html                # Vite entry
+├── vite.config.js            # Vite + vitest config
+├── src/
+│   ├── index.js / App.js      # entry + router (route-based code-splitting)
+│   ├── config/                # apiConfig (env-driven), suppressConsole
+│   ├── components/            # shared UI incl. ErrorBoundary
+│   ├── pages/ , pages/dashboard/   # route components (lazy-loaded)
+│   ├── serviceAPI/            # API layer: apiBase, authStorage, *Api, userAPI
+│   └── styles/
+└── public/                   # static assets served at /
+```
 
-### `npm start`
+## Setup
+```bash
+npm ci
+cp .env.example .env     # set the API + MSG91 values for your environment
+npm run dev              # Vite dev server (http://localhost:3000)
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Environment variables (`.env`, build-time)
+| Var | Notes |
+|-----|-------|
+| `REACT_APP_API_URL` | backend API base, e.g. `https://api.nanakfinserv.com/api` |
+| `REACT_APP_DOWNLOAD_URL` | file download base |
+| `REACT_APP_BASE_URL` | backend origin |
+| `REACT_APP_MSG91_WIDGET_ID` / `REACT_APP_MSG91_TOKEN_AUTH` | MSG91 OTP widget |
+| `NODE_ENV` | `production` for prod builds |
+| `GENERATE_SOURCEMAP` | `false` to skip source maps |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+If env vars are unset, `apiConfig` falls back by hostname (localhost → dev API,
+otherwise prod API).
 
-### `npm test`
+## Scripts
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` / `npm start` | Vite dev server |
+| `npm run build` | production build → `build/` |
+| `npm run preview` | serve the built app |
+| `npm test` / `test:watch` | vitest |
+| `npm run lint` / `format` | ESLint / Prettier |
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Deployment
+```bash
+npm ci
+npm run build            # outputs to build/
+# deploy build/ to any static host (Apache .htaccess included for SPA routing,
+# security headers (HSTS/CSP/X-Frame-Options), and asset caching)
+```
+Set `REACT_APP_API_URL` to the correct backend for the target environment
+**before** building (values are inlined at build time).
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Notes
+- **Auth/session:** the OTP is collected via the MSG91 widget; the resulting
+  access-token is sent to the backend, which verifies it server-side and returns
+  a JWT (stored in a `Secure`/`SameSite` cookie; the backend also sets an
+  httpOnly cookie).
+- **Resilience:** a top-level `ErrorBoundary` prevents white-screens; user
+  messages use toasts.
+- **Performance:** routes are lazy-loaded (code-split) to keep the initial bundle small.
