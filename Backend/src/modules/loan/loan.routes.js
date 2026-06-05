@@ -6,11 +6,13 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const { requireCategory, CATEGORIES } = require("../../middleware/rbac");
+const { requireVerticalEnabled } = require("../../middleware/verticals");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./loan.controller"));
 const v = require("./loan.validator");
 
 const router = express.Router();
+router.use(requireVerticalEnabled("loan")); // 503 when the Loan vertical is off
 const staff = requireCategory(CATEGORIES.LOAN);
 
 router.get("/user/list/loan", verifyToken, staff, controller.getAllLoanUser);

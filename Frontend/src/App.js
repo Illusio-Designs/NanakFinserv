@@ -42,6 +42,7 @@ const VehicleRenewalSheet = lazy(() => import('./pages/dashboard/VehicleRenewalS
 const Support = lazy(() => import('./pages/dashboard/Support'));
 const BlogDetail = lazy(() => import('./pages/BlogDetail'));
 const WidgetDemo = lazy(() => import('./pages/WidgetDemo'));
+const Settings = lazy(() => import('./pages/dashboard/Settings'));
 
 const directories = [
   { "Dashboard": [] },
@@ -284,6 +285,7 @@ const AppContent = () => {
           <Route path="/vehicle-insurance/renewal" element={<PrivateVehicle element={<VehicleRenewalSheet />} />} />
           <Route path="/vehicle-policies" element={<PrivateVehicle element={<VehiclePolicies />} />} />
           <Route path="/dashboard/blog" element={<PrivateBlog element={<BlogDashboard />} />} />
+          <Route path="/settings" element={<PrivateRoleUser element={<Settings />} />} />
           <Route path="/widgets" element={<WidgetDemo />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

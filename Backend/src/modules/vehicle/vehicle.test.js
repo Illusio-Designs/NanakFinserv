@@ -8,7 +8,10 @@ jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
 });
 jest.mock("../../../app/models", () => ({
   vehicleUser: { findByPk: jest.fn() },
-}));
+}))
+jest.mock("../../middleware/verticals", () => ({
+  requireVerticalEnabled: () => (req, res, next) => next(),
+}));;
 
 const express = require("express");
 const request = require("supertest");

@@ -61,6 +61,7 @@ db.vehicle_document  = require("./vehicle_details/vehicle_document.model")(seque
 db.lifeInsurance = require("./lifeInsurance.model")(sequelize, Sequelize)
 db.lifeInsuranceDocument = require("./lifeInsuranceDocument.model")(sequelize, Sequelize)
 db.notification = require("./notification.model")(sequelize, Sequelize)
+db.appSetting = require("./appSetting.model")(sequelize, Sequelize)
 db.buildingManager = require("./buildingManager.model")(sequelize, Sequelize)
 
 db.mediclaimProduct.hasMany(db.mediclaimproductpdf , { foreignKey : "mediclaim_product_id"})

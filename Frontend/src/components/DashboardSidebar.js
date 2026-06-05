@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/components/DashboardSidebar.css';
 import Cookies from 'js-cookie';
+import { getVerticalSettings } from '../serviceAPI/adminApi';
 import { 
   FaHome, 
   FaUsers, 
@@ -36,8 +37,20 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
     const storedState = localStorage.getItem('openSubmenus');
     return storedState ? JSON.parse(storedState) : {};
   });
+  // Global vertical toggles (admin Settings). Default all on so nothing hides
+  // before the settings load.
+  const [verticals, setVerticals] = useState({
+    loan: true, vehicle: true, mediclaim: true, life: true,
+  });
 
   const location = useLocation();
+
+  useEffect(() => {
+    (async () => {
+      const res = await getVerticalSettings();
+      if (res && res.verticals) setVerticals(res.verticals);
+    })();
+  }, []);
 
   useEffect(() => {
     setActiveTab(location.pathname);
@@ -205,7 +218,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(2))) && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(2))) && verticals.loan && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['loan'] ? 'open' : ''}`}
@@ -260,7 +273,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(4))) && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(4))) && verticals.mediclaim && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['mediclaim'] ? 'open' : ''}`}
@@ -303,7 +316,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(6))) && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(6))) && verticals.vehicle && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['vehicle'] ? 'open' : ''}`}
@@ -340,7 +353,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(5))) && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(5))) && verticals.life && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['lifeinsurance'] ? 'open' : ''}`}
@@ -371,7 +384,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(4))) && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(4))) && verticals.mediclaim && (
             <li className={`nav-item ${activeTab === '/inquiries' ? 'active' : ''}`}>
               <Link to="/inquiries" onClick={handleLinkClick} className="nav-link">
                 <FaQuestionCircle className="nav-icon" />
@@ -394,6 +407,15 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
               <Link to="/user" onClick={handleLinkClick} className="nav-link">
                 <FaUserCog className="nav-icon" />
                 <span className="nav-text">Role Manager</span>
+              </Link>
+            </li>
+          )}
+
+          {isSuperAdmin && (
+            <li className={`nav-item ${activeTab === '/settings' ? 'active' : ''}`}>
+              <Link to="/settings" onClick={handleLinkClick} className="nav-link">
+                <FaCog className="nav-icon" />
+                <span className="nav-text">Settings</span>
               </Link>
             </li>
           )}
