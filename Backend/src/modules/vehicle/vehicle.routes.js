@@ -5,11 +5,13 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const { requireCategory, CATEGORIES } = require("../../middleware/rbac");
+const { requireVerticalEnabled } = require("../../middleware/verticals");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./vehicle.controller"));
 const v = require("./vehicle.validator");
 
 const router = express.Router();
+router.use(requireVerticalEnabled("vehicle")); // 503 when the Vehicle vertical is off
 const staff = requireCategory(CATEGORIES.VEHICLE);
 
 router.post("/user/vehicle/user/add", verifyToken, staff, controller.addVehicleUserData);

@@ -5,11 +5,13 @@
 const express = require("express");
 const verifyToken = require("../../../app/middleware/JWTAuth");
 const { requireCategory, requireSelfOrRoles, CATEGORIES, ADMIN } = require("../../middleware/rbac");
+const { requireVerticalEnabled } = require("../../middleware/verticals");
 const { wrapController } = require("../../middleware/asyncHandler");
 const controller = wrapController(require("./lifeInsurance.controller"));
 const v = require("./lifeInsurance.validator");
 
 const router = express.Router();
+router.use(requireVerticalEnabled("life")); // 503 when the Life vertical is off
 const staff = requireCategory(CATEGORIES.LIFE_INSURANCE);
 
 router.get("/user/list/lifeIns", verifyToken, staff, controller.getAllLifeInsUser);

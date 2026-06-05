@@ -3,6 +3,7 @@
  * (Replaces the legacy app/routes/users.routes.js single-file router.)
  */
 const express = require("express");
+const adminRoutes = require("../modules/admin/admin.routes");
 const authRoutes = require("../modules/auth/auth.routes");
 const blogRoutes = require("../modules/blog/blog.routes");
 const builderRoutes = require("../modules/builder/builder.routes");
@@ -20,6 +21,7 @@ const vehicleRoutes = require("../modules/vehicle/vehicle.routes");
 
 const router = express.Router();
 
+router.use(adminRoutes);
 router.use(authRoutes);
 router.use(blogRoutes);
 router.use(builderRoutes);

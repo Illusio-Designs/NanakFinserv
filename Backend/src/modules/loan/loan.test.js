@@ -9,6 +9,9 @@ jest.mock("../../../app/middleware/JWTAuth", () => (req, res, next) => {
 jest.mock("../../../app/models", () => ({
   loanUser: { update: jest.fn(), findOne: jest.fn(), findAll: jest.fn() },
 }));
+jest.mock("../../middleware/verticals", () => ({
+  requireVerticalEnabled: () => (req, res, next) => next(),
+}));
 
 const express = require("express");
 const request = require("supertest");
