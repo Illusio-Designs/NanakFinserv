@@ -7,11 +7,11 @@ import toast from 'react-hot-toast';
 
 // MSG91 widget credentials — env-driven (fall back to the existing values so
 // local dev keeps working). Set REACT_APP_MSG91_* per environment.
-// Vite exposes env vars on import.meta.env with a VITE_ prefix (NOT process.env
-// / REACT_APP_). Falls back to the existing values so things keep working if the
-// env vars aren't set.
-const MSG91_WIDGET_ID = import.meta.env.VITE_MSG91_WIDGET_ID || '346776667162353937323330';
-const MSG91_TOKEN_AUTH = import.meta.env.VITE_MSG91_TOKEN_AUTH || '426738TclvGmDmM66a8ec44P1';
+// This app inlines REACT_APP_* via Vite's `define` (see vite.config.js), so
+// process.env.REACT_APP_* is the correct accessor (matches apiConfig.js). Value
+// comes from .env; the fallback is only used if the env var is missing.
+const MSG91_WIDGET_ID = process.env.REACT_APP_MSG91_WIDGET_ID || '3467446d494d363636363630';
+const MSG91_TOKEN_AUTH = process.env.REACT_APP_MSG91_TOKEN_AUTH || '426738TclvGmDmM66a8ec44P1';
 
 const Login = () => {
   const navigate = useNavigate();
