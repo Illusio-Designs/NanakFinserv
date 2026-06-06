@@ -7,8 +7,11 @@ import toast from 'react-hot-toast';
 
 // MSG91 widget credentials — env-driven (fall back to the existing values so
 // local dev keeps working). Set REACT_APP_MSG91_* per environment.
-const MSG91_WIDGET_ID = process.env.REACT_APP_MSG91_WIDGET_ID || '346776667162353937323330';
-const MSG91_TOKEN_AUTH = process.env.REACT_APP_MSG91_TOKEN_AUTH || '426738TclvGmDmM66a8ec44P1';
+// Vite exposes env vars on import.meta.env with a VITE_ prefix (NOT process.env
+// / REACT_APP_). Falls back to the existing values so things keep working if the
+// env vars aren't set.
+const MSG91_WIDGET_ID = import.meta.env.VITE_MSG91_WIDGET_ID || '346776667162353937323330';
+const MSG91_TOKEN_AUTH = import.meta.env.VITE_MSG91_TOKEN_AUTH || '426738TclvGmDmM66a8ec44P1';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -70,15 +73,16 @@ const Login = () => {
     const failureCb = (error) => {
       console.error('[Login][SendOTP] failure', { error, identifier });
       setIsResending(false);
-      if (isResend) {
-        toast.error('Failed to resend OTP. Please try again.', {
-          duration: 3000,
-          style: {
-            background: '#333',
-            color: '#fff',
-          },
-        });
-      }
+      // Surface the real MSG91 error on BOTH initial send and resend, so the
+      // actual reason (credits / DLT template / invalid creds / number) is
+      // visible instead of failing silently on the first attempt.
+      const detail =
+        (error && (error.message || error.msg || error.type)) ||
+        (() => { try { return JSON.stringify(error); } catch (e) { return 'unknown error'; } })();
+      toast.error(`${isResend ? 'Failed to resend OTP' : 'Failed to send OTP'}: ${detail}`, {
+        duration: 6000,
+        style: { background: '#333', color: '#fff' },
+      });
     };
 
     if (window.sendOtp) {
@@ -114,6 +118,10 @@ const Login = () => {
     } else {
       console.error('OTP provider not available');
       setIsResending(false);
+      toast.error('OTP service not loaded. Please refresh and try again.', {
+        duration: 6000,
+        style: { background: '#333', color: '#fff' },
+      });
     }
   }, [mobileNumber]);
 
