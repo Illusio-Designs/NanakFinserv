@@ -2378,7 +2378,7 @@ exports.getVehicleUserRenewalData = async (req, res) => {
       const users = await User.findAll({
         order: [["username", "asc"]],
         where: {
-          role_id: [3, 5],
+          role_id: [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER],
           ...dateFilter,
         },
         attributes: [

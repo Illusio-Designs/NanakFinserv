@@ -11,21 +11,21 @@ const controller = wrapController(require("./mediclaim.controller"));
 const v = require("./mediclaim.validator");
 
 const router = express.Router();
-router.use(requireVerticalEnabled("mediclaim")); // 503 when the Mediclaim vertical is off
+const vEnabled = requireVerticalEnabled("mediclaim"); // applied per-route (path-less router.use leaked to other routers)
 const staff = requireCategory(CATEGORIES.MEDICLAIM);
 
-router.get("/user/list/mediclaim", verifyToken, staff, controller.getAllMediclaimUser);
-router.get("/user/mediclaim/company", verifyToken, staff, controller.getAllMediclaimCompany);
-router.post("/user/mediclaim/company/add", verifyToken, staff, v.validateAddCompany, controller.addMediclaimCompanyData);
-router.put("/user/mediclaim/company/update", verifyToken, staff, v.validateUpdateCompany, controller.updateMediclaimCompanyData);
-router.get("/user/mediclaim/product/:id", verifyToken, staff, controller.getAllMediclaimProduct);
-router.post("/user/mediclaim/product/add/:id", verifyToken, staff, v.validateAddProduct, controller.addMediclaimProductData);
-router.put("/user/mediclaim/product/update/:id", verifyToken, staff, v.validateUpdateProduct, controller.updateMediclaimProductData);
-router.post("/user/mediclaim/user/add", verifyToken, staff, v.validateAddMediclaimUser, controller.addMediclaimUserData);
-router.put("/user/mediclaim/user/update/:id", verifyToken, staff, controller.updateMediclaimUserData);
-router.get("/user/mediclaim/user/list", verifyToken, staff, controller.geteMediclaimUserData);
-router.post("/user/mediclaim/user/renewal/list", verifyToken, staff, controller.geteMediclaimUserRenewalData);
-router.get("/user/mediclaim/company/list", verifyToken, staff, controller.geteMediclaimCompanyData);
-router.get("/user/mediclaim/product/list", verifyToken, staff, controller.geteMediclaimProductData);
+router.get("/user/list/mediclaim", vEnabled, verifyToken, staff, controller.getAllMediclaimUser);
+router.get("/user/mediclaim/company", vEnabled, verifyToken, staff, controller.getAllMediclaimCompany);
+router.post("/user/mediclaim/company/add", vEnabled, verifyToken, staff, v.validateAddCompany, controller.addMediclaimCompanyData);
+router.put("/user/mediclaim/company/update", vEnabled, verifyToken, staff, v.validateUpdateCompany, controller.updateMediclaimCompanyData);
+router.get("/user/mediclaim/product/:id", vEnabled, verifyToken, staff, controller.getAllMediclaimProduct);
+router.post("/user/mediclaim/product/add/:id", vEnabled, verifyToken, staff, v.validateAddProduct, controller.addMediclaimProductData);
+router.put("/user/mediclaim/product/update/:id", vEnabled, verifyToken, staff, v.validateUpdateProduct, controller.updateMediclaimProductData);
+router.post("/user/mediclaim/user/add", vEnabled, verifyToken, staff, v.validateAddMediclaimUser, controller.addMediclaimUserData);
+router.put("/user/mediclaim/user/update/:id", vEnabled, verifyToken, staff, controller.updateMediclaimUserData);
+router.get("/user/mediclaim/user/list", vEnabled, verifyToken, staff, controller.geteMediclaimUserData);
+router.post("/user/mediclaim/user/renewal/list", vEnabled, verifyToken, staff, controller.geteMediclaimUserRenewalData);
+router.get("/user/mediclaim/company/list", vEnabled, verifyToken, staff, controller.geteMediclaimCompanyData);
+router.get("/user/mediclaim/product/list", vEnabled, verifyToken, staff, controller.geteMediclaimProductData);
 
 module.exports = router;

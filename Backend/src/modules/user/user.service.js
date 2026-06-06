@@ -25,12 +25,10 @@ function getCategoriesByUserId(userId) {
   });
 }
 
-/** Verticals = categories excluding the reserved ids (1, 3). */
+/** Verticals = all seeded categories (Loan, Mediclaim, Life Insurance, Vehicle).
+ *  The legacy "reserved" numeric ids (1, 3) no longer exist under UUIDs. */
 function getUnitVerticals() {
-  return Category.findAll({
-    raw: true,
-    where: { category_id: { [Op.ne]: [1, 3] } },
-  });
+  return Category.findAll({ raw: true });
 }
 
 module.exports = { getRoles, getCategoriesByUserId, getUnitVerticals };

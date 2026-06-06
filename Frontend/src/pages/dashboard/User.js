@@ -86,9 +86,9 @@ const User = () => {
       phone_number: userData.mobileNumber || '',
       email: userData.email || '',
       referenceName: userData.referenceName || '',
-      roleId: Array.isArray(userData.categories) 
-        ? userData.categories 
-        : (userData.categories || '').split(',').map(Number).filter(id => !isNaN(id))
+      roleId: Array.isArray(userData.categories)
+        ? userData.categories
+        : (userData.categories || '').split(',').map(s => s.trim()).filter(Boolean)
     });
 
     setIsModalOpen(true);

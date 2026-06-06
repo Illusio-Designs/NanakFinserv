@@ -155,7 +155,7 @@ exports.getUserCounts = async (req, res) => {
         if (req?.user.Role === ROLE_IDS.BUILDER) {
             consumerWhereObj.builder_user = req.user.id; // Only consumers linked to the builder user.
         }
-        consumerWhereObj.role_id = [3, 5]; // Consumer and builder consumer roles
+        consumerWhereObj.role_id = [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER]; // Consumer and builder consumer roles
         
 
         // Calculate dates for expiry counts

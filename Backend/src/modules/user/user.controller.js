@@ -1,4 +1,4 @@
-const { ROLE_IDS } = require("../../config/ids");
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * user controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -129,7 +129,7 @@ exports.getAllUsers = async (req, res) => {
             }
         }
 
-        whereObj.role_id = [3, 5]; // only consumer + builder consumer
+        whereObj.role_id = [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER]; // only consumer + builder consumer
 
         // ✨ Single Fetch for Admin + Builder (NO raw:true anywhere)
         const users = await User.findAll({
@@ -299,7 +299,7 @@ exports.getCategoryById = async (req, res) => {
 };
 
 exports.getAllRolesUsers = async (req, res) => {
-    logger.debug('🔍 [ROLE MANAGER] Filtering users with role_id:', [1, 2, 3]);
+    logger.debug('🔍 [ROLE MANAGER] Filtering users (admin + staff roles)');
     
     // Auto-fix super admin categories when loading role management page
     try {
@@ -319,7 +319,7 @@ exports.getAllRolesUsers = async (req, res) => {
             });
             
             const existingCategoryIds = existingCategories.map(cat => cat.category_id);
-            const requiredCategories = [2, 4, 5, 6]; // Loan, Mediclaim, Life Insurance, Vehicle
+            const requiredCategories = [CATEGORY_IDS.LOAN, CATEGORY_IDS.MEDICLAIM, CATEGORY_IDS.LIFE_INSURANCE, CATEGORY_IDS.VEHICLE]; // Loan, Mediclaim, Life Insurance, Vehicle
             
             const missingCategories = requiredCategories.filter(catId => !existingCategoryIds.includes(catId));
             
@@ -373,7 +373,7 @@ exports.getAllRolesUsers = async (req, res) => {
         raw: true,
         where: {
             role_id: {
-                [Op.or]: [1, 4], // Show admin and user roles (exclude builder, consumer and mediclaim users)
+                [Op.or]: [ROLE_IDS.SUPER_ADMIN, ROLE_IDS.STAFF], // Show admin and user roles (exclude builder, consumer and mediclaim users)
             },
         },
         group: ["user_id"],
