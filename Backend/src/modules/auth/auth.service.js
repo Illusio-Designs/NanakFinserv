@@ -40,10 +40,14 @@ async function verifyMsg91AccessToken(accessToken) {
     );
   }
 
-  const response = await axios.post(config.msg91.verifyUrl, {
-    authkey: config.msg91.authKey,
-    "access-token": accessToken,
-  });
+  const response = await axios.post(
+    config.msg91.verifyUrl,
+    {
+      authkey: config.msg91.authKey,
+      "access-token": accessToken,
+    },
+    { timeout: 10000 } // fail fast instead of hanging the login if MSG91 is slow
+  );
 
   return Boolean(response && response.data && response.data.type === "success");
 }
