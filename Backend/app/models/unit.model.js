@@ -3,8 +3,8 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const Unit = sequelize.define('unit', {
         unit_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         unit_name: {
@@ -16,7 +16,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: true
         },
         builder_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
         },
     }, {
         tableName: 'unit',

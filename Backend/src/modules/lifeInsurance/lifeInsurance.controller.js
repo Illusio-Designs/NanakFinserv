@@ -1,3 +1,4 @@
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * lifeInsurance controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -87,7 +88,7 @@ exports.getAllLifeInsUser = async (req, res) => {
 
     // For users with life insurance category access, show all life insurance consumers
     // Only apply role-based filtering if the user doesn't have life insurance category access
-    if (req.user.Role === 4 && !req.user.categoryIds?.includes(5)) {
+    if (req.user.Role === ROLE_IDS.STAFF && !req.user.categoryIds?.includes(CATEGORY_IDS.LIFE_INSURANCE)) {
         whereObj.user_role_id = req.user.id;
         logger.debug('🔍 [LIFE INS API] Setting user_role_id filter:', req.user.id);
     } else {
@@ -261,7 +262,7 @@ exports.getAllLifeInsurance = async (req, res) => {
         const offset = (page - 1) * limit;
 
         // Show all life insurance data for Super Admin OR users with life insurance category access
-        if (req.user.Role == 1 || req.user.categoryIds?.includes(5)) {
+        if (req.user.Role == ROLE_IDS.SUPER_ADMIN || req.user.categoryIds?.includes(CATEGORY_IDS.LIFE_INSURANCE)) {
             // ADMIN ROLE OR LIFE INSURANCE CATEGORY ACCESS - Fetch all life insurance data
         const { count, rows } = await LifeInsurance.findAndCountAll({
                 where: {},
@@ -300,7 +301,7 @@ exports.getAllLifeInsurance = async (req, res) => {
             let findUserList = await consumerRoleMapping.findAll({
                 where: {
                     user_role_id: req.user.id,
-                    category_id: 5 // Life insurance category
+                    category_id: CATEGORY_IDS.LIFE_INSURANCE // Life insurance category
                 },
                 raw: true,
                 attributes: ["user_consumer_id"],
@@ -584,7 +585,7 @@ exports.updateLifeInsurance = async (req, res) => {
             where: {
                 user_role_id: req.user.id,
                 user_consumer_id: req.user.id,
-                category_id: 5
+                category_id: CATEGORY_IDS.LIFE_INSURANCE
             }
         });
 
@@ -592,7 +593,7 @@ exports.updateLifeInsurance = async (req, res) => {
             await consumerRoleMapping.create({
                 user_role_id: req.user.id, // Current logged-in user becomes the role user (vertical)
                 user_consumer_id: req.user.id, // Use the current user as consumer
-                category_id: 5, // life insurance category
+                category_id: CATEGORY_IDS.LIFE_INSURANCE, // life insurance category
             });
             logger.debug('🔍 [UPDATE] ConsumerRoleMapping created for life insurance category');
         }
@@ -993,12 +994,12 @@ exports.getLifeInsuranceRenewalData = async (req, res) => {
         let whereObj = {};
 
         // Apply user filtering based on role (similar to getAllLifeInsurance)
-        if (req.user.Role !== 1 && !req.user.categoryIds?.includes(5)) {
+        if (req.user.Role !== ROLE_IDS.SUPER_ADMIN && !req.user.categoryIds?.includes(CATEGORY_IDS.LIFE_INSURANCE)) {
             // USER ROLE WITHOUT LIFE INSURANCE CATEGORY ACCESS - Fetch life insurance data for assigned consumers only
             const findUserList = await consumerRoleMapping.findAll({
                 where: {
                     user_role_id: req.user.id,
-                    category_id: 5 // Life insurance category
+                    category_id: CATEGORY_IDS.LIFE_INSURANCE // Life insurance category
                 },
                 raw: true,
                 attributes: ["user_consumer_id"],

@@ -2,10 +2,9 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const notification = sequelize.define('notification', {
         id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             primaryKey: true,
-            autoIncrement: true
-        },
+            defaultValue: Sequelize.UUIDV4,},
         title: {
             type: DataTypes.STRING,
             allowNull: false
@@ -23,17 +22,17 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: false
         },
         user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             comment: 'ID of the user who performed the action'
         },
         target_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             comment: 'ID of the user who was added/updated (for user notifications)'
         },
         record_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             comment: 'ID of the record (vehicle_user_id, mediclaim_id, etc.)'
         },

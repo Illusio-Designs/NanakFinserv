@@ -1,3 +1,4 @@
+const { ROLE_IDS } = require("../../config/ids");
 /**
  * buildingManager controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -128,7 +129,7 @@ exports.createBuildingManager = async (req, res) => {
             email: email.trim(),
             mobileNumber: mobileNumber.trim(),
             password: 'BuildingManager@123', // Default password
-            role_id: 7, // Building Manager role
+            role_id: ROLE_IDS.BUILDING_MANAGER, // Building Manager role
             referenceName: 'Building Manager',
             referenceMobileNumber: '',
             referenceEmail: '',
@@ -322,7 +323,7 @@ exports.getBuildingManagerStats = async (req, res) => {
 exports.getBuildingManagerDashboardStats = async (req, res) => {
     try {
         // Check if user is a building manager (Role 7)
-        if (req.user.Role !== 7) {
+        if (req.user.Role !== ROLE_IDS.BUILDING_MANAGER) {
             return res.status(403).json({
                 status: false,
                 message: 'Access denied. Only building managers can access this endpoint.'

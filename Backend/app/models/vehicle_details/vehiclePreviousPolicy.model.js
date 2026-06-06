@@ -1,20 +1,25 @@
 const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const previouspolicies_vehicle = sequelize.define('previouspolicies_vehicle', {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true,
+        },
         vehicle_user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         PolicyNumber: {
             type: DataTypes.STRING,
         },
         policy_type_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         policy_plan_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         company_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         PolicyTenure: {
             type: DataTypes.INTEGER,

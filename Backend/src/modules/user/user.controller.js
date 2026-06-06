@@ -1,3 +1,4 @@
+const { ROLE_IDS } = require("../../config/ids");
 /**
  * user controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -76,12 +77,12 @@ exports.getAllUsers = async (req, res) => {
         let whereObj = {};
         
         // If builder login → show only consumers under them
-        if (req?.user.Role == 2) {
+        if (req?.user.Role == ROLE_IDS.BUILDER) {
             whereObj.builder_user = req.user.id;
         }
 
         // If building manager (Role 7) login → show only consumers from their assigned buildings
-        if (req?.user.Role == 7) {
+        if (req?.user.Role == ROLE_IDS.BUILDING_MANAGER) {
             // Get all units assigned to this building manager
             const buildingManagerAssignments = await BuildingManager.findAll({
                 where: { 
@@ -211,7 +212,7 @@ exports.getAllUsers = async (req, res) => {
         // Filter out building managers and consumers with loan status interested/notInterested
         const filteredData = finalData.filter(x => {
             // Exclude building managers
-            if (x.role_id === 7) return false;
+            if (x.role_id === ROLE_IDS.BUILDING_MANAGER) return false;
             // Exclude consumers with loan status interested/notInterested
             if (excludedUserIds.includes(x.user_id)) return false;
             return true;
@@ -233,7 +234,7 @@ exports.getAllUsers = async (req, res) => {
 
 exports.getAllBuilderUsers = async (req, res) => {
     wherObj = {};
-    if (req?.user.Role == 1) {
+    if (req?.user.Role == ROLE_IDS.SUPER_ADMIN) {
         wherObj.role_id = 2;
     } else {
         wherObj.role_id = 2;
@@ -306,7 +307,7 @@ exports.getAllRolesUsers = async (req, res) => {
         
         // Find all users with role_id = 1 (super admin)
         const superAdmins = await User.findAll({
-            where: { role_id: 1 },
+            where: { role_id: ROLE_IDS.SUPER_ADMIN },
             attributes: ['user_id', 'username', 'email']
         });
         

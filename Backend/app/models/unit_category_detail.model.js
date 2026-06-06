@@ -5,18 +5,18 @@ module.exports = (sequelize, Sequelize) => {
     "unitcategorydetail",
     {
       unit_category_detail_id: {
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
       },
       unit_category_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       count: {
         type: Sequelize.INTEGER,
       },
       unit_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       floorCount: {
         type: Sequelize.INTEGER,

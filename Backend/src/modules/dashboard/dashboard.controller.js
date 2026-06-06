@@ -1,3 +1,4 @@
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * dashboard controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -74,7 +75,7 @@ const logger = require("../../config/logger");
 exports.getUserCounts = async (req, res) => {
     try {
         const consumerWhereObj = {};
-        const builderWhereObj = { role_id: 5 }; // Builder consumers keep role_id 5
+        const builderWhereObj = { role_id: ROLE_IDS.BUILDER_CONSUMER }; // Builder consumers keep role_id 5
         const mediclaimWhereObj = {};
         const loanUserWhereObj = {};
         const loanInterstedUserWhereObj = {
@@ -110,7 +111,7 @@ exports.getUserCounts = async (req, res) => {
 
         // Get all building manager user IDs to exclude them from loan counts
         const buildingManagerUsers = await User.findAll({
-            where: { role_id: 7 },
+            where: { role_id: ROLE_IDS.BUILDING_MANAGER },
             attributes: ['user_id'],
             raw: true
         });
@@ -134,7 +135,7 @@ exports.getUserCounts = async (req, res) => {
             loanCompletedUserWhereObj.user_id = { [Op.notIn]: buildingManagerUserIds };
         }
 
-        if (req.user.Role === 4) {
+        if (req.user.Role === ROLE_IDS.STAFF) {
             loanUserWhereObj.role_id = req.user.id;
             loanInterstedUserWhereObj.role_id = req.user.id;
             loanNotInterstedUserWhereObj.role_id = req.user.id;
@@ -151,7 +152,7 @@ exports.getUserCounts = async (req, res) => {
         }
 
         // Filter for consumers based on role
-        if (req?.user.Role === 2) {
+        if (req?.user.Role === ROLE_IDS.BUILDER) {
             consumerWhereObj.builder_user = req.user.id; // Only consumers linked to the builder user.
         }
         consumerWhereObj.role_id = [3, 5]; // Consumer and builder consumer roles
@@ -168,8 +169,8 @@ exports.getUserCounts = async (req, res) => {
         nextYear.setFullYear(today.getFullYear() + 1);
 
         // Execute all counts in parallel using Promise.all
-        // Check if user is Super Admin (role_id === 1 OR has Super Admin category access)
-        const isSuperAdmin = req.user.Role === 1 || (req.user.categoryIds && req.user.categoryIds.includes(1));
+        // Check if user is Super Admin (role_id === ROLE_IDS.SUPER_ADMIN OR has Super Admin category access)
+        const isSuperAdmin = req.user.Role === ROLE_IDS.SUPER_ADMIN || (req.user.categoryIds && req.user.categoryIds.includes(ROLE_IDS.SUPER_ADMIN));
         
         logger.debug('🔍 [USER COUNTS] User Role:', req.user.Role);
         logger.debug('🔍 [USER COUNTS] User categoryIds:', req.user.categoryIds);
@@ -211,7 +212,7 @@ exports.getUserCounts = async (req, res) => {
                 // Count loan consumers from role mapping, excluding building managers
                 consumerRoleMapping.count({ 
                     where: { 
-                        category_id: 2,
+                        category_id: CATEGORY_IDS.LOAN,
                         ...(buildingManagerUserIds.length > 0 && {
                             user_consumer_id: { [Op.notIn]: buildingManagerUserIds }
                         })
@@ -229,7 +230,7 @@ exports.getUserCounts = async (req, res) => {
                 loanUser.count({ where: loanPartUserWhereObj }),
                 loanUser.count({ where: loanCancelUserWhereObj }),
                 loanUser.count({ where: loanCompletedUserWhereObj }),
-                consumerRoleMapping.count({ where: { category_id: 4 } }), // Count mediclaim consumers from role mapping
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.MEDICLAIM } }), // Count mediclaim consumers from role mapping
                 RunningPolicies.count({ 
                     where: { 
                         ExpiryDate: { 
@@ -258,8 +259,8 @@ exports.getUserCounts = async (req, res) => {
                 DisbursementLoan.sum('disbursementAmount', { where: allTimeDisbursedFilter }),
                 LoginLoan.sum('loanAmount', { where: allTimeLoanedFilter }),
                 PartPaymentLoan.sum('part_amount', { where: allTimePartPaymentFilter }),
-                consumerRoleMapping.count({ where: { category_id: 6 } }), // <-- count all vehicle users (same as admin)
-                consumerRoleMapping.count({ where: { category_id: 5 } }) // <-- count all life insurance users
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.VEHICLE } }), // <-- count all vehicle users (same as admin)
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.LIFE_INSURANCE } }) // <-- count all life insurance users
             ]);
 
             logger.debug('🔍 [COUNTS DEBUG] ===== USER COUNTS RESULTS =====');
@@ -326,11 +327,11 @@ exports.getUserCounts = async (req, res) => {
             logger.debug('🔍 [COUNTS DEBUG] ===============================================');
 
             res.status(200).send(responseData);
-        } else if (req.user.Role === 2) {
+        } else if (req.user.Role === ROLE_IDS.BUILDER) {
             const [consumerCount, builderUserCount, lifeUserCount] = await Promise.all([
                 User.count({ where: consumerWhereObj }),
                 User.count({ where: builderWhereObj }),
-                consumerRoleMapping.count({ where: { category_id: 5 } }) // <-- count life insurance users
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.LIFE_INSURANCE } }) // <-- count life insurance users
             ]);
 
             // Send the combined counts
@@ -364,7 +365,7 @@ exports.getUserCounts = async (req, res) => {
                 },
                 status: true,
             });
-        } else if (req.user.Role === 4) {
+        } else if (req.user.Role === ROLE_IDS.STAFF) {
             // Fetch categories assigned to this user
             const assignedCategories = await userCatergory.findAll({
                 where: { user_id: req.user.id },
@@ -382,7 +383,7 @@ exports.getUserCounts = async (req, res) => {
                     // Exclude building managers from loan count (reuse buildingManagerUserIds from top of function)
                     count = await consumerRoleMapping.count({
                         where: { 
-                            category_id: 2,
+                            category_id: CATEGORY_IDS.LOAN,
                             ...(buildingManagerUserIds.length > 0 && {
                                 user_consumer_id: { [Op.notIn]: buildingManagerUserIds }
                             })
@@ -390,15 +391,15 @@ exports.getUserCounts = async (req, res) => {
                     });
                 } else if (categoryId == 4) { // Mediclaim
                     count = await consumerRoleMapping.count({
-                        where: { user_role_id: req.user.id, category_id: 4 },
+                        where: { user_role_id: req.user.id, category_id: CATEGORY_IDS.MEDICLAIM },
                     });
                 } else if (categoryId == 6) { // Vehicle
                     count = await consumerRoleMapping.count({
-                        where: { category_id: 6 }, // Show total count, not just assigned
+                        where: { category_id: CATEGORY_IDS.VEHICLE }, // Show total count, not just assigned
                     });
                 } else if (categoryId == 5) { // Life Insurance
                     count = await consumerRoleMapping.count({
-                        where: { category_id: 5 }, // Show total count, not just assigned
+                        where: { category_id: CATEGORY_IDS.LIFE_INSURANCE }, // Show total count, not just assigned
                     });
                 } // Add more categories as needed
                 categoryCounts[categoryName] = count;
@@ -472,7 +473,7 @@ exports.getLoanAmounFilterDate = async (req, res) => {
         const endOfDay = new Date(endDay.setHours(23, 59, 59, 999));
 
         // Execute the aggregate sums (admins only).
-        if (req.user.Role === 1) {
+        if (req.user.Role === ROLE_IDS.SUPER_ADMIN) {
             const data = await dashboardService.sumLoanAmounts(startOfDay, endOfDay);
             res.status(200).send({
                 message: "Counts fetched successfully",
@@ -512,7 +513,7 @@ exports.getConsumerDashboardData = async (req, res) => {
         logger.debug('🔍 [CONSUMER DASHBOARD] User Role from JWT:', req.user.Role);
 
         // Check if user is a consumer (role_id 3) - check both JWT and database
-        if (req.user.Role !== 3) {
+        if (req.user.Role !== ROLE_IDS.CONSUMER) {
             return res.status(403).json({
                 message: "Access denied. This endpoint is only for consumers.",
                 status: false
@@ -534,7 +535,7 @@ exports.getConsumerDashboardData = async (req, res) => {
         }
 
         // Double-check role from database
-        if (user.role_id !== 3) {
+        if (user.role_id !== ROLE_IDS.CONSUMER) {
             return res.status(403).json({
                 message: "Access denied. This endpoint is only for consumers.",
                 status: false

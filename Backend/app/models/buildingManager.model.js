@@ -3,20 +3,20 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const BuildingManager = sequelize.define('buildingmanager', {
         building_manager_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         user_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             allowNull: false
         },
         unit_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             allowNull: false
         },
         assigned_by: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             allowNull: true
         },
         status: {

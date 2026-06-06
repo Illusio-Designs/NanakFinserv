@@ -130,12 +130,69 @@ app.use("/api", apiLimiter);
 
 const db = require("./app/models/index");
 
-// Verify the DB connection. Fail-fast: if the database is unreachable we must
-// NOT start serving traffic. Schema changes are managed by Sequelize CLI
-// migrations (`npm run db:migrate`), run during deploy — not on boot.
+// Verify the DB connection, then auto-sync the schema. Fail-fast: if the
+// database is unreachable we must NOT start serving traffic.
+//
+// Schema management is automatic on boot via sequelize.sync({ alter: true }):
+// missing tables are created and existing tables are altered to match the
+// current models. Set DB_SYNC=off to disable (e.g. to fall back to manual
+// `npm run db:migrate`).
 const initializeDatabase = async () => {
   await db.sequelize.authenticate(); // throws if the DB is unreachable
   logger.info("Database connection established");
+
+  const fs = require("fs");
+  const path = require("path");
+  // Persist any DB-init error to a stable file too — the host rotates stderr.log
+  // away, so this is the reliable place to read what went wrong (via FTP).
+  const errFile = path.join(__dirname, "tmp", "db-init-error.log");
+  const recordErr = (label, err) => {
+    const msg = `[${new Date().toISOString()}] ${label}: ${err && err.stack ? err.stack : err}\n`;
+    try { fs.appendFileSync(errFile, msg); } catch (e) { /* ignore */ }
+    logger.error({ err }, label);
+  };
+
+  if (process.env.DB_SYNC !== "off") {
+    // One-time hard reset: drop & recreate every table. Needed when column types
+    // change in ways `alter` can't handle (e.g. INT primary keys -> UUID).
+    // Triggered by DB_SYNC=force OR the presence of tmp/force-sync.once.
+    const forceFlag = path.join(__dirname, "tmp", "force-sync.once");
+    const force = process.env.DB_SYNC === "force" || fs.existsSync(forceFlag);
+
+    // IMPORTANT: consume the flag BEFORE doing the heavy work. If the drop/sync
+    // crashes or times out, we must NOT retry it on every boot (that would loop
+    // and keep the app down). One attempt only.
+    if (force && process.env.DB_SYNC !== "force") {
+      try { fs.unlinkSync(forceFlag); } catch (e) { /* may not exist */ }
+    }
+
+    // Best-effort: schema problems are logged but must NOT stop the server from
+    // starting — otherwise we get a 503 with no way to read the error.
+    try {
+      if (force) {
+        await db.sequelize.getQueryInterface().dropAllTables(); // disables FK checks internally
+        await db.sequelize.sync(); // recreate all tables fresh
+        logger.warn("Database schema RECREATED (force) — all tables dropped & rebuilt");
+        try { fs.appendFileSync(errFile, `[${new Date().toISOString()}] OK: schema recreated\n`); } catch (e) {}
+      } else {
+        await db.sequelize.sync({ alter: true });
+        logger.info("Database schema synced (alter: true)");
+      }
+    } catch (err) {
+      recordErr("Schema sync failed (server still starting)", err);
+    }
+  }
+
+  // Seed default data (lookup tables + default admin user). Best-effort.
+  if (process.env.SEED_DEFAULTS !== "off") {
+    try {
+      const { seedDefaults } = require("./src/bootstrap/seedDefaults");
+      await seedDefaults(logger);
+      try { fs.appendFileSync(errFile, `[${new Date().toISOString()}] OK: seed complete\n`); } catch (e) {}
+    } catch (err) {
+      recordErr("Default seeding failed", err);
+    }
+  }
 };
 
 // Liveness: process is up.

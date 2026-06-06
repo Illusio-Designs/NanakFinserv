@@ -1,3 +1,4 @@
+const { ROLE_IDS } = require("../../config/ids");
 /**
  * Auth service — business logic for login.
  *
@@ -68,7 +69,7 @@ async function loginByMobile(mobileNumber) {
     id: user.user_id,
   };
 
-  if (user.role_id === 2) {
+  if (user.role_id === ROLE_IDS.BUILDER) {
     const builder = await BuilderUser.findOne({
       where: { user_id: user.user_id },
       raw: true,

@@ -1,21 +1,25 @@
 /**
  * Role-based access control.
  *
- * The JWT payload carries `Role` as the numeric role_id. `requireRole(...ids)`
+ * The JWT payload carries `Role` as the role's UUID (and `categoryIds` as an
+ * array of category UUIDs + the caller's role UUID). `requireRole(...ids)`
  * allows the request only if the caller's role is in the list. Must be mounted
  * AFTER the auth middleware (which populates req.user).
  *
- * Applied conservatively to back-office config/management writes so that
- * consumers/builders/building-managers cannot reach them. Fine-grained,
- * per-record authorization still lives inside the handlers.
+ * Roles/categories are identified by the stable seeded UUIDs in
+ * src/config/ids.js (see ROLE_IDS / CATEGORY_IDS).
  */
+const { ROLE_IDS, CATEGORY_IDS } = require("../config/ids");
+
+// Kept under the historical names so existing imports keep working; values are
+// now UUID strings instead of numbers.
 const ROLES = {
-  SUPER_ADMIN: 1,
-  BUILDER: 2,
-  CONSUMER: 3,
-  STAFF: 4,
-  BUILDER_CONSUMER: 5,
-  BUILDING_MANAGER: 7,
+  SUPER_ADMIN: ROLE_IDS.SUPER_ADMIN,
+  BUILDER: ROLE_IDS.BUILDER,
+  CONSUMER: ROLE_IDS.CONSUMER,
+  STAFF: ROLE_IDS.STAFF,
+  BUILDER_CONSUMER: ROLE_IDS.BUILDER_CONSUMER,
+  BUILDING_MANAGER: ROLE_IDS.BUILDING_MANAGER,
 };
 
 // ── Role groups ───────────────────────────────────────────────────────────
@@ -38,17 +42,16 @@ const CONSUMER_VIEW = [
 // Business verticals, gated by the JWT `categoryIds` (mirrors the frontend's
 // PrivateLoan/PrivateMediclaim/... route guards). Super admin bypasses.
 const CATEGORIES = {
-  LOAN: 2,
-  MEDICLAIM: 4,
-  LIFE_INSURANCE: 5,
-  VEHICLE: 6,
+  LOAN: CATEGORY_IDS.LOAN,
+  MEDICLAIM: CATEGORY_IDS.MEDICLAIM,
+  LIFE_INSURANCE: CATEGORY_IDS.LIFE_INSURANCE,
+  VEHICLE: CATEGORY_IDS.VEHICLE,
 };
 
 function requireRole(...allowed) {
-  const allow = allowed.map(Number);
   return (req, res, next) => {
-    const role = req.user && Number(req.user.Role);
-    if (role && allow.includes(role)) return next();
+    const role = req.user && req.user.Role;
+    if (role && allowed.includes(role)) return next();
     return res
       .status(403)
       .json({ message: "Forbidden: insufficient role", status: false });
@@ -56,18 +59,17 @@ function requireRole(...allowed) {
 }
 
 /**
- * Vertical access guard: super admin (role 1) passes; otherwise the caller must
- * carry the category in their JWT `categoryIds`. Matches the frontend's
- * category-based route guards.
+ * Vertical access guard: super admin passes; otherwise the caller must carry the
+ * category in their JWT `categoryIds`. Matches the frontend's category-based
+ * route guards.
  *   requireCategory(CATEGORIES.LOAN)
  */
 function requireCategory(categoryId) {
-  const cat = Number(categoryId);
   return (req, res, next) => {
-    const role = req.user && Number(req.user.Role);
+    const role = req.user && req.user.Role;
     if (role === ROLES.SUPER_ADMIN) return next();
     const cats = (req.user && req.user.categoryIds) || [];
-    if (Array.isArray(cats) && cats.map(Number).includes(cat)) return next();
+    if (Array.isArray(cats) && cats.includes(categoryId)) return next();
     return res
       .status(403)
       .json({ message: "Forbidden: missing category access", status: false });
@@ -80,10 +82,9 @@ function requireCategory(categoryId) {
  *   requireSelfOrRoles("consumerId", ADMIN)
  */
 function requireSelfOrRoles(paramName, allowedRoles) {
-  const allow = allowedRoles.map(Number);
   return (req, res, next) => {
-    const role = req.user && Number(req.user.Role);
-    if (role && allow.includes(role)) return next();
+    const role = req.user && req.user.Role;
+    if (role && allowedRoles.includes(role)) return next();
     const target = req.params && req.params[paramName];
     if (
       target !== undefined &&

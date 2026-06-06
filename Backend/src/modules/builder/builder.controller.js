@@ -1,3 +1,4 @@
+const { ROLE_IDS, UNIT_CATEGORY_IDS } = require("../../config/ids");
 /**
  * builder controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -133,7 +134,7 @@ exports.addBuilderData = async (req, res) => {
                     username: req.body.username,
                     email: req.body.email,
                     mobileNumber: req.body.phone_number,
-                    role_id: 2,
+                    role_id: ROLE_IDS.BUILDER,
                     referenceName: req.body.referenceName,
                     otp: "",
                     token: "",
@@ -222,9 +223,9 @@ exports.updateBuilderData = async (req, res) => {
 exports.getUnitsByBuilder = async (req, res) => {
     let whereObj = {};
 
-    if (req.user.Role === 2) {
+    if (req.user.Role === ROLE_IDS.BUILDER) {
         whereObj.builder_id = req.user.builder_id;
-    } else if (req.user.Role === 7) { // Building Manager role ID 7
+    } else if (req.user.Role === ROLE_IDS.BUILDING_MANAGER) { // Building Manager role ID 7
         // For building managers, get their assigned buildings
         const buildingManagerAssignments = await BuildingManager.findAll({
             where: { 
@@ -374,11 +375,11 @@ exports.getUnitsByBuilder = async (req, res) => {
                             }
 
                             // Map categoryId to the correct category name
-                            const categoryKey = categoryId === 1
+                            const categoryKey = categoryId === UNIT_CATEGORY_IDS.SHOWROOM
                                 ? "Showroom"
-                                : categoryId === 2
+                                : categoryId === UNIT_CATEGORY_IDS.OFFICE
                                     ? "Office"
-                                    : categoryId === 3
+                                    : categoryId === UNIT_CATEGORY_IDS.FLAT
                                         ? "Flat"
                                         : "House";
 
@@ -389,10 +390,10 @@ exports.getUnitsByBuilder = async (req, res) => {
                                 wings: wingsRanges,
                             };
 
-                            if (categoryId === 1) element.unit_showroomCount = totalCount;
-                            if (categoryId === 2) element.unit_officeCount = totalCount;
-                            if (categoryId === 3) element.unit_flatCount = totalCount;
-                            if (categoryId === 4) element.unit_houseCount = totalCount;
+                            if (categoryId === UNIT_CATEGORY_IDS.SHOWROOM) element.unit_showroomCount = totalCount;
+                            if (categoryId === UNIT_CATEGORY_IDS.OFFICE) element.unit_officeCount = totalCount;
+                            if (categoryId === UNIT_CATEGORY_IDS.FLAT) element.unit_flatCount = totalCount;
+                            if (categoryId === UNIT_CATEGORY_IDS.HOUSE) element.unit_houseCount = totalCount;
                         })
                     );
 
@@ -468,7 +469,7 @@ exports.getUnitsByBuilder = async (req, res) => {
 exports.getUintByConsumer = async (req, res) => {
     try {
         // Validation for missing required fields
-        // if (req.user.Role === 2 && !req.user.builder_id) {
+        // if (req.user.Role === ROLE_IDS.BUILDER && !req.user.builder_id) {
         //     return res.status(400).send({ message: 'Builder ID is required for this user role', status: false });
         // }
 
@@ -482,7 +483,7 @@ exports.getUintByConsumer = async (req, res) => {
             unit_id: req.body.unit_id,
         };
 
-        if (req.user.Role === 2) {
+        if (req.user.Role === ROLE_IDS.BUILDER) {
             whereObj.builder_id = req.user.builder_id;
         }
 
@@ -621,11 +622,11 @@ exports.getUintByConsumer = async (req, res) => {
                         }
 
                         // Map categoryId to the correct category name
-                        const categoryKey = categoryId === 1
+                        const categoryKey = categoryId === UNIT_CATEGORY_IDS.SHOWROOM
                             ? "Showroom"
-                            : categoryId === 2
+                            : categoryId === UNIT_CATEGORY_IDS.OFFICE
                                 ? "Office"
-                                : categoryId === 3
+                                : categoryId === UNIT_CATEGORY_IDS.FLAT
                                     ? "Flat"
                                     : "House";
 
@@ -753,30 +754,30 @@ exports.addBuilderUnit = async (req, res) => {
             let unitCategoryData = {};
 
             // Determine unit category details
-            if (item == "1" || item?.unit_category_id == 1) {
+            if (item == UNIT_CATEGORY_IDS.SHOWROOM || item?.unit_category_id == UNIT_CATEGORY_IDS.SHOWROOM) {
                 unitCategoryData = {
-                    unit_category_id: 1,
+                    unit_category_id: UNIT_CATEGORY_IDS.SHOWROOM,
                     totalCount: req.body?.Showroom?.summary?.totalCount || 0,
                     floorCount: req.body?.Showroom?.summary?.floorCount || 0,
                     wingCount: req.body?.Showroom?.summary?.wingCount || 0,
                 };
-            } else if (item == "2" || item?.unit_category_id == 2) {
+            } else if (item == UNIT_CATEGORY_IDS.OFFICE || item?.unit_category_id == UNIT_CATEGORY_IDS.OFFICE) {
                 unitCategoryData = {
-                    unit_category_id: 2,
+                    unit_category_id: UNIT_CATEGORY_IDS.OFFICE,
                     totalCount: req.body?.Office?.summary?.totalCount || 0,
                     floorCount: req.body?.Office?.summary?.floorCount || 0,
                     wingCount: req.body?.Office?.summary?.wingCount || 0,
                 };
-            } else if (item == "3" || item?.unit_category_id == 3) {
+            } else if (item == UNIT_CATEGORY_IDS.FLAT || item?.unit_category_id == UNIT_CATEGORY_IDS.FLAT) {
                 unitCategoryData = {
-                    unit_category_id: 3,
+                    unit_category_id: UNIT_CATEGORY_IDS.FLAT,
                     totalCount: req.body?.Flat?.summary?.totalCount || 0,
                     floorCount: req.body?.Flat?.summary?.floorCount || 0,
                     wingCount: req.body?.Flat?.summary?.wingCount || 0,
                 };
-            } else if (item == "4" || item?.unit_category_id == 4) {
+            } else if (item == UNIT_CATEGORY_IDS.HOUSE || item?.unit_category_id == UNIT_CATEGORY_IDS.HOUSE) {
                 unitCategoryData = {
-                    unit_category_id: 4,
+                    unit_category_id: UNIT_CATEGORY_IDS.HOUSE,
                     totalCount: req.body?.House?.summary?.totalCount || 0,
                     floorCount: req.body?.House?.summary?.floorCount || 0,
                     wingCount: req.body?.House?.summary?.wingCount || 0,
@@ -794,7 +795,7 @@ exports.addBuilderUnit = async (req, res) => {
 
             let floorData = [];
 
-            if (createdCategory.unit_category_id === 1 && req.body?.Showroom?.wings) {
+            if (createdCategory.unit_category_id === UNIT_CATEGORY_IDS.SHOWROOM && req.body?.Showroom?.wings) {
                 await Promise.all(req.body.Showroom.wings.map(async (wing) => {
                     // Create Wing
                     const createdWing = await Wing.create({
@@ -817,7 +818,7 @@ exports.addBuilderUnit = async (req, res) => {
                 }));
             }
 
-            if (createdCategory.unit_category_id === 2 && req.body?.Office?.wings) {
+            if (createdCategory.unit_category_id === UNIT_CATEGORY_IDS.OFFICE && req.body?.Office?.wings) {
                 await Promise.all(req.body.Office.wings.map(async (wing) => {
                     // Create Wing
                     const createdWing = await Wing.create({
@@ -840,7 +841,7 @@ exports.addBuilderUnit = async (req, res) => {
                 }));
             }
 
-            if (createdCategory.unit_category_id === 3 && req.body?.Flat?.wings) {
+            if (createdCategory.unit_category_id === UNIT_CATEGORY_IDS.FLAT && req.body?.Flat?.wings) {
                 await Promise.all(req.body.Flat.wings.map(async (wing) => {
                     // Create Wing
                     const createdWing = await Wing.create({
@@ -863,7 +864,7 @@ exports.addBuilderUnit = async (req, res) => {
                 }));
             }
 
-            if (createdCategory.unit_category_id === 4 && req.body?.House?.wings) {
+            if (createdCategory.unit_category_id === UNIT_CATEGORY_IDS.HOUSE && req.body?.House?.wings) {
                 await Promise.all(req.body.House.wings.map(async (wing) => {
                     // Create Wing
                     const createdWing = await Wing.create({

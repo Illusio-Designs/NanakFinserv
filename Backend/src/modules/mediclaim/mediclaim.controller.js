@@ -1,3 +1,4 @@
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * mediclaim controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -87,7 +88,7 @@ exports.getAllMediclaimUser = async (req, res) => {
 
     // For users with mediclaim category access, show all mediclaim consumers
     // Only apply role-based filtering if the user doesn't have mediclaim category access
-    if (req.user.Role === 4 && !req.user.categoryIds?.includes(4)) {
+    if (req.user.Role === ROLE_IDS.STAFF && !req.user.categoryIds?.includes(CATEGORY_IDS.MEDICLAIM)) {
         whereObj.user_role_id = req.user.id;
         logger.debug('🔍 [MEDICLAIM API] Setting user_role_id filter:', req.user.id);
     } else {
@@ -455,7 +456,7 @@ exports.addMediclaimUserData = async (req, res) => {
             const existingMapping = await consumerRoleMapping.findOne({
                 where: {
                     user_consumer_id: user.user_id,
-                    category_id: 4 // mediclaim category
+                    category_id: CATEGORY_IDS.MEDICLAIM // mediclaim category
                 }
             });
 
@@ -465,7 +466,7 @@ exports.addMediclaimUserData = async (req, res) => {
                 await consumerRoleMapping.create({
                     user_role_id: req.user.id,
                     user_consumer_id: user.user_id,
-                    category_id: 4, // mediclaim category
+                    category_id: CATEGORY_IDS.MEDICLAIM, // mediclaim category
                 });
             }
         } else {
@@ -477,7 +478,7 @@ exports.addMediclaimUserData = async (req, res) => {
             email: Email,
             mobileNumber: MobileNumber,
             referenceName: ReferenceName, // User model uses PascalCase
-            role_id: 3 // Use role_id 3 for consumers (consumer role)
+            role_id: ROLE_IDS.CONSUMER // Use role_id 3 for consumers (consumer role)
         });
 
             if (!user) {
@@ -488,7 +489,7 @@ exports.addMediclaimUserData = async (req, res) => {
             await consumerRoleMapping.create({
                 user_role_id: req.user.id,
                 user_consumer_id: user.user_id,
-                category_id: 4, // mediclaim category
+                category_id: CATEGORY_IDS.MEDICLAIM, // mediclaim category
             });
         }
 
@@ -1321,7 +1322,7 @@ exports.geteMediclaimUserData = async (req, res) => {
     logger.debug('🔍 [MEDICLAIM USER DATA API] User categoryIds:', req.user.categoryIds);
 
     // Show all mediclaim data for Super Admin OR users with mediclaim category access
-    if (req.user.Role == 1 || req.user.categoryIds?.includes(4)) {
+    if (req.user.Role == ROLE_IDS.SUPER_ADMIN || req.user.categoryIds?.includes(CATEGORY_IDS.MEDICLAIM)) {
         // ADMIN ROLE - Fetch all mediclaim data
         Mediclaim.findAll({
             include: [{ model: MediclaimCompany }, { model: User }]
@@ -1464,7 +1465,7 @@ exports.geteMediclaimUserRenewalData = async (req, res) => {
     try {
         let whereObj = {};
 
-        if (req.user.Role !== 1) {
+        if (req.user.Role !== ROLE_IDS.SUPER_ADMIN) {
             const findUserList = await consumerRoleMapping.findAll({
                 where: { user_role_id: req.user.id },
                 raw: true,

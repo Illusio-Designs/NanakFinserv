@@ -1,8 +1,13 @@
 const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const runningpolicies = sequelize.define('runningpolicies', {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true,
+        },
         mediclaim_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         Zone: {
             type: DataTypes.STRING,

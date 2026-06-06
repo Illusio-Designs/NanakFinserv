@@ -3,15 +3,15 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const Disburse = sequelize.define('disburse', {
         disburse_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         laon_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
         },
         user_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
         },
         pdfname: {
             type: Sequelize.TEXT,

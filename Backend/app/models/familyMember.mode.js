@@ -3,12 +3,12 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const FamilyMember = sequelize.define('familymember', {
         family_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         mediclaim_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         DateOfBirth: {
             type: DataTypes.STRING,

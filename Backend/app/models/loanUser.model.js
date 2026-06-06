@@ -3,8 +3,8 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const LoanUser = sequelize.define('loanuser', {
         laon_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         status: {
@@ -12,10 +12,10 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: true
         },
         user_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
         },
         role_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
         },
         remarks: {
             type: Sequelize.TEXT,

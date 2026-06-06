@@ -1,12 +1,12 @@
 module.exports = (sequelize, Sequelize) => {
     const DisbursementLoan = sequelize.define('disbursetb', {
         disbursement_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         laon_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             // unique: true, // Temporarily disabled due to MySQL 64-key limit
         },
         disbursementAmount: {
@@ -46,7 +46,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: true
         },
         updated_by: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
         },
     }, {
         tableName: 'disburseloan',

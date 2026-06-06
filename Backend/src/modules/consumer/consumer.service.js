@@ -1,3 +1,4 @@
+const { ROLE_IDS } = require("../../config/ids");
 /**
  * consumer service — data-access helpers for the consumer domain.
  * (Used by the large addConsumer flow for its foreign-key and duplicate checks.)
@@ -54,7 +55,7 @@ async function createBuilderConsumer(payload, actorId) {
     }
   } else {
     user = await db.user.create({
-      username, email, mobileNumber, role_id: 5, otp: "", token: "",
+      username, email, mobileNumber, role_id: ROLE_IDS.BUILDER_CONSUMER, otp: "", token: "",
       created_by: actorId, updated_by: actorId,
       builder_user: builder_user_id, is_from_builder_user: 1, referenceName,
     });

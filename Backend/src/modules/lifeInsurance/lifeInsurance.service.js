@@ -1,3 +1,4 @@
+const { CATEGORY_IDS } = require("../../config/ids");
 /**
  * lifeInsurance service — data-access for the life-insurance domain.
  */
@@ -35,7 +36,7 @@ async function createPolicy(data) {
   await ConsumerRoleMapping.create({
     user_role_id: data.created_by,
     user_consumer_id: data.created_by,
-    category_id: 5,
+    category_id: CATEGORY_IDS.LIFE_INSURANCE,
   });
 
   return policy;

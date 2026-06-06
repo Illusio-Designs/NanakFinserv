@@ -1,3 +1,4 @@
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * loan controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -88,11 +89,11 @@ exports.getAllLoanUser = async (req, res) => {
 
     // For users with loan category access, show all loan consumers
     // Only apply role-based filtering if the user doesn't have loan category access
-    if (req.user.Role === 4 && !req.user.categoryIds?.includes(2)) {
+    if (req.user.Role === ROLE_IDS.STAFF && !req.user.categoryIds?.includes(CATEGORY_IDS.LOAN)) {
         whereObj.user_role_id = req.user.id;
         logger.debug('🔍 [LOAN API] Setting user_role_id filter:', req.user.id);
     }
-    if (req.user.Role === 4 && !req.user.categoryIds?.includes(2)) {
+    if (req.user.Role === ROLE_IDS.STAFF && !req.user.categoryIds?.includes(CATEGORY_IDS.LOAN)) {
         whereObjLoan.role_id = req.user.id;
         logger.debug('🔍 [LOAN API] Setting role_id filter:', req.user.id);
     } else {
@@ -104,7 +105,7 @@ exports.getAllLoanUser = async (req, res) => {
     
     // Get all building manager user IDs to exclude them
     const buildingManagerUsers = await User.findAll({
-        where: { role_id: 7 },
+        where: { role_id: ROLE_IDS.BUILDING_MANAGER },
         attributes: ['user_id'],
         raw: true
     });
@@ -254,7 +255,7 @@ exports.getAllLoanUserInterested = async (req, res) => {
     // whereObjLoan.createdAt = { [Op.between]: [startDate, endDate] }
     // For Role 4, don't filter by user_role_id - show all loan consumers they have access to
     // The consumerRoleMapping will be checked, but if there are no mappings, show all
-    // if (req.user.Role === 4) {
+    // if (req.user.Role === ROLE_IDS.STAFF) {
     //     whereObj.user_role_id = req.user.id;
     // }
     whereObj.category_id = 2;
@@ -796,11 +797,11 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
     let whereObj = {};
     let whereObjLoan = {};
 
-    if (req.user.Role === 4) {
+    if (req.user.Role === ROLE_IDS.STAFF) {
         whereObj.user_role_id = req.user.id;
     }
     // Set role_id filter for Not Interested page
-    if (req.user.Role === 4) {
+    if (req.user.Role === ROLE_IDS.STAFF) {
         whereObjLoan.role_id = req.user.id;
         logger.debug('🔍 [BACKEND] Setting role_id filter to:', req.user.id);
     }
@@ -931,7 +932,7 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
         const existingMapping = await consumerRoleMapping.findOne({
             where: {
                 user_role_id: req.user.id,
-                category_id: 2,
+                category_id: CATEGORY_IDS.LOAN,
                 user_consumer_id: userId
             }
         });
@@ -940,7 +941,7 @@ exports.getAllLoanUserNotInterested = async (req, res) => {
             logger.debug('🔍 [BACKEND] Creating missing consumerRoleMapping for user_id:', userId);
             await consumerRoleMapping.create({
                 user_role_id: req.user.id,
-                category_id: 2,
+                category_id: CATEGORY_IDS.LOAN,
                 user_consumer_id: userId
             });
             logger.debug('🔍 [BACKEND] consumerRoleMapping created successfully');
@@ -1060,11 +1061,11 @@ exports.getAllLoanUserDisburse = async (req, res) => {
 
     // For Role 4, don't filter by user_role_id - show all completed loans they have access to
     // The consumerRoleMapping will be checked, but if there are no mappings, show all
-    // if (req.user.Role === 4) {
+    // if (req.user.Role === ROLE_IDS.STAFF) {
     //     whereObj.user_role_id = req.user.id;
     // }
     // Don't filter by role_id in loanUser table - filter by consumerRoleMapping instead
-    // if (req.user.Role === 4) {
+    // if (req.user.Role === ROLE_IDS.STAFF) {
     //     whereObjLoan.role_id = req.user.id;
     // }
     whereObj.category_id = 2;
@@ -1404,7 +1405,7 @@ exports.addDisburse = async (req, res) => {
 
         // Find an existing entry by user_id
         let disburse = await Disburse.findOne({
-            where: { user_id: Number(user_id), categoryname },
+            where: { user_id, categoryname },
         });
 
         if (disburse) {

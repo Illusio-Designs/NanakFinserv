@@ -1,3 +1,4 @@
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * vehicle controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -74,7 +75,7 @@ const logger = require("../../config/logger");
 exports.getAllVehicleInsUser = async (req, res) => {
     let whereObj = {};
 
-    if (req.user.Role === 4) {
+    if (req.user.Role === ROLE_IDS.STAFF) {
         whereObj.user_role_id = req.user.id;
     }
     whereObj.category_id = 6;
@@ -353,7 +354,7 @@ AgentContactNumber: _AgentContactNumber
             const existingMapping = await consumerRoleMapping.findOne({
                 where: {
                     user_consumer_id: userData.user_id,
-                    category_id: 6
+                    category_id: CATEGORY_IDS.VEHICLE
                 }
             });
 
@@ -363,7 +364,7 @@ AgentContactNumber: _AgentContactNumber
                 await consumerRoleMapping.create({
                     user_role_id: req.user.id,
                     user_consumer_id: userData.user_id,
-                    category_id: 6,
+                    category_id: CATEGORY_IDS.VEHICLE,
                 });
             }
         } else {
@@ -374,7 +375,7 @@ AgentContactNumber: _AgentContactNumber
                 username: _Name,
                 email: _Email,
                 mobileNumber: _MobileNumber,
-                role_id: 3, // All users should be consumers
+                role_id: ROLE_IDS.CONSUMER, // All users should be consumers
                 otp: "",
                 token: "",
                 created_by: req.user.id,
@@ -389,7 +390,7 @@ AgentContactNumber: _AgentContactNumber
             await consumerRoleMapping.create({
                 user_role_id: req.user.id,
                 user_consumer_id: userData.user_id,
-                category_id: 6,
+                category_id: CATEGORY_IDS.VEHICLE,
             });
         }
 
@@ -1534,9 +1535,9 @@ exports.getVehicleUserData = async (req, res) => {
 //         if (!startDate || !endDate) {
 //             logger.debug('🔍 getVehicleUserRenewalData: No dates provided, fetching all vehicle category users');
             
-//             // Get all users assigned to Vehicle category (category_id: 6)
+//             // Get all users assigned to Vehicle category (category_id: CATEGORY_IDS.VEHICLE)
 //             const vehicleCategoryUsers = await db.consumerRoleMapping.findAll({
-//                 where: { category_id: 6 },
+//                 where: { category_id: CATEGORY_IDS.VEHICLE },
 //                 include: [
 //                     {
 //                         model: db.user,
@@ -1704,7 +1705,7 @@ exports.getVehicleUserData = async (req, res) => {
 
 //         // Original logic for date-based filtering
 //         let whereObj = {};
-//         if (req.user.Role !== 1) {
+//         if (req.user.Role !== ROLE_IDS.SUPER_ADMIN) {
 //             whereObj.consumer_role_id = req.user.id;
 //         }
 //         // Add status filter if provided

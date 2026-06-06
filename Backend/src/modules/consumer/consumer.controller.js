@@ -1,3 +1,4 @@
+const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
 /**
  * consumer controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -79,11 +80,11 @@ exports.addConsumerData = async (req, res) => {
     
     try {
     let buildeUser;
-    if (req.user.Role == 1) {
+    if (req.user.Role == ROLE_IDS.SUPER_ADMIN) {
         buildeUser = req.body.builderType;
         logger.debug('🔍 [ADD CONSUMER] Admin user - Builder Type:', buildeUser);
     } else {
-        if (req.user.Role == 2) {
+        if (req.user.Role == ROLE_IDS.BUILDER) {
             buildeUser = req.user.id;
             logger.debug('🔍 [ADD CONSUMER] Builder user - Builder ID:', buildeUser);
         }
@@ -138,7 +139,7 @@ exports.addConsumerData = async (req, res) => {
                 username: req.body.username,
                 email: req.body.email,
                 mobileNumber: req.body.phone_number,
-                role_id: 3,
+                role_id: ROLE_IDS.CONSUMER,
                 referenceName: req.body.referenceName,
                 created_by: req.user.id,
                 updated_by: req.user.id,
@@ -151,11 +152,11 @@ exports.addConsumerData = async (req, res) => {
         }
 
                     logger.debug('🔍 [ADD CONSUMER] Checking vertical assignment conditions...');
-                    logger.debug('🔍 [ADD CONSUMER] User Role check:', req.user.Role == 1 || req.user.Role == 4);
+                    logger.debug('🔍 [ADD CONSUMER] User Role check:', req.user.Role == ROLE_IDS.SUPER_ADMIN || req.user.Role == ROLE_IDS.STAFF);
                     logger.debug('🔍 [ADD CONSUMER] Category check:', req.body?.category && req.body.category.length);
                     
                     if (
-                        // (req.user.Role == 1 || req.user.Role == 4) &&
+                        // (req.user.Role == ROLE_IDS.SUPER_ADMIN || req.user.Role == ROLE_IDS.STAFF) &&
                         // req.body?.category &&
                         // req.body.category.length
                         (req.body?.category && req.body.category.length) 
@@ -175,7 +176,7 @@ exports.addConsumerData = async (req, res) => {
                         let Rs = await consumerRoleMapping.bulkCreate(array);
                         logger.debug('🔍 [ADD CONSUMER] ConsumerRoleMapping created:', Rs);
 
-                        let findLoan = array.find((item) => item.category_id == 2);
+                        let findLoan = array.find((item) => item.category_id == CATEGORY_IDS.LOAN);
                         if (findLoan) {
                             logger.debug('🔍 [ADD CONSUMER] Creating loan user for category 2');
                             const loanUserRecord = await loanUser.create({
@@ -208,14 +209,14 @@ exports.addConsumerData = async (req, res) => {
                                 }
                             });
                         }
-                        let findMediclaim = array.find((item) => item.category_id == 4);
+                        let findMediclaim = array.find((item) => item.category_id == CATEGORY_IDS.MEDICLAIM);
                         if (findMediclaim) {
                             logger.debug('🔍 [ADD CONSUMER] Creating mediclaim for category 4');
                             await Mediclaim.create({
                                 user_id: findMediclaim.user_consumer_id,
                             });
                         }
-            let findLifeInsurance = array.find((item) => item.category_id == 5);
+            let findLifeInsurance = array.find((item) => item.category_id == CATEGORY_IDS.LIFE_INSURANCE);
             if (findLifeInsurance) {
                 logger.debug('🔍 [ADD CONSUMER] Creating life insurance for category 5');
                 const lifeInsuranceRecord = await LifeInsurance.create({
@@ -343,7 +344,7 @@ exports.updateConsumerData = async (req, res) => {
         // }
 
         // Proceed with the category mapping if the user has the required role
-        if ((req.user.Role == 1 || req.user.Role == 4) && req.body?.category && req.body.category.length) {
+        if ((req.user.Role == ROLE_IDS.SUPER_ADMIN || req.user.Role == ROLE_IDS.STAFF) && req.body?.category && req.body.category.length) {
             // Delete existing category mappings for the user
             await consumerRoleMapping.destroy({
                 where: { user_consumer_id: req.body.user_id },
@@ -360,7 +361,7 @@ exports.updateConsumerData = async (req, res) => {
             let Rs = await consumerRoleMapping.bulkCreate(array);
 
             // Handle loan-related category logic
-            let findLoan = array.find((item) => item.category_id == 2);
+            let findLoan = array.find((item) => item.category_id == CATEGORY_IDS.LOAN);
             if (findLoan) {
                 let findLoanUser = await loanUser.findOne({
                     where: { user_id: findLoan.user_consumer_id },
@@ -410,7 +411,7 @@ exports.updateConsumerData = async (req, res) => {
             }
 
             // Handle Mediclaim-related category logic
-            let findMediclaim = array.find((item) => item.category_id == 4);
+            let findMediclaim = array.find((item) => item.category_id == CATEGORY_IDS.MEDICLAIM);
             if (findMediclaim) {
                 let findLoanMediclaim = await Mediclaim.findOne({
                     where: { user_id: findMediclaim.user_consumer_id },
@@ -424,7 +425,7 @@ exports.updateConsumerData = async (req, res) => {
             }
 
             // Handle Life Insurance-related category logic
-            let findLifeInsurance = array.find((item) => item.category_id === 5);
+            let findLifeInsurance = array.find((item) => item.category_id === CATEGORY_IDS.LIFE_INSURANCE);
             if (findLifeInsurance) {
                 let findLifeInsuranceRecord = await LifeInsurance.findOne({
                     where: { user_id: findLifeInsurance.user_consumer_id },
@@ -503,7 +504,7 @@ exports.updateConsumerData = async (req, res) => {
                 }
             }
 
-            let findVehicle = array.find((item) => item.category_id === 6);
+            let findVehicle = array.find((item) => item.category_id === CATEGORY_IDS.VEHICLE);
             if (findVehicle) {
                 let findLoanMediclaim = await vehicleUser.findOne({
                     where: { user_id: findVehicle.user_consumer_id },
@@ -788,7 +789,7 @@ exports.updateConsumer = async (req, res) => {
                     username,
                     email,
                     mobileNumber,
-                    role_id: 5, // Builder consumers
+                    role_id: ROLE_IDS.BUILDER_CONSUMER, // Builder consumers
                     otp: "",
                     token: "",
                     created_by: req.user.id,

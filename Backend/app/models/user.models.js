@@ -1,8 +1,8 @@
 module.exports = (sequelize, Sequelize) => {
   const User = sequelize.define('user', {
     user_id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
+      type: Sequelize.UUID,
+      defaultValue: Sequelize.UUIDV4,
       primaryKey: true
     },
     username: {
@@ -30,10 +30,10 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: true
     },
     role_id: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.UUID,
     },
     created_by: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.UUID,
       allowNull: true,
       references: {
         model: 'user',
@@ -41,7 +41,7 @@ module.exports = (sequelize, Sequelize) => {
       }
     },
     updated_by: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.UUID,
       allowNull: true,
       references: {
         model: 'user',
@@ -49,7 +49,7 @@ module.exports = (sequelize, Sequelize) => {
       }
     },
     builder_user: {
-      type: Sequelize.INTEGER,
+      type: Sequelize.UUID,
       allowNull: true,
       references: {
         model: 'user',

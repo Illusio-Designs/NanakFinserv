@@ -3,8 +3,8 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const vehicleuser = sequelize.define('vehicleuser', {
         vehicle_user_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         vehicle_policy_type: {
@@ -17,7 +17,7 @@ module.exports = (sequelize, Sequelize) => {
             type: DataTypes.STRING,
         },
         user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         contact_person_name: {
             type: DataTypes.STRING,
@@ -39,10 +39,10 @@ module.exports = (sequelize, Sequelize) => {
             }
         },
         vehicle_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         reference_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         make: {
             type: DataTypes.STRING,
@@ -64,7 +64,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: true,
         },
         consumer_role_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
         },
         agentName: {
             type: DataTypes.STRING,

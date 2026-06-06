@@ -3,12 +3,12 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const LifeInsuranceDocument = sequelize.define('lifeInsuranceDocument', {
         document_id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
+            type: DataTypes.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         life_insurance_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'life_insurance',
@@ -49,7 +49,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: true
         },
         uploaded_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             references: {
                 model: 'user',

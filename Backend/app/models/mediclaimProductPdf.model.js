@@ -1,12 +1,12 @@
 module.exports = (sequelize, Sequelize) => {
     const MediclaimProductPDF = sequelize.define('mediclaimproductpdf', {
         mediclaim_pdf_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         mediclaim_product_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             allowNull: false
         },
         pdf_name: {

@@ -5,19 +5,19 @@ module.exports = (sequelize, Sequelize) => {
     "builderconsumer",
     {
       builderConsumerId: {
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
       },
       user_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: true,
       },
       role_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       unit_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       status: {
         type: Sequelize.STRING(20),
@@ -33,21 +33,21 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.TEXT,
       },
       builder_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         allowNull: false,
       },
       office_no: {
         type: Sequelize.STRING(100),
       },
       category_id: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
       },
       wing_id: {
-        type: Sequelize.INTEGER, // e.g., "A", "B", etc.
+        type: Sequelize.UUID, // e.g., "A", "B", etc.
         allowNull: false,
       },
       floor_id: {
-        type: Sequelize.INTEGER, // Floor number
+        type: Sequelize.UUID, // Floor number
         allowNull: false,
       },
     },

@@ -2,6 +2,11 @@ const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize, Sequelize) => {
     const LifeInsurance = sequelize.define('lifeInsurance', {
+        id: {
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4,
+            primaryKey: true,
+        },
         // Agent Details
         agent_code: {
             type: DataTypes.STRING(50),
@@ -345,7 +350,7 @@ module.exports = (sequelize, Sequelize) => {
         
         // User reference for integration
         user_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: false,
             references: {
                 model: 'user',
@@ -355,7 +360,7 @@ module.exports = (sequelize, Sequelize) => {
         
         // Consumer reference for integration with consumer role mapping
         user_consumer_id: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             references: {
                 model: 'user',
@@ -372,7 +377,7 @@ module.exports = (sequelize, Sequelize) => {
         
         // Audit fields
         created_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             references: {
                 model: 'user',
@@ -380,7 +385,7 @@ module.exports = (sequelize, Sequelize) => {
             }
         },
         updated_by: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.UUID,
             allowNull: true,
             references: {
                 model: 'user',

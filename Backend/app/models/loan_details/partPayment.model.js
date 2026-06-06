@@ -3,12 +3,12 @@ const { DataTypes } = require("sequelize");
 module.exports = (sequelize, Sequelize) => {
     const PartPayment = sequelize.define('part_payment', {
         part_id: {
-            type: Sequelize.INTEGER,
-            autoIncrement: true,
+            type: Sequelize.UUID,
+            defaultValue: Sequelize.UUIDV4,
             primaryKey: true
         },
         laon_id: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             allowNull: false,
         },
         part_number: {
@@ -24,7 +24,7 @@ module.exports = (sequelize, Sequelize) => {
             allowNull: true,
         },
         updated_by: {
-            type: Sequelize.INTEGER,
+            type: Sequelize.UUID,
             allowNull: true,
         },
     }, {
