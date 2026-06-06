@@ -37,6 +37,15 @@ const UNIT_CATEGORY_IDS = {
   HOUSE: "30000000-0000-4000-8000-000000000004",
 };
 
+// Document types stored in the `documents` lookup table (FK target of
+// vehicle_document.categoryId). Historically: Aadhar=1, PAN=2, GST=3, RC Book=4.
+const DOCUMENT_IDS = {
+  AADHAR: "40000000-0000-4000-8000-000000000001",
+  PAN: "40000000-0000-4000-8000-000000000002",
+  GST: "40000000-0000-4000-8000-000000000003",
+  RC_BOOK: "40000000-0000-4000-8000-000000000004",
+};
+
 // Human-readable names for seeding (and any name-based UI lookups).
 const ROLE_NAMES = {
   [ROLE_IDS.SUPER_ADMIN]: "Super Admin",
@@ -61,11 +70,20 @@ const UNIT_CATEGORY_NAMES = {
   [UNIT_CATEGORY_IDS.HOUSE]: "House",
 };
 
+const DOCUMENT_NAMES = {
+  [DOCUMENT_IDS.AADHAR]: "Aadhar",
+  [DOCUMENT_IDS.PAN]: "PAN",
+  [DOCUMENT_IDS.GST]: "GST",
+  [DOCUMENT_IDS.RC_BOOK]: "RC Book",
+};
+
 module.exports = {
   ROLE_IDS,
   CATEGORY_IDS,
   UNIT_CATEGORY_IDS,
+  DOCUMENT_IDS,
   ROLE_NAMES,
   CATEGORY_NAMES,
   UNIT_CATEGORY_NAMES,
+  DOCUMENT_NAMES,
 };

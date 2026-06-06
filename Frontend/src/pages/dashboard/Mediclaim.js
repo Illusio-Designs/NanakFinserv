@@ -1,3 +1,4 @@
+import { ROLE_IDS, CATEGORY_IDS } from "../../config/ids";
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
@@ -1158,7 +1159,7 @@ const Mediclaim = () => {
           <h1>Mediclaim Management</h1>
         <div>
                 <Button className="add-consumer-btn me-2" onClick={exportToExcel}>Export to Excel</Button>
-                {((user && user.role_id !== 1) || (categoryId && categoryId.includes(4))) && (
+                {((user && user.role_id !== ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) && (
                     <Button className="add-consumer-btn" onClick={toggleModal}>+ Add Mediclaim</Button>
                 )}
         </div>

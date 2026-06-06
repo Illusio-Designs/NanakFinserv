@@ -1,3 +1,4 @@
+import { ROLE_IDS } from "../config/ids";
 // Header.js
 import React, { useState, useEffect } from 'react';
 import { FaSearch, FaBell, FaUser, FaSignOutAlt, FaExpand, FaCompress, FaBars } from 'react-icons/fa';
@@ -70,7 +71,7 @@ const DashboardHeader = ({ toggleSidebar, isSidebarOpen, toggleFullScreen, isFul
           </div>
           <div className="profile-info">
             <div className="profile-name">{user?.name || 'User'}</div>
-            <div className="profile-role">{user?.role_id === 1 ? 'Admin' : 'User'}</div>
+            <div className="profile-role">{user?.role_id === ROLE_IDS.SUPER_ADMIN ? 'Admin' : 'User'}</div>
           </div>
         </div>
 
@@ -82,7 +83,7 @@ const DashboardHeader = ({ toggleSidebar, isSidebarOpen, toggleFullScreen, isFul
               </div>
               <div className="popup-user-info">
                 <h4>{user?.name || 'User'}</h4>
-                <p>{user?.role_id === 1 ? 'Administrator' : 'User'}</p>
+                <p>{user?.role_id === ROLE_IDS.SUPER_ADMIN ? 'Administrator' : 'User'}</p>
               </div>
             </div>
             <div className="popup-actions">

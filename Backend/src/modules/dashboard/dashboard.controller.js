@@ -379,7 +379,7 @@ exports.getUserCounts = async (req, res) => {
                 const categoryId = cat["category.category_id"];
                 const categoryName = cat["category.category_name"];
                 let count = 0;
-                if (categoryId == 2) { // Loan
+                if (categoryId == CATEGORY_IDS.LOAN) { // Loan
                     // Exclude building managers from loan count (reuse buildingManagerUserIds from top of function)
                     count = await consumerRoleMapping.count({
                         where: { 
@@ -389,15 +389,15 @@ exports.getUserCounts = async (req, res) => {
                             })
                         },
                     });
-                } else if (categoryId == 4) { // Mediclaim
+                } else if (categoryId == CATEGORY_IDS.MEDICLAIM) { // Mediclaim
                     count = await consumerRoleMapping.count({
                         where: { user_role_id: req.user.id, category_id: CATEGORY_IDS.MEDICLAIM },
                     });
-                } else if (categoryId == 6) { // Vehicle
+                } else if (categoryId == CATEGORY_IDS.VEHICLE) { // Vehicle
                     count = await consumerRoleMapping.count({
                         where: { category_id: CATEGORY_IDS.VEHICLE }, // Show total count, not just assigned
                     });
-                } else if (categoryId == 5) { // Life Insurance
+                } else if (categoryId == CATEGORY_IDS.LIFE_INSURANCE) { // Life Insurance
                     count = await consumerRoleMapping.count({
                         where: { category_id: CATEGORY_IDS.LIFE_INSURANCE }, // Show total count, not just assigned
                     });

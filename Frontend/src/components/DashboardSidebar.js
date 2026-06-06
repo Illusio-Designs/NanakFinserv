@@ -1,10 +1,11 @@
+import { ROLE_IDS, CATEGORY_IDS } from "../config/ids";
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/components/DashboardSidebar.css';
 import Cookies from 'js-cookie';
 import { getVerticalSettings } from '../serviceAPI/adminApi';
-import { 
-  FaHome, 
+import {
+  FaHome,
   FaUsers, 
   FaBuilding, 
   FaHandHoldingUsd, 
@@ -105,7 +106,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
   }
   
   // Check if user is Super Admin via role OR category includes 1
-  const isSuperAdmin = (user && user.role_id === 1) || (Array.isArray(categoryId) && categoryId.includes(1));
+  const isSuperAdmin = (user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (Array.isArray(categoryId) && categoryId.includes(ROLE_IDS.SUPER_ADMIN));
 
   const handleLinkClick = () => {
     toggleSidebar();
@@ -137,7 +138,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
       
     <nav className="sidebar-nav">
         <ul className="nav-list">
-          {user && user.role_id !== 2 && (
+          {user && user.role_id !== ROLE_IDS.BUILDER && (
             <li className={`nav-item ${activeTab === '/dashboard' ? 'active' : ''}`}>
               <Link to="/dashboard" onClick={handleLinkClick} className="nav-link">
                 <FaHome className="nav-icon" />
@@ -146,7 +147,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (user && user.role_id === 2)) && (
+          {(isSuperAdmin || (user && user.role_id === ROLE_IDS.BUILDER)) && (
             <li className={`nav-item ${activeTab === '/consumer' ? 'active' : ''}`}>
               <Link to="/consumer" onClick={handleLinkClick} className="nav-link">
                 <FaUsers className="nav-icon" />
@@ -156,7 +157,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
           )}
 
           {/* Building Manager Menu */}
-          {user && user.role_id === 7 && (
+          {user && user.role_id === ROLE_IDS.BUILDING_MANAGER && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['building-manager'] ? 'open' : ''}`}
@@ -187,7 +188,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (user && user.role_id === 2)) && (
+          {(isSuperAdmin || (user && user.role_id === ROLE_IDS.BUILDER)) && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['builder'] ? 'open' : ''}`}
@@ -218,7 +219,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(2))) && verticals.loan && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.LOAN))) && verticals.loan && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['loan'] ? 'open' : ''}`}
@@ -273,7 +274,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(4))) && verticals.mediclaim && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) && verticals.mediclaim && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['mediclaim'] ? 'open' : ''}`}
@@ -316,7 +317,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(6))) && verticals.vehicle && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.VEHICLE))) && verticals.vehicle && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['vehicle'] ? 'open' : ''}`}
@@ -353,7 +354,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(5))) && verticals.life && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.LIFE_INSURANCE))) && verticals.life && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['lifeinsurance'] ? 'open' : ''}`}
@@ -384,7 +385,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (categoryId && categoryId.includes(4))) && verticals.mediclaim && (
+          {(isSuperAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) && verticals.mediclaim && (
             <li className={`nav-item ${activeTab === '/inquiries' ? 'active' : ''}`}>
               <Link to="/inquiries" onClick={handleLinkClick} className="nav-link">
                 <FaQuestionCircle className="nav-icon" />

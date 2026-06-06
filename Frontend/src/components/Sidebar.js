@@ -1,3 +1,4 @@
+import { ROLE_IDS, CATEGORY_IDS } from "../config/ids";
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import './Sidebar.css';
@@ -64,14 +65,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       </div>
 
       <ul className="menu">
-        {user && user.role_id !== 2 && <li className={`${activeTab === '/dashboard' && 'active'}`}>
+        {user && user.role_id !== ROLE_IDS.BUILDER && <li className={`${activeTab === '/dashboard' && 'active'}`}>
           <Link to="/dashboard" onClick={handleLinkClick}>
             <i className="bi bi-speedometer2"></i>
             <span>Dashboard</span>
           </Link>
         </li>}
 
-        {(user && (user.role_id === 1 || user.role_id === 2)) && <li className={`${activeTab === '/consumer' && 'active'}`}>
+        {(user && (user.role_id === ROLE_IDS.SUPER_ADMIN || user.role_id === ROLE_IDS.BUILDER)) && <li className={`${activeTab === '/consumer' && 'active'}`}>
           <Link to="/consumer" onClick={handleLinkClick}>
             <i className="bi bi-person"></i>
             <span>Consumer</span>
@@ -79,7 +80,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </li>}
 
         {/* Building Manager Menu */}
-        {user && user.role_id === 7 && (
+        {user && user.role_id === ROLE_IDS.BUILDING_MANAGER && (
           <>
             <li className={`${activeTab === '/builder/building' && 'active'}`}>
               <Link to="/builder/building" onClick={handleLinkClick}>
@@ -96,7 +97,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </>
         )}
 
-        {(user && (user.role_id === 1 || user.role_id === 2)) && (
+        {(user && (user.role_id === ROLE_IDS.SUPER_ADMIN || user.role_id === ROLE_IDS.BUILDER)) && (
           <li>
             <div
               className={`submenu-toggle ${openSubmenus['builder'] ? 'open' : ''}`}
@@ -123,7 +124,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {((user && user.role_id === 1) || (categoryId && categoryId.includes(2))) && (
+        {((user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.LOAN))) && (
           <li>
             <div
               className={`submenu-toggle ${openSubmenus['loan'] ? 'open' : ''}`}
@@ -163,7 +164,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {((user && user.role_id === 1) || (categoryId && categoryId.includes(4))) && (
+        {((user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) && (
           <li>
             <div
               className={`submenu-toggle ${openSubmenus['mediclaim'] ? 'open' : ''}`}
@@ -198,7 +199,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {((user && user.role_id === 1) || (categoryId && categoryId.includes(6))) && (
+        {((user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.VEHICLE))) && (
           <li>
             <div
               className={`submenu-toggle ${openSubmenus['vehicle'] ? 'open' : ''}`}
@@ -223,7 +224,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {((user && user.role_id === 1) || (categoryId && categoryId.includes(5))) && (
+        {((user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.LIFE_INSURANCE))) && (
           <li>
             <div
               className={`submenu-toggle ${openSubmenus['lifeinsurance'] ? 'open' : ''}`}
@@ -250,7 +251,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {((user && user.role_id === 1) || (categoryId && categoryId.includes(4))) && (
+        {((user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) && (
           <li className={`${activeTab === '/inquiries' && 'active'}`}>
             <Link to="/inquiries" onClick={handleLinkClick}>
               <i className="bi bi-question-circle"></i>
@@ -259,7 +260,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {user && user.role_id === 1 && (
+        {user && user.role_id === ROLE_IDS.SUPER_ADMIN && (
           <li className={`${activeTab === '/dashboard/blog' && 'active'}`}>
             <Link to="/dashboard/blog" onClick={handleLinkClick}>
               <i className="bi bi-pencil-square"></i>
@@ -268,7 +269,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           </li>
         )}
 
-        {user && user.role_id === 1 && (
+        {user && user.role_id === ROLE_IDS.SUPER_ADMIN && (
           <li className={`${activeTab === '/user' && 'active'}`}>
             <Link to="/user" onClick={handleLinkClick}>
               <i className="bi bi-person-lines-fill"></i>

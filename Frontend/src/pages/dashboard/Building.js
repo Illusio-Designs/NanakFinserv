@@ -1,3 +1,4 @@
+import { ROLE_IDS } from "../../config/ids";
 import React, { useEffect, useState } from "react";
 import '../../styles/pages/dashboard/Consumer.css';
 import Table from "../../components/common/Table";
@@ -412,7 +413,7 @@ const Building = () => {
             <div className="consumer-container">
                 <div className="consumer-header">
                     <h1>Building Management</h1>
-                    {user.Role !== 7 && (
+                    {user.Role !== ROLE_IDS.BUILDING_MANAGER && (
                     <Button 
                         className="add-consumer-btn" 
                         onClick={toggleModal}

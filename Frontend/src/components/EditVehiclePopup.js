@@ -1,3 +1,4 @@
+import { DOCUMENT_IDS } from "../config/ids";
 import React, { useState, useEffect } from 'react';
 import './EditVehiclePopup.css';
 import DatePicker from "react-datepicker";
@@ -183,11 +184,11 @@ const EditVehiclePopup = ({ data, onClose, onSubmit, mode = 'edit', isOpen }) =>
             setDocumentsToRemove(prev => [...prev, { categoryId, fileName }]);
             
             // Update formData to clear the file name
-            if (categoryId === 1) {
+            if (categoryId === DOCUMENT_IDS.AADHAR) {
                 setFormData(prev => ({ ...prev, AadharFileName: '' }));
-            } else if (categoryId === 2) {
+            } else if (categoryId === DOCUMENT_IDS.PAN) {
                 setFormData(prev => ({ ...prev, PanFileName: '' }));
-            } else if (categoryId === 3) {
+            } else if (categoryId === DOCUMENT_IDS.GST) {
                 setFormData(prev => ({ ...prev, GstFileName: '' }));
             }
             
@@ -263,9 +264,9 @@ const EditVehiclePopup = ({ data, onClose, onSubmit, mode = 'edit', isOpen }) =>
             });
             
             // Extract document file names by categoryId (handle string/number)
-            const aadharDoc = (data.documents && Array.isArray(data.documents)) ? data.documents.find(doc => doc.categoryId == 1) : null;
-            const panDoc = (data.documents && Array.isArray(data.documents)) ? data.documents.find(doc => doc.categoryId == 2) : null;
-            const gstDoc = (data.documents && Array.isArray(data.documents)) ? data.documents.find(doc => doc.categoryId == 3) : null;
+            const aadharDoc = (data.documents && Array.isArray(data.documents)) ? data.documents.find(doc => doc.categoryId == DOCUMENT_IDS.AADHAR) : null;
+            const panDoc = (data.documents && Array.isArray(data.documents)) ? data.documents.find(doc => doc.categoryId == DOCUMENT_IDS.PAN) : null;
+            const gstDoc = (data.documents && Array.isArray(data.documents)) ? data.documents.find(doc => doc.categoryId == DOCUMENT_IDS.GST) : null;
             // Helper function to find policy type name by ID
             const getPolicyTypeName = (policyTypeId) => {
                 if (!policyTypes || !policyTypeId) return '';

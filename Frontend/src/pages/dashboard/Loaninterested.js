@@ -1,3 +1,4 @@
+import { ROLE_IDS } from "../../config/ids";
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
@@ -206,11 +207,11 @@ const Loani = () => {
 
     const currentStatus = editData?.details?.status;
 
-    if (user.role_id === 1) {
+    if (user.role_id === ROLE_IDS.SUPER_ADMIN) {
       return allOptions; // Admin users can see all options
     }
 
-    if (user.role_id === 4) {
+    if (user.role_id === ROLE_IDS.STAFF) {
       // For Role 4 users, always show all options regardless of current status
       return allOptions;
     }

@@ -20,6 +20,7 @@ const {
   ROLE_NAMES,
   CATEGORY_NAMES,
   UNIT_CATEGORY_NAMES,
+  DOCUMENT_NAMES,
 } = require("../config/ids");
 
 const ADMIN_MOBILE = process.env.DEFAULT_ADMIN_MOBILE || "7600046416";
@@ -42,7 +43,13 @@ async function seedDefaults(logger) {
       defaults: { unit_category_id: id, unit_category_name: name },
     });
   }
-  log.info("Lookup tables seeded (roles, categories, unit categories)");
+  for (const [id, name] of Object.entries(DOCUMENT_NAMES)) {
+    await db.documents.findOrCreate({
+      where: { categoryId: id },
+      defaults: { categoryId: id, doc_name: name },
+    });
+  }
+  log.info("Lookup tables seeded (roles, categories, unit categories, documents)");
 
   // 2) Default admin user (looked up by mobile, the login key).
   const [user, created] = await db.user.findOrCreate({

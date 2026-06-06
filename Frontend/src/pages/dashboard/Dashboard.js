@@ -1,3 +1,4 @@
+import { ROLE_IDS } from "../../config/ids";
 // src/dashboard/Dashboard.js
 import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
@@ -16,10 +17,10 @@ const Dashboard = () => {
     // Check if user is a consumer (role_id === 3)
     const user = Cookies.get('user') ? JSON.parse(Cookies.get('user')) : null;
     
-    if (user && user.role_id === 3) {
+    if (user && user.role_id === ROLE_IDS.CONSUMER) {
       setIsConsumer(true);
       fetchConsumerData();
-    } else if (user && user.role_id === 7) {
+    } else if (user && user.role_id === ROLE_IDS.BUILDING_MANAGER) {
       // Check if user is a building manager (role_id === 7)
       setIsBuildingManager(true);
       fetchBuildingManagerStats();

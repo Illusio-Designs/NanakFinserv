@@ -1,3 +1,4 @@
+import { ROLE_IDS, CATEGORY_IDS } from "../../config/ids";
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
 import Table from '../../components/common/Table';
@@ -121,7 +122,7 @@ const Consumer = () => {
     console.log('🔍 [FRONTEND] Debug useEffect - Current verticleUser:', verticleUser);
     console.log('🔍 [FRONTEND] Debug useEffect - Current user:', user);
     console.log('🔍 [FRONTEND] Debug useEffect - User role_id:', user?.role_id);
-    console.log('🔍 [FRONTEND] Debug useEffect - Should show Builder Type:', user && user.role_id === 1);
+    console.log('🔍 [FRONTEND] Debug useEffect - Should show Builder Type:', user && user.role_id === ROLE_IDS.SUPER_ADMIN);
     
     // Log specific category data
     console.log('🔍 [FRONTEND] Debug useEffect - Life Insurance (5) roleData:', roleData[5]);
@@ -149,13 +150,13 @@ const Consumer = () => {
           case 'all':
             return true; // Show all consumers
           case 'loan':
-            return hasCategories && item.category.some(cat => cat.category_id === 2);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.LOAN);
           case 'mediclaim':
-            return hasCategories && item.category.some(cat => cat.category_id === 4);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.MEDICLAIM);
           case 'life':
-            return hasCategories && item.category.some(cat => cat.category_id === 5);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.LIFE_INSURANCE);
           case 'vehicle':
-            return hasCategories && item.category.some(cat => cat.category_id === 6);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.VEHICLE);
           case 'unassigned':
             return !hasCategories; // No categories assigned
           default:
@@ -195,13 +196,13 @@ const Consumer = () => {
           case 'all':
             return true; // Show all consumers
           case 'loan':
-            return hasCategories && item.category.some(cat => cat.category_id === 2);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.LOAN);
           case 'mediclaim':
-            return hasCategories && item.category.some(cat => cat.category_id === 4);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.MEDICLAIM);
           case 'life':
-            return hasCategories && item.category.some(cat => cat.category_id === 5);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.LIFE_INSURANCE);
           case 'vehicle':
-            return hasCategories && item.category.some(cat => cat.category_id === 6);
+            return hasCategories && item.category.some(cat => cat.category_id === CATEGORY_IDS.VEHICLE);
           case 'unassigned':
             return !hasCategories; // No categories assigned
           default:
@@ -297,7 +298,7 @@ const Consumer = () => {
     ];
     
     // Only show builder column if NOT building manager
-    if (user?.role_id !== 7) {
+    if (user?.role_id !== ROLE_IDS.BUILDING_MANAGER) {
       tableColumns.push({ key: 'builderUser', head: 'Builder User' });
     }
     
@@ -746,7 +747,7 @@ const handleSubmit = async (e) => {
       <div className="consumer-container">
         <div className="consumer-header">
           <h1>Consumer Management</h1>
-          {user && user.role_id !== 7 && (
+          {user && user.role_id !== ROLE_IDS.BUILDING_MANAGER && (
             <Button 
               className="add-consumer-btn" 
               onClick={toggleModal}
@@ -819,7 +820,7 @@ const handleSubmit = async (e) => {
           </div>
         </div> */}
 {/* Show stats only if NOT building manager */}
-{user?.role_id !== 7 && (
+{user?.role_id !== ROLE_IDS.BUILDING_MANAGER && (
   <div className="stat-cards-container">
     <div 
       className={`stat-card ${activeFilter === 'all' ? 'active' : ''}`}
@@ -959,7 +960,7 @@ const handleSubmit = async (e) => {
                 </div>
               </div>
 
-              {user && user.role_id === 1 && (
+              {user && user.role_id === ROLE_IDS.SUPER_ADMIN && (
                 <div className="form-row">
                   <div className="form-group">
                     <label>Builder Type</label>

@@ -1,4 +1,4 @@
-const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
+const { ROLE_IDS, CATEGORY_IDS, DOCUMENT_IDS } = require("../../config/ids");
 /**
  * vehicle controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -439,10 +439,10 @@ AgentContactNumber: _AgentContactNumber
 
             // Handle standard documents (aadhar, pan, gst, rcbook)
             const standardDocuments = [
-                { fieldName: 'aadhar', categoryId: 1 },
-                { fieldName: 'pan', categoryId: 2 },
-                { fieldName: 'gst', categoryId: 3 },
-                { fieldName: 'rcbook', categoryId: 4 }
+                { fieldName: 'aadhar', categoryId: DOCUMENT_IDS.AADHAR },
+                { fieldName: 'pan', categoryId: DOCUMENT_IDS.PAN },
+                { fieldName: 'gst', categoryId: DOCUMENT_IDS.GST },
+                { fieldName: 'rcbook', categoryId: DOCUMENT_IDS.RC_BOOK }
             ];
 
             for (const doc of standardDocuments) {
@@ -1265,10 +1265,10 @@ exports.updateVehicleUserData = async (req, res) => {
         
         // Handle standard documents (aadhar, pan, gst, rcbook)
         const standardDocuments = [
-            { fieldName: 'aadhar', categoryId: 1 },
-            { fieldName: 'pan', categoryId: 2 },
-            { fieldName: 'gst', categoryId: 3 },
-            { fieldName: 'rcbook', categoryId: 4 }
+            { fieldName: 'aadhar', categoryId: DOCUMENT_IDS.AADHAR },
+            { fieldName: 'pan', categoryId: DOCUMENT_IDS.PAN },
+            { fieldName: 'gst', categoryId: DOCUMENT_IDS.GST },
+            { fieldName: 'rcbook', categoryId: DOCUMENT_IDS.RC_BOOK }
         ];
         
         for (const doc of standardDocuments) {

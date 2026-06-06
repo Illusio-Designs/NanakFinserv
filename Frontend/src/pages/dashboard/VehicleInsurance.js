@@ -1,3 +1,4 @@
+import { DOCUMENT_IDS } from "../../config/ids";
 import React, { useEffect, useState } from "react";
 import "../../styles/pages/dashboard/Consumer.css";
 import Table from "../../components/common/Table";
@@ -580,19 +581,19 @@ const VehicleInsurance = () => {
 
       const aadharDoc = documents.find(
         (doc) =>
-          doc.categoryId == 1 || doc.categoryId === 1 || doc.categoryId === "1"
+          doc.categoryId == DOCUMENT_IDS.AADHAR || doc.categoryId === DOCUMENT_IDS.AADHAR || doc.categoryId === DOCUMENT_IDS.AADHAR
       );
       const panDoc = documents.find(
         (doc) =>
-          doc.categoryId == 2 || doc.categoryId === 2 || doc.categoryId === "2"
+          doc.categoryId == DOCUMENT_IDS.PAN || doc.categoryId === DOCUMENT_IDS.PAN || doc.categoryId === DOCUMENT_IDS.PAN
       );
       const gstDoc = documents.find(
         (doc) =>
-          doc.categoryId == 3 || doc.categoryId === 3 || doc.categoryId === "3"
+          doc.categoryId == DOCUMENT_IDS.GST || doc.categoryId === DOCUMENT_IDS.GST || doc.categoryId === DOCUMENT_IDS.GST
       );
       const rcbookDoc = documents.find(
         (doc) =>
-          doc.categoryId == 4 || doc.categoryId === 4 || doc.categoryId === "4"
+          doc.categoryId == DOCUMENT_IDS.RC_BOOK || doc.categoryId === DOCUMENT_IDS.RC_BOOK || doc.categoryId === DOCUMENT_IDS.RC_BOOK
       );
 
       // Determine if this edit is for a Renewal so we can clear running-policy nominee fields
@@ -2205,10 +2206,10 @@ const VehicleInsurance = () => {
     const documents =
       completeUserData.documents || completeUserData.vehicle_documents || [];
 
-    const aadharDoc = documents.find((doc) => doc.categoryId == 1);
-    const panDoc = documents.find((doc) => doc.categoryId == 2);
-    const gstDoc = documents.find((doc) => doc.categoryId == 3);
-    const rcbookDoc = documents.find((doc) => doc.categoryId == 4);
+    const aadharDoc = documents.find((doc) => doc.categoryId == DOCUMENT_IDS.AADHAR);
+    const panDoc = documents.find((doc) => doc.categoryId == DOCUMENT_IDS.PAN);
+    const gstDoc = documents.find((doc) => doc.categoryId == DOCUMENT_IDS.GST);
+    const rcbookDoc = documents.find((doc) => doc.categoryId == DOCUMENT_IDS.RC_BOOK);
 
     // Move current running policy to previous policy
     const previousPolicy = {

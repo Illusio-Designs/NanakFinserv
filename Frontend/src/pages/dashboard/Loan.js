@@ -1,3 +1,4 @@
+import { ROLE_IDS, CATEGORY_IDS } from "../../config/ids";
 import React, { useEffect, useState } from 'react';
 import '../../styles/pages/dashboard/Consumer.css';
 import DashboardLayout from '../../components/DashboardLayout';
@@ -254,7 +255,7 @@ const Loan = () => {
       <div className="consumer-container">
         <div className="consumer-header">
           <h1>Loan Management</h1>
-          {((user && user.role_id !== 1) || (categoryId && categoryId.includes(2))) && 
+          {((user && user.role_id !== ROLE_IDS.SUPER_ADMIN) || (categoryId && categoryId.includes(CATEGORY_IDS.LOAN))) && 
             <Button className="add-consumer-btn" onClick={toggleStatusModal}>+ Add Loan Consumer</Button>
           }
         </div>

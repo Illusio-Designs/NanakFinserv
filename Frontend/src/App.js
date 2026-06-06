@@ -1,3 +1,4 @@
+import { ROLE_IDS, CATEGORY_IDS } from "./config/ids";
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate, Outlet, BrowserRouter } from 'react-router-dom';
 import CustomScrollbar from './CustomScrollbar';
@@ -103,7 +104,7 @@ const AppContent = () => {
   const isSuperAdmin = () => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
-    return (user && user.role_id === 1) || (Array.isArray(categoryId) && categoryId.includes(1));
+    return (user && user.role_id === ROLE_IDS.SUPER_ADMIN) || (Array.isArray(categoryId) && categoryId.includes(ROLE_IDS.SUPER_ADMIN));
   };
 
   const dashboardPaths = [
@@ -165,60 +166,60 @@ const AppContent = () => {
   const PrivateDashboard = ({ element }) => {
     const user = Cookies.get('user') && JSON.parse(Cookies.get('user'));
     const categoryId = Cookies.get('category');
-    return user && user.role_id != 2 ? element : user ? <Navigate to="/consumer" /> : <Navigate to="/login" />;
+    return user && user.role_id != ROLE_IDS.BUILDER ? element : user ? <Navigate to="/consumer" /> : <Navigate to="/login" />;
   };
 
   const PrivateLoan = ({ element }) => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (categoryId && categoryId.includes(2))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.LOAN))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateMediclaim = ({ element }) => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (categoryId && categoryId.includes(4))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateInquiries = ({ element }) => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (categoryId && categoryId.includes(4))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateLife = ({ element }) => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (categoryId && categoryId.includes(5))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.LIFE_INSURANCE))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateVehicle = ({ element }) => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (categoryId && categoryId.includes(6))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.VEHICLE))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateBuilder = ({ element }) => {
     const user = safeParseCookie('user', {});
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (user && user.role_id === 2)) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (user && user.role_id === ROLE_IDS.BUILDER)) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateBuildingManager = ({ element }) => {
     const user = safeParseCookie('user', {});
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (user && (user.role_id === 2 || user.role_id === 7))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (user && (user.role_id === ROLE_IDS.BUILDER || user.role_id === ROLE_IDS.BUILDING_MANAGER))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateConsumer = ({ element }) => {
     const user = safeParseCookie('user', {});
     const superAdmin = isSuperAdmin();
-    return (superAdmin || (user && (user.role_id === 2 || user.role_id === 7))) ? element : <Navigate to="/dashboard" />;
+    return (superAdmin || (user && (user.role_id === ROLE_IDS.BUILDER || user.role_id === ROLE_IDS.BUILDING_MANAGER))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateRoleUser = ({ element }) => {
