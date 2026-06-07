@@ -151,4 +151,19 @@ env = dotenvParseVariables(env.parsed);
 // keep resolving to Backend/uploads exactly as before the split.
 const CTRL_DIR = path.join(__dirname, "../../../app/controllers");
 
-module.exports = { Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
+/**
+ * Universal de-dup helper: ensure a consumer→category mapping exists, creating
+ * it only if missing. Use this EVERYWHERE a consumer is assigned to a vertical
+ * (consumer/vehicle/loan/mediclaim/life pages) so the same person+category can
+ * never get a duplicate mapping, regardless of which path created them.
+ */
+async function ensureCategoryMapping(user_consumer_id, category_id, user_role_id) {
+  if (!user_consumer_id || !category_id) return null;
+  const [row] = await consumerRoleMapping.findOrCreate({
+    where: { user_consumer_id, category_id },
+    defaults: { user_consumer_id, category_id, user_role_id: user_role_id || null },
+  });
+  return row;
+}
+
+module.exports = { ensureCategoryMapping, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };

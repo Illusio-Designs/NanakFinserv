@@ -32,11 +32,15 @@ async function createPolicy(data) {
 
   const policy = await LifeInsurance.create(data);
 
-  // Map the creating user to the life-insurance vertical (category 5).
-  await ConsumerRoleMapping.create({
-    user_role_id: data.created_by,
-    user_consumer_id: data.created_by,
-    category_id: CATEGORY_IDS.LIFE_INSURANCE,
+  // Map the creating user to the life-insurance vertical (idempotent — never a
+  // duplicate mapping even when the user creates multiple life policies).
+  await ConsumerRoleMapping.findOrCreate({
+    where: { user_consumer_id: data.created_by, category_id: CATEGORY_IDS.LIFE_INSURANCE },
+    defaults: {
+      user_role_id: data.created_by,
+      user_consumer_id: data.created_by,
+      category_id: CATEGORY_IDS.LIFE_INSURANCE,
+    },
   });
 
   return policy;
