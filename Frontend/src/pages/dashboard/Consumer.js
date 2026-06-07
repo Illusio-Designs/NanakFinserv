@@ -7,7 +7,8 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import DashboardLayout from '../../components/DashboardLayout';
-import { getAllConsumers, getAllVerticle, getAllVerticleUser, addConsumerUser, updateConsumerUser, getAllBuilders, getUserCountList } from '../../serviceAPI/userAPI';
+import { getAllConsumers, getAllVerticle, getAllVerticleUser, addConsumerUser, updateConsumerUser, getAllBuilders, getUserCountList, getHousehold, addFamilyMember } from '../../serviceAPI/userAPI';
+import toast from 'react-hot-toast';
 import Cookies from 'js-cookie';
 
 const Consumer = () => {
@@ -38,6 +39,12 @@ const Consumer = () => {
     vehicleInsurance: { checked: false, roleId: '' }
   });
   const [loading, setLoading] = useState(false);
+  // ── Family / household ──
+  const [familyOpen, setFamilyOpen] = useState(false);
+  const [familyHead, setFamilyHead] = useState(null);   // the consumer row whose family we manage
+  const [household, setHousehold] = useState([]);        // members + their policies
+  const [familyLoading, setFamilyLoading] = useState(false);
+  const [familyForm, setFamilyForm] = useState({ username: '', phone_number: '', email: '', referenceName: '' });
   const [activeFilter, setActiveFilter] = useState(null); // null, 'all', 'loan', 'mediclaim', 'vehicle', 'life', 'unassigned'
   const [statsData, setStatsData] = useState({
     totalConsumers: 0,
@@ -742,6 +749,51 @@ const handleSubmit = async (e) => {
     return selectedOption || null;
   };
 
+  // ── Family / household handlers ──
+  const loadHousehold = async (mobile) => {
+    setFamilyLoading(true);
+    const res = await getHousehold(mobile);
+    setHousehold(res && res.status && res.data ? (res.data.members || []) : []);
+    setFamilyLoading(false);
+  };
+
+  const handleViewFamily = async (row) => {
+    setFamilyHead(row);
+    setFamilyForm({ username: '', phone_number: '', email: '', referenceName: '' });
+    setFamilyOpen(true);
+    if (row && row.mobileNumber) await loadHousehold(row.mobileNumber);
+  };
+
+  const closeFamily = () => {
+    setFamilyOpen(false);
+    setFamilyHead(null);
+    setHousehold([]);
+  };
+
+  const submitFamilyMember = async (e) => {
+    e.preventDefault();
+    if (!familyForm.username || !familyForm.phone_number) {
+      toast.error('Name and mobile number are required');
+      return;
+    }
+    if (!/^\d{10}$/.test(familyForm.phone_number)) {
+      toast.error('Mobile number must be 10 digits');
+      return;
+    }
+    const res = await addFamilyMember({
+      head_user_id: familyHead.user_id,
+      username: familyForm.username,
+      phone_number: familyForm.phone_number,
+      email: familyForm.email,
+      referenceName: familyForm.referenceName,
+    });
+    if (res && res.status) {
+      toast.success('Family member added');
+      setFamilyForm({ username: '', phone_number: '', email: '', referenceName: '' });
+      await loadHousehold(familyHead.mobileNumber);
+    }
+  };
+
   return (
     <DashboardLayout onSearch={handleSearch}>
       <div className="consumer-container">
@@ -889,6 +941,7 @@ const handleSubmit = async (e) => {
           columns={heading.map(h => ({ key: h.key, title: h.head }))}
           data={filteredData}
           onEdit={handleEdit}
+          onView={handleViewFamily}
           pagination={true}
           itemsPerPage={itemsPerPage}
           loading={loading}
@@ -1107,6 +1160,79 @@ const handleSubmit = async (e) => {
               </Button>
             </div>
           </form>
+        </Modal>
+
+        {/* Family / household modal */}
+        <Modal
+          open={familyOpen}
+          onClose={closeFamily}
+          title={familyHead ? `Family of ${familyHead.username || familyHead.mobileNumber}` : 'Family'}
+        >
+          <div className="family-modal">
+            <h4 style={{ margin: '0 0 8px' }}>Household members</h4>
+            {familyLoading ? (
+              <p>Loading…</p>
+            ) : household.length === 0 ? (
+              <p style={{ color: '#666' }}>No members yet.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
+                    <th style={{ padding: '6px 4px' }}>Name</th>
+                    <th style={{ padding: '6px 4px' }}>Mobile</th>
+                    <th style={{ padding: '6px 4px' }}>Role</th>
+                    <th style={{ padding: '6px 4px' }}>Policies</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {household.map((m) => {
+                    const p = m.policies || {};
+                    const counts = [
+                      p.vehicle?.length ? `Vehicle ${p.vehicle.length}` : null,
+                      p.loan?.length ? `Loan ${p.loan.length}` : null,
+                      p.mediclaim?.length ? `Mediclaim ${p.mediclaim.length}` : null,
+                      p.life?.length ? `Life ${p.life.length}` : null,
+                    ].filter(Boolean).join(', ') || '—';
+                    return (
+                      <tr key={m.user_id} style={{ borderBottom: '1px solid #f5f5f5' }}>
+                        <td style={{ padding: '6px 4px' }}>{m.username}</td>
+                        <td style={{ padding: '6px 4px' }}>{m.mobileNumber}</td>
+                        <td style={{ padding: '6px 4px' }}>{m.isHead ? 'Head' : 'Member'}</td>
+                        <td style={{ padding: '6px 4px' }}>{counts}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+
+            <h4 style={{ margin: '8px 0' }}>Add family member</h4>
+            <form onSubmit={submitFamilyMember} className="family-form">
+              <div className="form-group">
+                <label>Name *</label>
+                <Input type="text" value={familyForm.username} placeholder="Enter full name"
+                  onChange={(e) => setFamilyForm({ ...familyForm, username: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Mobile Number *</label>
+                <Input type="tel" value={familyForm.phone_number} placeholder="Enter 10-digit mobile" maxLength="10"
+                  onChange={(e) => setFamilyForm({ ...familyForm, phone_number: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <Input type="email" value={familyForm.email} placeholder="Optional"
+                  onChange={(e) => setFamilyForm({ ...familyForm, email: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>Relation</label>
+                <Input type="text" value={familyForm.referenceName} placeholder="e.g. Son, Spouse"
+                  onChange={(e) => setFamilyForm({ ...familyForm, referenceName: e.target.value })} />
+              </div>
+              <div className="form-actions" style={{ marginTop: 12 }}>
+                <Button type="submit">Add member</Button>
+              </div>
+            </form>
+          </div>
         </Modal>
       </div>
     </DashboardLayout>
