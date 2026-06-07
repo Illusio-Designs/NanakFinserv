@@ -1,5 +1,5 @@
 /** Validators for the admin module. */
-const VERTICALS = ["loan", "vehicle", "mediclaim", "life"];
+const VERTICALS = ["loan", "vehicle", "mediclaim", "life", "builder"];
 
 const validateVerticals = (req, res, next) => {
   const b = req.body || {};
