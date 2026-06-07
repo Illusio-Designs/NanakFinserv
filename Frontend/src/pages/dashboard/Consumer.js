@@ -1178,70 +1178,83 @@ const handleSubmit = async (e) => {
           onClose={closeFamily}
           title={familyHead ? `Family of ${familyHead.username || familyHead.mobileNumber}` : 'Family'}
         >
-          <div className="family-modal">
-            <h4 style={{ margin: '0 0 8px' }}>Household members</h4>
-            {familyLoading ? (
-              <p>Loading…</p>
-            ) : household.length === 0 ? (
-              <p style={{ color: '#666' }}>No members yet.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', borderBottom: '1px solid #eee' }}>
-                    <th style={{ padding: '6px 4px' }}>Name</th>
-                    <th style={{ padding: '6px 4px' }}>Mobile</th>
-                    <th style={{ padding: '6px 4px' }}>Role</th>
-                    <th style={{ padding: '6px 4px' }}>Policies</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <div className="family-modal consumer-form">
+            <div className="form-section">
+              <div className="family-section-head">
+                <h5>Household Members</h5>
+                {!familyLoading && <span className="family-count">{household.length}</span>}
+              </div>
+
+              {familyLoading ? (
+                <p className="family-empty">Loading…</p>
+              ) : household.length === 0 ? (
+                <p className="family-empty">No family members yet. Add one below.</p>
+              ) : (
+                <div className="family-roster">
                   {household.map((m) => {
                     const p = m.policies || {};
-                    const counts = [
-                      p.vehicle?.length ? `Vehicle ${p.vehicle.length}` : null,
-                      p.loan?.length ? `Loan ${p.loan.length}` : null,
-                      p.mediclaim?.length ? `Mediclaim ${p.mediclaim.length}` : null,
-                      p.life?.length ? `Life ${p.life.length}` : null,
-                    ].filter(Boolean).join(', ') || '—';
+                    const badges = [
+                      { k: 'Vehicle', n: p.vehicle?.length || 0 },
+                      { k: 'Loan', n: p.loan?.length || 0 },
+                      { k: 'Mediclaim', n: p.mediclaim?.length || 0 },
+                      { k: 'Life', n: p.life?.length || 0 },
+                    ].filter((b) => b.n > 0);
                     return (
-                      <tr key={m.user_id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                        <td style={{ padding: '6px 4px' }}>{m.username}</td>
-                        <td style={{ padding: '6px 4px' }}>{m.mobileNumber}</td>
-                        <td style={{ padding: '6px 4px' }}>{m.isHead ? 'Head' : 'Member'}</td>
-                        <td style={{ padding: '6px 4px' }}>{counts}</td>
-                      </tr>
+                      <div className="family-card" key={m.user_id}>
+                        <div className="fm-avatar">{(m.username || '?').charAt(0).toUpperCase()}</div>
+                        <div className="fm-info">
+                          <div className="fm-name-row">
+                            <span className="fm-name">{m.username || 'Unnamed'}</span>
+                            <span className={`fm-tag ${m.isHead ? 'head' : ''}`}>{m.isHead ? 'Head' : 'Member'}</span>
+                          </div>
+                          <div className="fm-mobile">📞 {m.mobileNumber}</div>
+                          <div className="fm-policies">
+                            {badges.length ? (
+                              badges.map((b) => <span className="fm-badge" key={b.k}>{b.k} · {b.n}</span>)
+                            ) : (
+                              <span className="fm-badge muted">No policies</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-            )}
+                </div>
+              )}
+            </div>
 
-            <h4 style={{ margin: '8px 0' }}>Add family member</h4>
-            <form onSubmit={submitFamilyMember} className="family-form">
-              <div className="form-group">
-                <label>Name *</label>
-                <Input type="text" value={familyForm.username} placeholder="Enter full name"
-                  onChange={(e) => setFamilyForm({ ...familyForm, username: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label>Mobile Number *</label>
-                <Input type="tel" value={familyForm.phone_number} placeholder="Enter 10-digit mobile" maxLength="10"
-                  onChange={(e) => setFamilyForm({ ...familyForm, phone_number: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <Input type="email" value={familyForm.email} placeholder="Optional"
-                  onChange={(e) => setFamilyForm({ ...familyForm, email: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label>Relation</label>
-                <Input type="text" value={familyForm.referenceName} placeholder="e.g. Son, Spouse"
-                  onChange={(e) => setFamilyForm({ ...familyForm, referenceName: e.target.value })} />
-              </div>
-              <div className="form-actions" style={{ marginTop: 12 }}>
-                <Button type="submit">Add member</Button>
-              </div>
-            </form>
+            <div className="form-section family-add-section">
+              <h5>Add Family Member</h5>
+              <form onSubmit={submitFamilyMember}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Name *</label>
+                    <Input type="text" value={familyForm.username} placeholder="Full name"
+                      onChange={(e) => setFamilyForm({ ...familyForm, username: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Mobile Number *</label>
+                    <Input type="tel" value={familyForm.phone_number} placeholder="10-digit mobile" maxLength="10"
+                      onChange={(e) => setFamilyForm({ ...familyForm, phone_number: e.target.value })} required />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Email</label>
+                    <Input type="email" value={familyForm.email} placeholder="Optional"
+                      onChange={(e) => setFamilyForm({ ...familyForm, email: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label>Relation</label>
+                    <Input type="text" value={familyForm.referenceName} placeholder="e.g. Son, Spouse"
+                      onChange={(e) => setFamilyForm({ ...familyForm, referenceName: e.target.value })} />
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <Button type="submit" className="submit-btn">+ Add Member</Button>
+                </div>
+              </form>
+            </div>
           </div>
         </Modal>
       </div>
