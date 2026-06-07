@@ -10,7 +10,7 @@ import {
   manualLogout,
   errorHandel,
 } from './authStorage';
-import { API_URL, DOWNLOAD_URL, BASE_URL } from './apiBase';
+import { API_URL, DOWNLOAD_URL, BASE_URL, authHeaders } from './apiBase';
 
 // API base (constants + 401 interceptor) now lives in ./apiBase; the
 // building-manager calls in ./buildingManagerApi. Re-exported here so existing
@@ -2990,3 +2990,26 @@ export const getConsumerDashboardData = async () => {
 };
 
 
+
+// ── Household / family members ────────────────────────────────────────────
+/** Add a family member (a full user linked to the household head). */
+export const addFamilyMember = async (data) => {
+  try {
+    const response = await axios.post(`${API_URL}/user/data/consumer/family/add`, data, authHeaders());
+    return response.data;
+  } catch (error) {
+    errorHandel(error);
+    return { status: false };
+  }
+};
+
+/** Resolve a household (head + members + their policies) by any member's mobile. */
+export const getHousehold = async (mobile) => {
+  try {
+    const response = await axios.get(`${API_URL}/user/household/${mobile}`, authHeaders());
+    return response.data;
+  } catch (error) {
+    errorHandel(error);
+    return { data: null, status: false };
+  }
+};
