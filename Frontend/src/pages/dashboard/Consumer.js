@@ -284,7 +284,10 @@ const Consumer = () => {
                 category_id: c.category_id,
                 user_role_id: c.user_role_id
               }))
-            )
+            ),
+            familyDisplay: (item.family_member_count || 0) > 0
+              ? `👨‍👩‍👧 ${item.family_member_count} member${item.family_member_count > 1 ? 's' : ''}`
+              : '—'
           };
         });
         
@@ -301,6 +304,7 @@ const Consumer = () => {
       { key: 'email', head: 'Email' },
       { key: 'mobileNumber', head: 'Mobile' },
       { key: 'categoryDisplay', head: 'Services' },
+      { key: 'familyDisplay', head: 'Family' },
       { key: 'referenceName', head: 'Reference' }
     ];
     

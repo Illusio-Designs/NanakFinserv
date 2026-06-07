@@ -138,7 +138,7 @@ exports.getAllUsers = async (req, res) => {
             attributes: [
                 'user_id','username','email','mobileNumber','referenceName',
                 'role_id','builder_user','created_by','updated_by',
-                'is_from_builder_user','createdAt','updatedAt'
+                'is_from_builder_user','family_head_id','createdAt','updatedAt'
             ],
             include: [
                 { model: db.role, attributes: ['role_name'], as: 'role' },
@@ -173,6 +173,20 @@ exports.getAllUsers = async (req, res) => {
         const excludedUserIds = [...new Set(excludedLoanUsers.map(u => u.user_id).filter(id => id !== null))];
         logger.debug('🔍 [CONSUMER API] Excluding user_ids with loan status interested/notInterested:', excludedUserIds);
 
+        // Family member counts per head (one grouped query, not N+1).
+        const listUserIds = users.map(u => u.user_id);
+        const familyRows = listUserIds.length
+            ? await User.findAll({
+                where: { family_head_id: { [Op.in]: listUserIds } },
+                attributes: ['family_head_id'],
+                raw: true,
+            })
+            : [];
+        const familyCountByHead = familyRows.reduce((acc, r) => {
+            acc[r.family_head_id] = (acc[r.family_head_id] || 0) + 1;
+            return acc;
+        }, {});
+
         // ⚡ Add category mapping for ALL users
         const finalData = await Promise.all(
             users.map(async (item) => {
@@ -204,7 +218,9 @@ exports.getAllUsers = async (req, res) => {
                     }
                 }
                 item.dataValues.builder_company_name = builderCompanyName;
-                
+                // How many family members belong to this consumer (head).
+                item.dataValues.family_member_count = familyCountByHead[item.user_id] || 0;
+
                 return item;
             })
         );
