@@ -1316,3 +1316,113 @@ exports.updateLoanConsumerData = async (req, res) => {
     }
 };
 
+/**
+ * POST /user/data/consumer/family/add
+ * Add a family member as a full user linked to the household head.
+ * Body: { head_user_id, username, phone_number, email?, referenceName?,
+ *         category?: [{ category_id, user_role_id }] }
+ */
+exports.addFamilyMember = async (req, res) => {
+  try {
+    const { head_user_id, username, phone_number, email, referenceName, category } = req.body;
+    if (!head_user_id || !username || !phone_number) {
+      return res.status(400).send({ message: "head_user_id, username and phone_number are required", status: false });
+    }
+
+    const head = await User.findOne({ where: { user_id: head_user_id } });
+    if (!head) return res.status(404).send({ message: "Head consumer not found", status: false });
+    // If the given head is itself a member, link to its head (single level).
+    const headId = head.family_head_id || head.user_id;
+
+    // A member is a full user identified by their own mobile. Reuse if exists.
+    let member = await User.findOne({ where: { mobileNumber: phone_number } });
+    if (member) {
+      if (!member.family_head_id && member.user_id !== headId) {
+        await User.update({ family_head_id: headId }, { where: { user_id: member.user_id } });
+        member.family_head_id = headId;
+      }
+    } else {
+      member = await User.create({
+        username,
+        email: email || "",
+        mobileNumber: phone_number,
+        referenceName: referenceName || null,
+        role_id: ROLE_IDS.CONSUMER,
+        family_head_id: headId,
+        created_by: req.user && req.user.id,
+      });
+    }
+
+    // Map the member to the requested verticals.
+    if (Array.isArray(category) && category.length) {
+      const existing = await consumerRoleMapping.findAll({ where: { user_consumer_id: member.user_id } });
+      const toCreate = category
+        .filter((cat) => !existing.some((m) => m.category_id === cat.category_id))
+        .map((cat) => ({
+          user_role_id: cat.user_role_id || (req.user && req.user.id),
+          user_consumer_id: member.user_id,
+          category_id: cat.category_id,
+        }));
+      if (toCreate.length) await consumerRoleMapping.bulkCreate(toCreate);
+    }
+
+    return res.status(200).send({ message: "Family member added", data: member, status: true });
+  } catch (e) {
+    logger.error({ err: e }, "addFamilyMember failed");
+    return res.status(400).send({ message: "error adding family member", status: false });
+  }
+};
+
+/**
+ * GET /user/household/:mobile
+ * Resolve the household by any member's mobile and return the head + all members
+ * with their policies (vehicle/loan/mediclaim/life).
+ */
+exports.getHousehold = async (req, res) => {
+  try {
+    const mobile = req.params.mobile;
+    const user = await User.findOne({ where: { mobileNumber: mobile }, raw: true });
+    if (!user) return res.status(404).send({ message: "No consumer with that mobile", status: false });
+
+    const headId = user.family_head_id || user.user_id;
+
+    const members = await User.findAll({
+      where: { [Op.or]: [{ user_id: headId }, { family_head_id: headId }] },
+      attributes: ["user_id", "username", "email", "mobileNumber", "family_head_id", "role_id"],
+      raw: true,
+    });
+    const ids = members.map((m) => m.user_id);
+
+    const [vehicles, loans, mediclaims, lifes] = await Promise.all([
+      vehicleUser.findAll({ where: { user_id: ids }, raw: true }),
+      loanUser.findAll({ where: { user_id: ids }, raw: true }),
+      Mediclaim.findAll({ where: { user_id: ids }, raw: true }),
+      LifeInsurance.findAll({ where: { user_id: ids }, raw: true }),
+    ]);
+
+    const groupBy = (arr) =>
+      arr.reduce((acc, r) => { (acc[r.user_id] = acc[r.user_id] || []).push(r); return acc; }, {});
+    const v = groupBy(vehicles), l = groupBy(loans), m = groupBy(mediclaims), li = groupBy(lifes);
+
+    const data = members.map((mem) => ({
+      ...mem,
+      isHead: mem.user_id === headId,
+      policies: {
+        vehicle: v[mem.user_id] || [],
+        loan: l[mem.user_id] || [],
+        mediclaim: m[mem.user_id] || [],
+        life: li[mem.user_id] || [],
+      },
+    }));
+
+    return res.status(200).send({
+      message: "household get success",
+      data: { head_user_id: headId, members: data },
+      status: true,
+    });
+  } catch (e) {
+    logger.error({ err: e }, "getHousehold failed");
+    return res.status(400).send({ message: "error fetching household", status: false });
+  }
+};
+

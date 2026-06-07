@@ -61,6 +61,16 @@ module.exports = (sequelize, Sequelize) => {
       default:0,
       allowNull: true,
     },
+    // Household linkage: a family member points at the primary consumer (head).
+    // NULL means this user is itself a head / standalone consumer.
+    family_head_id: {
+      type: Sequelize.UUID,
+      allowNull: true,
+      references: {
+        model: 'user',
+        key: 'user_id'
+      }
+    },
   }, {
     tableName: 'user',
     // timestamps: false

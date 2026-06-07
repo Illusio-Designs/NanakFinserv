@@ -78,6 +78,12 @@ db.user.belongsTo(db.user, { foreignKey: 'created_by',as: 'created_by_user' });
 db.user.belongsTo(db.user, { foreignKey: 'updated_by',as: 'updated_by_user' });
 db.user.belongsTo(db.user, { foreignKey: 'builder_user',as: 'builder_user_fk' });
 
+// Household: a head (primary consumer) has many family members; each member
+// belongs to its head. Both are `user` rows (members can log in with their own
+// mobile). family_head_id is NULL for heads.
+db.user.hasMany(db.user, { foreignKey: 'family_head_id', as: 'familyMembers' });
+db.user.belongsTo(db.user, { foreignKey: 'family_head_id', as: 'familyHead' });
+
 db.user.hasOne(db.builderUser, { foreignKey: 'user_id' });
 db.builderUser.belongsTo(db.user, { foreignKey: 'user_id' });
 

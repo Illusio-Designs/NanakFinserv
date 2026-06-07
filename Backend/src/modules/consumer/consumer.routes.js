@@ -17,4 +17,8 @@ router.put("/user/data/update/consumer", verifyToken, builderOps, controller.upd
 router.post("/user/data/consumer/add", verifyToken, builderOps, v.validateAddConsumer, controller.addConsumer);
 router.put("/user/data/consumer/update/:id", verifyToken, builderOps, v.validateUpdateConsumer, controller.updateConsumer);
 
+// Household / family members (members are full users linked to a head).
+router.post("/user/data/consumer/family/add", verifyToken, builderOps, controller.addFamilyMember);
+router.get("/user/household/:mobile", verifyToken, builderOps, controller.getHousehold);
+
 module.exports = router;
