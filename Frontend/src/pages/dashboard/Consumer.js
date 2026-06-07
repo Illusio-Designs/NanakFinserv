@@ -1158,6 +1158,16 @@ const handleSubmit = async (e) => {
               >
                 {loading ? 'Saving...' : (editData ? 'Update' : 'Save')}
               </Button>
+              {editData && editData.user_id && (
+                <Button
+                  type="button"
+                  className="submit-btn"
+                  style={{ background: '#374151' }}
+                  onClick={() => { toggleModal(); handleViewFamily(editData); }}
+                >
+                  + Add Family Member
+                </Button>
+              )}
             </div>
           </form>
         </Modal>

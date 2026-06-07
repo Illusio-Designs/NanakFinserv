@@ -102,36 +102,10 @@ exports.addConsumerData = async (req, res) => {
         let userData;
         if (user) {
             logger.debug('🔍 [ADD CONSUMER] User found with mobile number:', req.body.phone_number, 'User ID:', user.user_id);
-            
-            // Check if user is already assigned to any of the requested categories
-            const existingMappings = await consumerRoleMapping.findAll({
-                where: {
-                    user_consumer_id: user.user_id,
-                    category_id: req.body?.category?.map(cat => cat.category_id) || []
-                }
-            });
-
-            logger.debug('🔍 [ADD CONSUMER] Existing mappings:', existingMappings);
-
-            // Filter out categories that are already assigned
-            const newCategories = req.body?.category?.filter(cat => 
-                !existingMappings.some(mapping => mapping.category_id === cat.category_id)
-            ) || [];
-
-            if (newCategories.length > 0) {
-                logger.debug('🔍 [ADD CONSUMER] Adding new category mappings for existing user');
-                const newMappings = newCategories.map(cat => ({
-                    user_role_id: cat.user_role_id,
-                    user_consumer_id: user.user_id,
-                    category_id: cat.category_id,
-                }));
-
-                await consumerRoleMapping.bulkCreate(newMappings);
-                logger.debug('✅ [ADD CONSUMER] New category mappings created for existing user');
-            } else {
-                logger.debug('ℹ️ [ADD CONSUMER] User already assigned to all requested categories');
-            }
-
+            // Reuse the existing user (NO duplicate user). Category mappings and the
+            // per-vertical records are created below — de-duped against whatever the
+            // consumer already has — so this single path is idempotent whether the
+            // consumer was created here or via the vehicle/loan/etc. pages.
             userData = user;
         } else {
             logger.debug('➕ [ADD CONSUMER] User not found, creating new user...');
@@ -162,19 +136,25 @@ exports.addConsumerData = async (req, res) => {
                         (req.body?.category && req.body.category.length) 
                     ) {
                         logger.debug('🔍 [ADD CONSUMER] Vertical assignment conditions met!');
-                        let array = [];
-                        req.body.category.map((item) => {
-                            logger.debug('🔍 [ADD CONSUMER] Processing category item:', item);
-                            array.push({
-                                user_role_id: item.user_role_id,
-                    user_consumer_id: userData.user_id,
-                                category_id: item.category_id,
-                            });
+                        // De-dup: only add categories the consumer doesn't already have,
+                        // so re-adding an existing consumer (or one created via another
+                        // page) never creates duplicate mappings or per-vertical records.
+                        const existingMappings = await consumerRoleMapping.findAll({
+                            where: { user_consumer_id: userData.user_id },
                         });
+                        const existingCatIds = existingMappings.map((m) => String(m.category_id));
+                        let array = req.body.category
+                            .filter((item) => !existingCatIds.includes(String(item.category_id)))
+                            .map((item) => ({
+                                user_role_id: item.user_role_id,
+                                user_consumer_id: userData.user_id,
+                                category_id: item.category_id,
+                            }));
 
-                        logger.debug('🔍 [ADD CONSUMER] ConsumerRoleMapping array:', array);
-                        let Rs = await consumerRoleMapping.bulkCreate(array);
-                        logger.debug('🔍 [ADD CONSUMER] ConsumerRoleMapping created:', Rs);
+                        if (array.length) {
+                            let Rs = await consumerRoleMapping.bulkCreate(array);
+                            logger.debug('🔍 [ADD CONSUMER] New ConsumerRoleMapping created:', Rs);
+                        }
 
                         let findLoan = array.find((item) => item.category_id == CATEGORY_IDS.LOAN);
                         if (findLoan) {
