@@ -7,6 +7,7 @@ import Cookies from 'js-cookie';
 import { ToasterProvider } from './components/Toaster';
 import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
+import { getVerticalSettings } from './serviceAPI/adminApi';
 
 // Route components are lazy-loaded so each page is its own chunk (keeps the
 // initial bundle small instead of shipping every dashboard page up front).
@@ -62,6 +63,21 @@ const AppContent = () => {
   const navigate = useNavigate();
   const [category, setCategory] = useState([]);
   const [userData, setUserData] = useState(null);
+  // Vertical on/off toggles (admin Settings). Default all-on; refined once the
+  // API responds. Used to block disabled-vertical pages on direct navigation.
+  const [verticals, setVerticals] = useState({
+    loan: true, vehicle: true, mediclaim: true, life: true, builder: true,
+  });
+
+  // Load vertical settings — only when logged in (the endpoint requires auth;
+  // calling it on the public/login pages would 401 and trigger a logout).
+  useEffect(() => {
+    if (!Cookies.get('token')) return;
+    (async () => {
+      const res = await getVerticalSettings();
+      if (res && res.verticals) setVerticals((v) => ({ ...v, ...res.verticals }));
+    })();
+  }, [location.pathname]);
 
   // Helper function to safely parse cookies
   const safeParseCookie = (cookieName, defaultValue = null) => {
@@ -87,12 +103,12 @@ const AppContent = () => {
       if (categoryCookie.trim().startsWith('[')) {
         return JSON.parse(categoryCookie);
       } else {
+        // Category ids are UUID strings now — keep them as strings (do NOT
+        // Number() them, which would turn every UUID into NaN).
         return categoryCookie
           .split(',')
           .map((s) => s.trim())
-          .filter(Boolean)
-          .map((n) => Number(n))
-          .filter((n) => !Number.isNaN(n));
+          .filter(Boolean);
       }
     } catch (error) {
       console.error('🔍 [APP] Error parsing category cookie:', error);
@@ -173,6 +189,7 @@ const AppContent = () => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
+    if (verticals.loan === false) return <Navigate to="/dashboard" />;
     return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.LOAN))) ? element : <Navigate to="/dashboard" />;
   };
 
@@ -180,6 +197,7 @@ const AppContent = () => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
+    if (verticals.mediclaim === false) return <Navigate to="/dashboard" />;
     return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) ? element : <Navigate to="/dashboard" />;
   };
 
@@ -187,6 +205,7 @@ const AppContent = () => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
+    if (verticals.mediclaim === false) return <Navigate to="/dashboard" />;
     return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.MEDICLAIM))) ? element : <Navigate to="/dashboard" />;
   };
 
@@ -194,6 +213,7 @@ const AppContent = () => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
+    if (verticals.life === false) return <Navigate to="/dashboard" />;
     return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.LIFE_INSURANCE))) ? element : <Navigate to="/dashboard" />;
   };
 
@@ -201,12 +221,14 @@ const AppContent = () => {
     const user = safeParseCookie('user', {});
     const categoryId = parseCategoryCookie();
     const superAdmin = isSuperAdmin();
+    if (verticals.vehicle === false) return <Navigate to="/dashboard" />;
     return (superAdmin || (categoryId && categoryId.includes(CATEGORY_IDS.VEHICLE))) ? element : <Navigate to="/dashboard" />;
   };
 
   const PrivateBuilder = ({ element }) => {
     const user = safeParseCookie('user', {});
     const superAdmin = isSuperAdmin();
+    if (verticals.builder === false) return <Navigate to="/dashboard" />;
     return (superAdmin || (user && user.role_id === ROLE_IDS.BUILDER)) ? element : <Navigate to="/dashboard" />;
   };
 

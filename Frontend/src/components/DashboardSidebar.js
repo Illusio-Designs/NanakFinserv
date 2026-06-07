@@ -41,7 +41,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
   // Global vertical toggles (admin Settings). Default all on so nothing hides
   // before the settings load.
   const [verticals, setVerticals] = useState({
-    loan: true, vehicle: true, mediclaim: true, life: true,
+    loan: true, vehicle: true, mediclaim: true, life: true, builder: true,
   });
 
   const location = useLocation();
@@ -188,7 +188,7 @@ const DashboardSidebar = ({ isOpen, toggleSidebar }) => {
             </li>
           )}
 
-          {(isSuperAdmin || (user && user.role_id === ROLE_IDS.BUILDER)) && (
+          {verticals.builder && (isSuperAdmin || (user && user.role_id === ROLE_IDS.BUILDER)) && (
             <li className="nav-item submenu-item">
               <div
                 className={`submenu-toggle ${openSubmenus['builder'] ? 'open' : ''}`}

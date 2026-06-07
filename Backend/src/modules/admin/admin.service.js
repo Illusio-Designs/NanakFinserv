@@ -5,8 +5,8 @@ const db = require("../../../app/models");
 
 const AppSetting = db.appSetting;
 const VERTICAL_KEY = "verticals";
-const VERTICALS = ["loan", "vehicle", "mediclaim", "life"];
-const DEFAULT_VERTICALS = { loan: true, vehicle: true, mediclaim: true, life: true };
+const VERTICALS = ["loan", "vehicle", "mediclaim", "life", "builder"];
+const DEFAULT_VERTICALS = { loan: true, vehicle: true, mediclaim: true, life: true, builder: true };
 
 // Short in-memory cache so the per-request "is this vertical enabled?" check
 // doesn't hit the DB every time. Invalidated on update.

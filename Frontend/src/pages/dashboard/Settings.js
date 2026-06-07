@@ -12,6 +12,7 @@ const VERTICALS = [
   { key: 'vehicle', label: 'Vehicle Insurance' },
   { key: 'mediclaim', label: 'Mediclaim' },
   { key: 'life', label: 'Life Insurance' },
+  { key: 'builder', label: 'Builder' },
 ];
 
 const Settings = () => {
@@ -20,6 +21,7 @@ const Settings = () => {
     vehicle: true,
     mediclaim: true,
     life: true,
+    builder: true,
   });
   const [loading, setLoading] = useState(true);
   const [savingKey, setSavingKey] = useState(null);
