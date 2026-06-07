@@ -350,6 +350,15 @@ AgentContactNumber: _AgentContactNumber
         if (userData) {
             logger.debug('🔍 [addVehicleUserData] User found with mobile number:', _MobileNumber, 'User ID:', userData.user_id);
 
+            // Link to a household head if one was passed and not already linked
+            // (lets a vehicle policy be added for a specific family member).
+            if (req.body.head_user_id && !userData.family_head_id && userData.user_id !== req.body.head_user_id) {
+                await User.update(
+                    { family_head_id: req.body.head_user_id },
+                    { where: { user_id: userData.user_id } }
+                );
+            }
+
             // Check if user is already assigned to vehicle category
             const existingMapping = await consumerRoleMapping.findOne({
                 where: {
@@ -380,6 +389,8 @@ AgentContactNumber: _AgentContactNumber
                 token: "",
                 created_by: req.user.id,
                 updated_by: req.user.id,
+                // If this policy is for a family member, link to the household head.
+                family_head_id: req.body.head_user_id || null,
             });
 
             if (!userData) {
