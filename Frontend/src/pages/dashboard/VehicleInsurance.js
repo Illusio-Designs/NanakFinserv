@@ -2308,9 +2308,8 @@ const VehicleInsurance = () => {
       EngineNumber: completeUserData.engine_number || "",
       ChassisNumber: completeUserData.chassis_number || "",
       CompanyName: "", // Clear company name for new policy
-      Vendor: completeUserData.vendor || "",
 
-      // Reset running policy data
+      // Reset running policy data (Vendor set below from resetRunningPolicy)
       PolicyNumber: resetRunningPolicy.PolicyNumber,
       PolicyIssuedDate: resetRunningPolicy.PolicyIssuedDate,
       PolicyExpiryDate: resetRunningPolicy.PolicyExpiryDate,
@@ -2588,10 +2587,6 @@ const VehicleInsurance = () => {
             parsed.agentContactNumber ||
             normalized.previousPolicy?.agentContactNumber ||
             "",
-          NomineeName: normalized.previousPolicy?.NomineeName || "",
-          NomineeRelation: normalized.previousPolicy?.NomineeRelation || "",
-          NomineeAge: normalized.previousPolicy?.NomineeAge || "",
-          NomineeDob: normalized.previousPolicy?.NomineeDob || "",
           Reference: parsed.reference?.reference_name || parsed.Reference || "",
           reference_id:
             parsed.reference_id || parsed.reference?.reference_id || null,
@@ -3786,8 +3781,6 @@ const VehicleInsurance = () => {
       ) : (
         <span style={{ color: "#999", fontSize: "12px" }}>No Record</span>
       ),
-
-      originalData: item, // Keep original data for edit/view operations
     };
   });
 

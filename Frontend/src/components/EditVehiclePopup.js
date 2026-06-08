@@ -752,7 +752,6 @@ const EditVehiclePopup = ({ data, onClose, onSubmit, mode = 'edit', isOpen }) =>
             vendor: formData.Vendor || '',
             policy_plan_type: formData.PolicyPlanType || '', // Policy Plan Type dropdown (COMPREHENSIVE/SAOD/THIRD PARTY)
             policy_type: formData.policyRadio || '', // Policy Type radio (Fresh/Renewal/Portability)
-            type: formData.Type || '', // Type radio (Individual/Corporate)
             vehicle_user_id: formData.vehicle_user_id,
             consumer_role_id: formData.ConsumerRoleId || '',
             // Document files
