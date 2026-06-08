@@ -1,5 +1,14 @@
 # Vehicle Policy Management — user flow
 
+> **Completeness: ~95% (functionally complete).** Done: full add/edit, nature
+> (Fresh/Renewal/Portability), Policy Type + Plan (TP/Comprehensive/Full) +
+> Company as creatable dropdowns, **TP & OD/Full timelines**, nominee, previous
+> (past) policy, document uploads (RC + running/previous PDF), renewals tab +
+> renew + add-next, and **auto year-by-year reconcile** with date-derived status.
+> Pending: renewal-sheet bulk export, and richer history-timeline display in the
+> view modal. Requires the backend deployed (TP/OD columns + reconcile).
+
+
 How vehicle insurance is managed in the CRM (consumer-linked, TP/OD timelines,
 year-by-year history). Page: **Dashboard → Vehicle** (`/vehicle`).
 

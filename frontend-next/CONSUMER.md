@@ -1,5 +1,12 @@
 # Consumer Management — user flow
 
+> **Completeness: 100% (functionally complete).** Done: list, add (standalone or
+> **join an existing consumer**), services + **working-person assignment**, family
+> members (inline + manage tab), **KYC documents** (upload + reuse across
+> policies), edit (with services/assignee), view, and row actions (family,
+> upload). No known gaps.
+
+
 How consumers (and their households, services and KYC) are managed.
 Page: **Dashboard → Consumers** (`/consumers`).
 
