@@ -23,6 +23,7 @@ export default function DataTable({
   onEdit,
   onView,
   onDelete,
+  rowActions = [],
   pageSize = 10,
   rowKey = "id",
 }) {
@@ -30,7 +31,7 @@ export default function DataTable({
   const [activeFilters, setActiveFilters] = useState({});
   const [page, setPage] = useState(1);
 
-  const hasActions = onEdit || onView || onDelete;
+  const hasActions = onEdit || onView || onDelete || rowActions.length > 0;
 
   const filtered = useMemo(() => {
     let rows = data || [];
@@ -160,6 +161,7 @@ export default function DataTable({
                       <div className="flex items-center justify-end gap-1">
                         {onView && <RowBtn icon={Eye} onClick={() => onView(row)} title="View" />}
                         {onEdit && <RowBtn icon={Pencil} onClick={() => onEdit(row)} title="Edit" />}
+                        {rowActions.map((a, i) => <RowBtn key={i} icon={a.icon} danger={a.danger} onClick={() => a.onClick(row)} title={a.title} />)}
                         {onDelete && <RowBtn icon={Trash2} danger onClick={() => onDelete(row)} title="Delete" />}
                       </div>
                     </td>

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, UserPlus, Trash2 } from "lucide-react";
+import { Plus, UserPlus, Trash2, Users, UploadCloud } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
@@ -34,6 +34,8 @@ export default function ConsumersPage() {
   const [picked, setPicked] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [manageRow, setManageRow] = useState(null);
+  const [manageTab, setManageTab] = useState("family");
+  const [viewRow, setViewRow] = useState(null);
   const [familyList, setFamilyList] = useState([]);
   const [famDraft, setFamDraft] = useState({ username: "", phone_number: "", email: "", picked: {} });
 
@@ -275,7 +277,11 @@ export default function ConsumersPage() {
           setEditRow(r);
           setForm({ username: r.username || "", email: r.email || "", phone_number: r.mobileNumber || "", referenceName: r.referenceName || "" });
         }}
-        onView={(r) => setManageRow(r)}
+        onView={(r) => setViewRow(r)}
+        rowActions={[
+          { icon: Users, title: "Family & documents", onClick: (r) => { setManageTab("family"); setManageRow(r); } },
+          { icon: UploadCloud, title: "Upload document", onClick: (r) => { setManageTab("documents"); setManageRow(r); } },
+        ]}
       />
 
       {/* Add — stepper modal */}
@@ -305,9 +311,28 @@ export default function ConsumersPage() {
       <ConsumerManageModal
         consumer={manageRow}
         open={!!manageRow}
+        initialTab={manageTab}
         onClose={() => setManageRow(null)}
         onChanged={load}
       />
+
+      {/* View — read-only info */}
+      <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Consumer details" subtitle={viewRow?.mobileNumber}>
+        {viewRow && (
+          <div className="space-y-2 text-[14px]">
+            <Row label="Name" value={viewRow.username || "—"} />
+            <Row label="Mobile" value={viewRow.mobileNumber || "—"} />
+            <Row label="Email" value={viewRow.email || "—"} />
+            <Row label="Reference" value={viewRow.referenceName || "—"} />
+            <Row label="Services" value={viewRow.services ? `${viewRow.services} active` : "None"} />
+            <Row label="Family members" value={viewRow.family || 0} />
+            <div className="flex justify-end gap-2 pt-3">
+              <Button variant="secondary" icon={Users} onClick={() => { setViewRow(null); setManageTab("family"); setManageRow(viewRow); }}>Family & docs</Button>
+              <Button icon={UploadCloud} onClick={() => { setViewRow(null); setManageTab("documents"); setManageRow(viewRow); }}>Upload doc</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

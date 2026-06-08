@@ -29,8 +29,12 @@ const DOC_OPTS = [
   { value: DOCUMENT_IDS.RC_BOOK, label: "RC Book" },
 ];
 
-export default function ConsumerManageModal({ consumer, open, onClose, onChanged }) {
-  const [tab, setTab] = useState("family");
+export default function ConsumerManageModal({ consumer, open, onClose, onChanged, initialTab = "family" }) {
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (open) setTab(initialTab);
+  }, [open, initialTab]);
 
   return (
     <Modal open={open} onClose={onClose} title={consumer ? `Manage — ${consumer.username || consumer.mobileNumber}` : "Manage"} subtitle="Family members & KYC documents" size="lg">
