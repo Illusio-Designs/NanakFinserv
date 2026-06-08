@@ -1,11 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
 import { Menu, Search, Bell, LogOut, ChevronDown } from "lucide-react";
+import { useSearch } from "@/lib/search";
 
 export default function Header({ onMenu }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const { query, setQuery } = useSearch();
   const [menuOpen, setMenuOpen] = useState(false);
   // Read the user only after mount — cookies aren't available during SSR, so
   // reading them in render causes a hydration mismatch.
@@ -17,6 +20,11 @@ export default function Header({ onMenu }) {
       setUser({});
     }
   }, []);
+
+  // Clear the global search when navigating to another page.
+  useEffect(() => {
+    setQuery("");
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const logout = () => {
     Cookies.remove("token");
@@ -30,9 +38,14 @@ export default function Header({ onMenu }) {
         <Menu size={20} />
       </button>
 
-      <div className="relative hidden max-w-md flex-1 sm:block">
+      <div className="relative max-w-md flex-1">
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-        <input placeholder="Search anything…" className="ui-control pl-9" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search this page…"
+          className="ui-control pl-9"
+        />
       </div>
 
       <div className="ml-auto flex items-center gap-1">

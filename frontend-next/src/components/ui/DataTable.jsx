@@ -1,11 +1,12 @@
 "use client";
-import { useMemo, useState } from "react";
-import { Search, Pencil, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Pencil, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Dropdown from "./Dropdown";
 import DateRange from "./DateRange";
 import EmptyState from "./EmptyState";
 import Tooltip from "./Tooltip";
+import { useSearch } from "@/lib/search";
 import { cn } from "@/lib/cn";
 
 /**
@@ -27,9 +28,11 @@ export default function DataTable({
   pageSize = 10,
   rowKey = "id",
 }) {
-  const [q, setQ] = useState("");
+  const { query: q } = useSearch(); // global header search drives all pages
   const [activeFilters, setActiveFilters] = useState({});
   const [page, setPage] = useState(1);
+
+  useEffect(() => setPage(1), [q]);
 
   const hasActions = onEdit || onView || onDelete || rowActions.length > 0;
 
@@ -66,23 +69,9 @@ export default function DataTable({
 
   return (
     <div className="ui-card overflow-hidden">
-      {/* Toolbar: search + filters */}
-      {(searchKeys.length > 0 || filters.length > 0) && (
+      {/* Toolbar: filters + count (search is the global header search) */}
+      {filters.length > 0 && (
         <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
-          {searchKeys.length > 0 && (
-            <div className="relative flex-1">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-              <input
-                value={q}
-                onChange={(e) => {
-                  setQ(e.target.value);
-                  setPage(1);
-                }}
-                placeholder="Search…"
-                className="ui-control pl-9"
-              />
-            </div>
-          )}
           {filters.map((f) =>
             f.type === "dateRange" ? (
               <div key={f.key} className="sm:w-auto">
@@ -108,6 +97,11 @@ export default function DataTable({
               </div>
             )
           )}
+          {!loading && (
+            <span className="shrink-0 rounded-full bg-subtle px-3 py-1 text-[12px] font-medium text-muted sm:ml-auto">
+              {filtered.length} record{filtered.length === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
       )}
 
@@ -115,13 +109,13 @@ export default function DataTable({
       <div className="hidden md:block">
         <table className="w-full text-left text-[14px]">
           <thead>
-            <tr className="border-b border-line bg-subtle/60 text-[12px] uppercase tracking-wide text-muted">
+            <tr className="border-b border-line bg-subtle text-[11px] uppercase tracking-wider text-muted">
               {columns.map((c) => (
-                <th key={c.key} className={cn("px-4 py-3 font-medium", c.className)}>
+                <th key={c.key} className={cn("px-4 py-3.5 font-semibold", c.className)}>
                   {c.title}
                 </th>
               ))}
-              {hasActions && <th className="px-4 py-3 text-right font-medium">Actions</th>}
+              {hasActions && <th className="px-4 py-3.5 text-right font-semibold">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -149,7 +143,7 @@ export default function DataTable({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: idx * 0.015 }}
-                  className="border-b border-line transition-colors hover:bg-subtle/60"
+                  className="border-b border-line transition-colors even:bg-subtle/20 hover:bg-brand-50/50"
                 >
                   {columns.map((c) => (
                     <td key={c.key} className={cn("px-4 py-3 text-ink", c.className)}>
@@ -194,6 +188,7 @@ export default function DataTable({
                 <div className="mt-2 flex justify-end gap-1 border-t border-line pt-2">
                   {onView && <RowBtn icon={Eye} onClick={() => onView(row)} title="View" />}
                   {onEdit && <RowBtn icon={Pencil} onClick={() => onEdit(row)} title="Edit" />}
+                  {rowActions.map((a, i) => <RowBtn key={i} icon={a.icon} danger={a.danger} onClick={() => a.onClick(row)} title={a.title} />)}
                   {onDelete && <RowBtn icon={Trash2} danger onClick={() => onDelete(row)} title="Delete" />}
                 </div>
               )}

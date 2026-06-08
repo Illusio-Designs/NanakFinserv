@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import api from "@/lib/api";
+import { SearchProvider } from "@/lib/search";
 
 export default function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,10 +35,12 @@ export default function AppShell({ children }) {
         onToggleCollapse={toggleCollapse}
         verticals={verticals}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Header onMenu={() => setSidebarOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
-      </div>
+      <SearchProvider>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Header onMenu={() => setSidebarOpen(true)} />
+          <main className="flex-1 p-4 sm:p-6">{children}</main>
+        </div>
+      </SearchProvider>
     </div>
   );
 }
