@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, FilePlus } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
@@ -27,6 +27,7 @@ export default function VehiclePage() {
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
+  const [renewRow, setRenewRow] = useState(null);
   const [viewRow, setViewRow] = useState(null);
   const [renewingId, setRenewingId] = useState(null);
 
@@ -130,6 +131,9 @@ export default function VehiclePage() {
           filters={[{ key: "status", label: "Status" }]}
           onView={(r) => setViewRow(r)}
           onEdit={(r) => setEditRow(r)}
+          rowActions={[
+            { icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) },
+          ]}
         />
       ) : (
         <DataTable
@@ -140,11 +144,16 @@ export default function VehiclePage() {
           searchKeys={["name", "mobile", "vehicle_number"]}
           filters={[{ key: "expiry_date", label: "Expiry", type: "dateRange" }]}
           onView={(r) => setViewRow(r)}
+          onEdit={(r) => setEditRow(r)}
+          rowActions={[
+            { icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) },
+          ]}
         />
       )}
 
       <VehicleFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={loadPolicies} />
       <VehicleFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={loadPolicies} />
+      <VehicleFormModal open={!!renewRow} editRow={renewRow} renewMode onClose={() => setRenewRow(null)} onSaved={() => { loadPolicies(); if (tab === "renewals") loadRenewals(); }} />
 
       <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Vehicle policy" subtitle={viewRow?.vehicle_number}>
         {viewRow && (

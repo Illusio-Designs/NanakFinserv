@@ -6,15 +6,19 @@ year-by-year history). Page: **Dashboard → Vehicle** (`/vehicle`).
 ## Screen layout
 - **Tabs:** **Policies** (all running policies) and **Renewals** (policies due / renew).
 - **Add Vehicle Policy** button → multi-step form.
-- Each row: **View** (read-only details) and **Edit** (full form prefilled).
+- Each row actions: **View** (read-only details), **Edit** (full form prefilled),
+  and **Add next policy / renew** (file-plus). Renewals rows also have a **Renew**
+  button. Edit/Add-next are available on **both** tabs.
 - Search via the global header search; **Status** filter on Policies; **Expiry**
-  date-range filter on Renewals.
+  date-range filter on Renewals; the toolbar shows a live **record count**.
 
 ## Add / Edit flow (stepper)
 1. **Consumer** — type the mobile and press **Find**:
    - found → name/email prefilled (existing consumer, linked by mobile) and the
      **KYC on file** is shown (reused, not re-asked);
-   - not found → enter name/email; a new consumer is created on submit.
+   - not found → enter name/email; a new consumer is created on submit, and you
+     can optionally **Join an existing consumer** (link the new user into that
+     household via `head_user_id`).
    *(In Edit the consumer is fixed; details are prefilled.)*
 2. **Vehicle** — vehicle number, type, make, model, manufacturing year, engine no, chassis no.
 3. **Policy** — the core:
@@ -50,16 +54,50 @@ A policy carries two expiry dates: `tp_expiry_date` (long-term TP) and
 `od_expiry_date` (1-yr OD/Full). Status uses the **OD/Full expiry first**, then
 `ExpiryDate` / `PolicyTo`. `tp_tenure` / `od_tenure` store the years.
 
-## Renewals
-- **Renewals** tab lists policies (filter by expiry range). **Renew** moves the
-  current running policy into history and recomputes the timeline.
-- A renewal can also be entered via the full form with **nature = Renewal** and the
-  **Previous Policy** step (porting the old policy's data, incl. NCB).
+## Renewals — display, renew, edit/update
 
-## Past / older records
-Enter them via **Renewal/Portability** with the **Previous Policy** step. They're
-stored in history with status **running** (if today is still within the period) or
-**completed** (if the expiry has passed) — set automatically from the dates.
+**Where:** Vehicle page → **Renewals** tab.
+
+**How upcoming renewals are displayed**
+- The tab loads `POST /user/vehicle/user/renewal/list` and shows each policy's
+  **owner, mobile, vehicle number, expiry date** and a **Renew** button.
+- Use the **Expiry** date-range filter (a single calendar, start→end) to narrow to
+  policies expiring in a window (e.g. this month / next 30–60 days); type in the
+  **header search** to find by name/mobile/vehicle number.
+- Status is date-derived: **running** while still within the period, **completed**
+  once the expiry has passed (computed from OD/Full expiry, else ExpiryDate/PolicyTo).
+
+**Three ways to act on a renewal row**
+1. **Renew** (the button in the row / the ↻ action) → `POST /user/renewVehiclePolicy`
+   `{ vehicle_user_id }`: the **current running policy is moved to history
+   (previous)** and the timeline is reconciled. Quick, no data entry.
+2. **Add next policy / renew** (the “file-plus” row action) → opens the **full
+   form pre-filled with the consumer + vehicle**, with a **blank new policy** and
+   nature = Renewal. You enter the new policy (type/plan/company/dates/TP-OD/
+   premium…); on save it goes through **`PUT /user/vehicle/user/update/:id`**,
+   which **archives the old running policy to previous** and makes this the new
+   running one. Use this to record the actual new policy (vs the one-click renew).
+   *(This is also how you add the next year's record once a policy is **completed** —
+   you don't re-create the vehicle; you add the next policy to the existing one.)*
+3. **Edit** (✎) → opens the full form pre-filled with the existing policy so you
+   can correct/update fields; saves via `PUT /user/vehicle/user/update/:id`.
+
+**After any of these**, `reconcileVehiclePolicies` runs: the newest policy stays
+**running**, older ones are archived to **history**, and every record's status is
+recomputed from its dates — keeping the year-by-year timeline correct.
+
+> Editing is available from **both** the Policies tab and the Renewals tab (same
+> full form, prefilled). A renewal can also be entered from scratch on the
+> Policies tab via **Add Vehicle Policy** with nature = Renewal + the Previous
+> Policy step.
+
+## Past / older records & "add the next one"
+- Enter historical policies via **Renewal/Portability** with the **Previous
+  Policy** step. They're stored in history with status **running** (if today is
+  still within the period) or **completed** (if expired) — set automatically.
+- When a policy is **completed**, you don't create the vehicle again — use **Add
+  next policy / renew** on that row to add the next period's policy to the same
+  vehicle. The old one is archived to history and the new one becomes running.
 
 ## Backend reference
 - Add: `POST /user/vehicle/user/add` · Update: `PUT /user/vehicle/user/update/:id`

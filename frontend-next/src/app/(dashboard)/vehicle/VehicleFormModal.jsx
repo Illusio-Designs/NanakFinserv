@@ -57,7 +57,7 @@ function statusFromExpiry(p) {
   return d >= new Date() ? "running" : "completed";
 }
 
-export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
+export default function VehicleFormModal({ open, onClose, onSaved, editRow, renewMode = false }) {
   const isEdit = !!editRow;
   const [form, setForm] = useState(empty);
   const [headUserId, setHeadUserId] = useState(null);
@@ -67,6 +67,7 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
   const [companies, setCompanies] = useState([]);
   const [policyTypes, setPolicyTypes] = useState([]);
   const [policyPlans, setPolicyPlans] = useState([]);
+  const [heads, setHeads] = useState([]);
   const [files, setFiles] = useState({ rcbook: null, CurrentPolicyFile: null, PreviousCurrentPolicyFile: null });
   const [submitting, setSubmitting] = useState(false);
 
@@ -123,9 +124,11 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
         ManufacturingYear: r.manufacturing_year || r.ManufacturingYear || "",
         EngineNumber: r.engine_number || r.EngineNumber || "",
         ChassisNumber: r.chassis_number || r.ChassisNumber || "",
-        policyRadio: r.vehicle_policy_type || "Fresh",
-        rp: { ...emptyPolicy(), ...(r.runningPolicy || {}) },
-        pp: { ...emptyPolicy(), ...(r.previousPolicy || {}) },
+        // Renew/add-next: keep consumer + vehicle, start a blank new policy
+        // (the backend archives the current running policy automatically).
+        policyRadio: renewMode ? "Renewal" : (r.vehicle_policy_type || "Fresh"),
+        rp: renewMode ? emptyPolicy() : { ...emptyPolicy(), ...(r.runningPolicy || {}) },
+        pp: renewMode ? emptyPolicy() : { ...emptyPolicy(), ...(r.previousPolicy || {}) },
       });
       setFound(true);
       setHeadUserId(r.user_id || r.head_user_id || null);
@@ -138,10 +141,12 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
       api.get("/user/data/company-type").catch(() => null),
       api.get("/user/data/policytype").catch(() => null),
       api.get("/user/data/policyplan").catch(() => null),
-    ]).then(([c, p, pl]) => {
+      api.get("/user/list/consumer").catch(() => null),
+    ]).then(([c, p, pl, cons]) => {
       setCompanies((c?.data?.data || []).map((r) => ({ value: r.company_id, label: r.company_name })));
       setPolicyTypes((p?.data?.data || []).map((r) => ({ value: r.policy_type_id, label: r.policy_type_name })));
       setPolicyPlans((pl?.data?.data || []).map((r) => ({ value: r.policy_plan_id, label: r.policy_name })));
+      setHeads((cons?.data?.data || []).map((r) => ({ value: r.user_id, label: `${r.username || "—"} · ${r.mobileNumber || ""}` })));
     });
   }, [open, isEdit, editRow]);
 
@@ -277,6 +282,16 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
               <Input label="Email" value={form.Email} onChange={(e) => set("Email")(e.target.value)} />
             </div>
           )}
+          {!isEdit && found === false && heads.length > 0 && (
+            <Dropdown
+              searchable
+              label="Join an existing consumer (optional)"
+              placeholder="Standalone — not joining anyone"
+              options={heads}
+              value={headUserId || ""}
+              onChange={(v) => setHeadUserId(v || null)}
+            />
+          )}
           {kyc?.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-subtle/40 p-3 text-[13px]">
               <span className="text-muted">KYC on file (reused):</span>
@@ -305,6 +320,11 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
       title: "Policy",
       render: () => (
         <div className="space-y-4">
+          {renewMode && (
+            <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-[13px] text-brand-700">
+              Adding the next policy for this vehicle — the current policy will be moved to history automatically.
+            </div>
+          )}
           <div>
             <div className="ui-label mb-1">Policy nature</div>
             <div className="flex gap-2">
@@ -342,7 +362,7 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
         </div>
       ),
     },
-    ...(form.policyRadio !== "Fresh"
+    ...(form.policyRadio !== "Fresh" && !renewMode
       ? [{
           title: "Previous Policy",
           render: () => (
@@ -386,7 +406,7 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
     },
   ];
 
-  return <StepperModal open={open} onClose={onClose} title={isEdit ? "Edit Vehicle Policy" : "Add Vehicle Policy"} steps={steps} onSubmit={submit} submitting={submitting} />;
+  return <StepperModal open={open} onClose={onClose} title={renewMode ? "Add Next Policy / Renew" : isEdit ? "Edit Vehicle Policy" : "Add Vehicle Policy"} steps={steps} onSubmit={submit} submitting={submitting} />;
 }
 
 function Row({ label, value }) {
