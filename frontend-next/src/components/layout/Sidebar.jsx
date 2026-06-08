@@ -14,11 +14,11 @@ const NAV = [
     section: "Business",
     items: [
       { label: "Consumers", href: "/consumers", icon: Users },
-      { label: "Loan", href: "/loan", icon: HandCoins },
-      { label: "Mediclaim", href: "/mediclaim", icon: HeartPulse },
-      { label: "Vehicle", href: "/vehicle", icon: Car },
-      { label: "Life Insurance", href: "/life", icon: ShieldCheck },
-      { label: "Builder", href: "/builder", icon: Building2 },
+      { label: "Loan", href: "/loan", icon: HandCoins, vertical: "loan" },
+      { label: "Mediclaim", href: "/mediclaim", icon: HeartPulse, vertical: "mediclaim" },
+      { label: "Vehicle", href: "/vehicle", icon: Car, vertical: "vehicle" },
+      { label: "Life Insurance", href: "/life", icon: ShieldCheck, vertical: "life" },
+      { label: "Builder", href: "/builder", icon: Building2, vertical: "builder" },
     ],
   },
   {
@@ -30,8 +30,14 @@ const NAV = [
   },
 ];
 
-export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) {
+// An item shows unless its vertical is explicitly disabled in settings.
+const isItemVisible = (item, verticals) => !item.vertical || !verticals || verticals[item.vertical] !== false;
+
+export default function Sidebar({ open, onClose, collapsed, onToggleCollapse, verticals }) {
   const pathname = usePathname();
+  const groups = NAV
+    .map((g) => ({ ...g, items: g.items.filter((it) => isItemVisible(it, verticals)) }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <>
@@ -68,7 +74,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
         {/* Nav — when collapsed, allow overflow so the right-side tooltips
             aren't clipped; expanded uses vertical scroll. */}
         <nav className={cn("flex-1 space-y-5 px-3 py-4", collapsed ? "overflow-visible" : "overflow-y-auto")}>
-          {NAV.map((group) => (
+          {groups.map((group) => (
             <div key={group.section}>
               {!collapsed && (
                 <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/40">
