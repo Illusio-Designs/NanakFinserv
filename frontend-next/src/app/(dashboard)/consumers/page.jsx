@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import PhoneInput from "@/components/ui/PhoneInput";
 import Checkbox from "@/components/ui/Checkbox";
+import Dropdown from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
 import api, { showError } from "@/lib/api";
 import { CATEGORY_IDS } from "@/config/ids";
@@ -22,8 +23,37 @@ const VERTICALS = [
   { key: "life", label: "Life Insurance", id: CATEGORY_IDS.LIFE_INSURANCE },
   { key: "vehicle", label: "Vehicle", id: CATEGORY_IDS.VEHICLE },
 ];
+const CAT_TO_KEY = Object.fromEntries(VERTICALS.map((v) => [v.id, v.key]));
 
 const emptyForm = { username: "", email: "", phone_number: "", referenceName: "" };
+
+/** Per-service selection with an assigned working person (staff). */
+function ServicePicker({ picked, setPicked, assignees, setAssignees, staff }) {
+  return (
+    <div className="space-y-2">
+      {VERTICALS.map((v) => {
+        const on = !!picked[v.key];
+        return (
+          <div key={v.key} className={`rounded-lg border p-3 transition-colors ${on ? "border-brand-600 bg-brand-50/50" : "border-line"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <Checkbox label={v.label} checked={on} onChange={(c) => setPicked({ ...picked, [v.key]: c })} />
+              {on && (
+                <div className="w-56">
+                  <Dropdown
+                    placeholder="Assign working person"
+                    options={staff}
+                    value={assignees[v.key] || ""}
+                    onChange={(val) => setAssignees({ ...assignees, [v.key]: val })}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function ConsumersPage() {
   const [rows, setRows] = useState([]);
@@ -32,6 +62,10 @@ export default function ConsumersPage() {
   const [editRow, setEditRow] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [picked, setPicked] = useState({});
+  const [assignees, setAssignees] = useState({});
+  const [editPicked, setEditPicked] = useState({});
+  const [editAssignees, setEditAssignees] = useState({});
+  const [staff, setStaff] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [manageRow, setManageRow] = useState(null);
   const [manageTab, setManageTab] = useState("family");
@@ -59,6 +93,11 @@ export default function ConsumersPage() {
 
   useEffect(() => {
     load();
+    // Working persons (admin + staff) for service assignment.
+    api
+      .get("/user/list/roleWise")
+      .then((res) => setStaff((res.data?.data || []).map((u) => ({ value: u.user_id, label: u.username || u.email || u.mobileNumber }))))
+      .catch(() => setStaff([]));
   }, []);
 
   const columns = useMemo(
@@ -83,9 +122,23 @@ export default function ConsumersPage() {
   const openAdd = () => {
     setForm(emptyForm);
     setPicked({});
+    setAssignees({});
     setFamilyList([]);
     setFamDraft({ username: "", phone_number: "", email: "", picked: {} });
     setAddOpen(true);
+  };
+
+  const openEdit = (r) => {
+    setEditRow(r);
+    setForm({ username: r.username || "", email: r.email || "", phone_number: r.mobileNumber || "", referenceName: r.referenceName || "" });
+    // Derive current services + assigned working person from the row's mappings.
+    const p = {}, a = {};
+    (r.category || []).forEach((m) => {
+      const key = CAT_TO_KEY[m.category_id];
+      if (key) { p[key] = true; if (m.user_role_id) a[key] = m.user_role_id; }
+    });
+    setEditPicked(p);
+    setEditAssignees(a);
   };
 
   const addFamilyToList = () => {
@@ -98,7 +151,7 @@ export default function ConsumersPage() {
   const submitAdd = async () => {
     setSubmitting(true);
     try {
-      const category = VERTICALS.filter((v) => picked[v.key]).map((v) => ({ category_id: v.id }));
+      const category = VERTICALS.filter((v) => picked[v.key]).map((v) => ({ category_id: v.id, user_role_id: assignees[v.key] || undefined }));
       const res = await api.post("/user/data/add/consumer", { ...form, category });
       const headId = res.data?.userData?.user_id;
 
@@ -133,7 +186,8 @@ export default function ConsumersPage() {
   const submitEdit = async () => {
     setSubmitting(true);
     try {
-      await api.put("/user/data/update/consumer", { user_id: editRow.user_id, ...form });
+      const category = VERTICALS.filter((v) => editPicked[v.key]).map((v) => ({ category_id: v.id, user_role_id: editAssignees[v.key] || undefined }));
+      await api.put("/user/data/update/consumer", { user_id: editRow.user_id, ...form, category });
       toast.success("Consumer updated");
       setEditRow(null);
       load();
@@ -175,23 +229,9 @@ export default function ConsumersPage() {
     {
       title: "Services",
       render: () => (
-        <div className="grid grid-cols-2 gap-3">
-          {VERTICALS.map((v) => (
-            <label
-              key={v.key}
-              className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                picked[v.key] ? "border-brand-600 bg-brand-50" : "border-line hover:bg-subtle"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={!!picked[v.key]}
-                onChange={(e) => setPicked({ ...picked, [v.key]: e.target.checked })}
-                className="h-4 w-4 accent-brand-600"
-              />
-              <span className="text-[14px] font-medium">{v.label}</span>
-            </label>
-          ))}
+        <div className="space-y-3">
+          <p className="text-[13px] text-muted">Select the services and assign a working person responsible for each.</p>
+          <ServicePicker picked={picked} setPicked={setPicked} assignees={assignees} setAssignees={setAssignees} staff={staff} />
         </div>
       ),
     },
@@ -273,10 +313,7 @@ export default function ConsumersPage() {
             { value: "3", label: "3" }, { value: "4", label: "4" },
           ] },
         ]}
-        onEdit={(r) => {
-          setEditRow(r);
-          setForm({ username: r.username || "", email: r.email || "", phone_number: r.mobileNumber || "", referenceName: r.referenceName || "" });
-        }}
+        onEdit={openEdit}
         onView={(r) => setViewRow(r)}
         rowActions={[
           { icon: Users, title: "Family & documents", onClick: (r) => { setManageTab("family"); setManageRow(r); } },
@@ -299,11 +336,17 @@ export default function ConsumersPage() {
           </div>
         }
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Name" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <PhoneInput label="Mobile Number" value={form.phone_number} onChange={(v) => setForm({ ...form, phone_number: v })} />
-          <Input label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input label="Reference" value={form.referenceName} onChange={(e) => setForm({ ...form, referenceName: e.target.value })} />
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Name" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+            <PhoneInput label="Mobile Number" value={form.phone_number} onChange={(v) => setForm({ ...form, phone_number: v })} />
+            <Input label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input label="Reference" value={form.referenceName} onChange={(e) => setForm({ ...form, referenceName: e.target.value })} />
+          </div>
+          <div>
+            <div className="ui-label mb-2">Services & assigned working person</div>
+            <ServicePicker picked={editPicked} setPicked={setEditPicked} assignees={editAssignees} setAssignees={setEditAssignees} staff={staff} />
+          </div>
         </div>
       </Modal>
 

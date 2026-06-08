@@ -36,6 +36,20 @@ export default function DataTable({
 
   const hasActions = onEdit || onView || onDelete || rowActions.length > 0;
 
+  // Filters without explicit options derive them from the real loaded data, so
+  // dropdown choices always match what the backend returned.
+  const resolvedFilters = useMemo(
+    () =>
+      filters.map((f) => {
+        if (f.type === "dateRange" || f.options) return f;
+        const vals = Array.from(
+          new Set((data || []).map((r) => r[f.key]).filter((v) => v !== undefined && v !== null && v !== "" && v !== "—"))
+        ).sort();
+        return { ...f, options: vals.map((v) => ({ value: String(v), label: String(v) })) };
+      }),
+    [filters, data]
+  );
+
   const filtered = useMemo(() => {
     let rows = data || [];
     if (q && searchKeys.length) {
@@ -44,7 +58,7 @@ export default function DataTable({
         searchKeys.some((k) => String(r[k] ?? "").toLowerCase().includes(needle))
       );
     }
-    for (const f of filters) {
+    for (const f of resolvedFilters) {
       const v = activeFilters[f.key];
       if (!v) continue;
       if (f.type === "dateRange") {
@@ -61,7 +75,7 @@ export default function DataTable({
       }
     }
     return rows;
-  }, [data, q, searchKeys, activeFilters, filters]);
+  }, [data, q, searchKeys, activeFilters, resolvedFilters]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -72,7 +86,7 @@ export default function DataTable({
       {/* Toolbar: filters + count (search is the global header search) */}
       {filters.length > 0 && (
         <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
-          {filters.map((f) =>
+          {resolvedFilters.map((f) =>
             f.type === "dateRange" ? (
               <div key={f.key} className="sm:w-auto">
                 <DateRange

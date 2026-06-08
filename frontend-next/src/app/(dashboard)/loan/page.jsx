@@ -9,6 +9,7 @@ export default function LoanPage() {
       subtitle="Loan applications & pipeline"
       endpoint="/user/list/loan"
       searchKeys={["name", "mobile", "status"]}
+      filters={[{ key: "status", label: "Status" }]}
       columns={[
         { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
         { key: "mobile", title: "Mobile" },

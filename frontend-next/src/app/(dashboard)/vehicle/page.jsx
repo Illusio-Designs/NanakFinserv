@@ -62,6 +62,7 @@ export default function VehiclePage() {
         loading={loading}
         rowKey="vehicle_user_id"
         searchKeys={["name", "mobile", "vehicle_number"]}
+        filters={[{ key: "status", label: "Status" }]}
         onView={(r) => setViewRow(r)}
       />
 

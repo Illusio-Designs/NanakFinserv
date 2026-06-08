@@ -9,6 +9,7 @@ export default function LifePage() {
       subtitle="Life insurance policies"
       endpoint="/user/life-insurance/list"
       searchKeys={["name", "mobile", "status"]}
+      filters={[{ key: "status", label: "Status" }]}
       columns={[
         { key: "name", title: "Proposer", render: (r) => <span className="font-medium">{r.name}</span> },
         { key: "mobile", title: "Mobile" },
