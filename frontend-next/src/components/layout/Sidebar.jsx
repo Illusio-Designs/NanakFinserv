@@ -19,6 +19,7 @@ const NAV = [
       { label: "Vehicle", href: "/vehicle", icon: Car, vertical: "vehicle" },
       { label: "Life Insurance", href: "/life", icon: ShieldCheck, vertical: "life" },
       { label: "Builder", href: "/builder", icon: Building2, vertical: "builder" },
+      { label: "Units", href: "/units", icon: Building2, vertical: "builder" },
     ],
   },
   {
