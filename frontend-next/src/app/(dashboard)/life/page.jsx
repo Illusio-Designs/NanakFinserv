@@ -6,6 +6,7 @@ import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import Tabs from "@/components/ui/Tabs";
 import api, { showError } from "@/lib/api";
 import LifeFormModal from "./LifeFormModal";
 
@@ -23,6 +24,9 @@ export default function LifePage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
   const [viewRow, setViewRow] = useState(null);
+  const [tab, setTab] = useState("policies");
+  const [renewals, setRenewals] = useState([]);
+  const [renLoading, setRenLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -33,7 +37,21 @@ export default function LifePage() {
     } catch (e) { showError(e, "Could not load life policies"); setRows([]); }
     finally { setLoading(false); }
   };
+  const loadRenewals = async () => {
+    setRenLoading(true);
+    try {
+      const res = await api.get("/user/life-insurance/renewal/data");
+      const d = res.data?.data || res.data || [];
+      setRenewals((Array.isArray(d) ? d : (d.rows || [])).map((r) => ({
+        ...norm(r),
+        due: r.due_date_of_premium || r.date_of_maturity || "—",
+      })));
+    } catch (e) { showError(e, "Could not load renewals"); setRenewals([]); }
+    finally { setRenLoading(false); }
+  };
+
   useEffect(() => { load(); }, []);
+  useEffect(() => { if (tab === "renewals") loadRenewals(); }, [tab]);
 
   const columns = useMemo(() => [
     { key: "name", title: "Proposer", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -44,17 +62,33 @@ export default function LifePage() {
 
   return (
     <div>
-      <PageHeader title="Life Insurance" subtitle="Life insurance policies" actions={<Button icon={Plus} onClick={() => setAddOpen(true)}>Add Life Policy</Button>} />
-      <DataTable
-        columns={columns}
-        data={rows}
-        loading={loading}
-        rowKey="id"
-        searchKeys={["name", "mobile", "policy", "status"]}
-        filters={[{ key: "status", label: "Status" }]}
-        onView={(r) => setViewRow(r)}
-        onEdit={(r) => setEditRow(r)}
-      />
+      <PageHeader title="Life Insurance" subtitle="Policies & renewals" actions={<Button icon={Plus} onClick={() => setAddOpen(true)}>Add Life Policy</Button>} />
+
+      <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[{ value: "policies", label: "Policies" }, { value: "renewals", label: "Renewals" }]} />
+
+      {tab === "policies" ? (
+        <DataTable
+          columns={columns}
+          data={rows}
+          loading={loading}
+          rowKey="id"
+          searchKeys={["name", "mobile", "policy", "status"]}
+          filters={[{ key: "status", label: "Status" }]}
+          onView={(r) => setViewRow(r)}
+          onEdit={(r) => setEditRow(r)}
+        />
+      ) : (
+        <DataTable
+          columns={[...columns.slice(0, 3), { key: "due", title: "Due Date" }]}
+          data={renewals}
+          loading={renLoading}
+          rowKey="id"
+          searchKeys={["name", "mobile", "policy"]}
+          filters={[{ key: "due", label: "Due", type: "dateRange" }]}
+          onView={(r) => setViewRow(r)}
+          onEdit={(r) => setEditRow(r)}
+        />
+      )}
 
       <LifeFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={load} />
       <LifeFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={load} />

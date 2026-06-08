@@ -24,11 +24,13 @@ export default function MediclaimPage() {
         onChange={setTab}
         tabs={[
           { value: "policies", label: "Policies" },
+          { value: "renewals", label: "Renewals" },
           { value: "companies", label: "Companies" },
           { value: "products", label: "Products" },
         ]}
       />
       {tab === "policies" && <Policies />}
+      {tab === "renewals" && <Renewals />}
       {tab === "companies" && <Companies />}
       {tab === "products" && <Products />}
     </div>
@@ -69,6 +71,41 @@ function Policies() {
       />
       <MediclaimPolicyModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={load} />
     </div>
+  );
+}
+
+function Renewals() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      try {
+        // Wide window so all upcoming/expiring policies surface.
+        const res = await api.post("/user/mediclaim/user/renewal/list", { startDate: "2000-01-01", endDate: "2100-01-01" });
+        const d = res.data?.data || [];
+        setRows((Array.isArray(d) ? d : []).map((r) => ({
+          ...r,
+          name: r.username || r.user_name || r.name || "—",
+          mobile: r.mobileNumber || r.mobile || "—",
+          expiry: r.runningPolicy?.ExpiryDate || r.ExpiryDate || "—",
+        })));
+      } catch (e) { showError(e, "Could not load renewals"); setRows([]); }
+      finally { setLoading(false); }
+    })();
+  }, []);
+  return (
+    <DataTable
+      columns={[
+        { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
+        { key: "mobile", title: "Mobile" },
+        { key: "expiry", title: "Expiry" },
+      ]}
+      data={rows}
+      loading={loading}
+      rowKey="id"
+      searchKeys={["name", "mobile"]}
+      filters={[{ key: "expiry", label: "Expiry", type: "dateRange" }]}
+    />
   );
 }
 
