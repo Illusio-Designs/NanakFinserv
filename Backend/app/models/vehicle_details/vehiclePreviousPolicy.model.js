@@ -45,6 +45,19 @@ module.exports = (sequelize, Sequelize) => {
         ExpiryDate: {
             type: DataTypes.STRING,
         },
+        // Separate TP (long-term) and OD/Full expiry timelines (Indian market).
+        tp_expiry_date: {
+            type: DataTypes.STRING,
+        },
+        od_expiry_date: {
+            type: DataTypes.STRING,
+        },
+        tp_tenure: {
+            type: DataTypes.INTEGER,
+        },
+        od_tenure: {
+            type: DataTypes.INTEGER,
+        },
         NomineeDob: {
             type: DataTypes.STRING,
         },

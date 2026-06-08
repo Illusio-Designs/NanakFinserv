@@ -45,6 +45,24 @@ module.exports = (sequelize, Sequelize) => {
         ExpiryDate: {
             type: DataTypes.STRING,
         },
+        // Indian market: long-term TP (3yr car / 5yr 2-wheeler) bundled with 1yr OD (Full).
+        // Separate expiry timelines for the TP and OD/Comprehensive portions.
+        tp_expiry_date: {
+            type: DataTypes.STRING,
+        },
+        od_expiry_date: {
+            type: DataTypes.STRING,
+        },
+        tp_tenure: {
+            type: DataTypes.INTEGER,
+        },
+        od_tenure: {
+            type: DataTypes.INTEGER,
+        },
+        // Derived from expiry vs today: "running" while active, "completed" once expired.
+        status: {
+            type: DataTypes.STRING,
+        },
         NomineeDob: {
             type: DataTypes.STRING,
         },

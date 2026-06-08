@@ -579,6 +579,18 @@ AgentContactNumber: _AgentContactNumber
             }
 
             // Use only the safe runningPolicy variable here!
+            // Derive running-policy status from expiry (OD/Full first) vs today.
+            const _runEnd =
+                runningPolicy.od_expiry_date ||
+                runningPolicy.ExpiryDate ||
+                runningPolicy.PolicyTo;
+            const _runStatus = (() => {
+                if (!_runEnd) return "running";
+                const end = new Date(_runEnd);
+                if (isNaN(end.getTime())) return "running";
+                return end >= new Date() ? "running" : "completed";
+            })();
+
             const runningPolicyData = {
                 vehicle_user_id: vehicle.vehicle_user_id,
                 policy_type_id: runningPolicy.PolicyTypeId,
@@ -591,6 +603,7 @@ AgentContactNumber: _AgentContactNumber
                 agentCode: _AgentCode || '',
                 agentContactNumber: _AgentContactNumber || '',
                 ...runningPolicy,
+                status: _runStatus,
             };
             await vehcileRunningPolicy.create(runningPolicyData);
 
@@ -662,8 +675,23 @@ AgentContactNumber: _AgentContactNumber
                         }
                     }
     
+                    // Derive status from the policy's expiry vs today: "running"
+                    // while still within the period, "completed" once expired.
+                    // Prefer OD/Full expiry, then generic expiry/PolicyTo.
+                    const _prevEnd =
+                        previousPolicy.od_expiry_date ||
+                        previousPolicy.ExpiryDate ||
+                        previousPolicy.PolicyTo ||
+                        previousPolicy.expiry_date;
+                    const _prevStatus = (() => {
+                        if (!_prevEnd) return "running";
+                        const end = new Date(_prevEnd);
+                        if (isNaN(end.getTime())) return "running";
+                        return end >= new Date() ? "running" : "completed";
+                    })();
+
                     // Build history data
-                    
+
                     const historyData = {
                         vehicle_user_id: vehicle.vehicle_user_id,
                         ...previousPolicy,
@@ -673,7 +701,7 @@ AgentContactNumber: _AgentContactNumber
                         PolicyNumber: previousPolicy.PolicyNumber || null,
                         issue_date: previousPolicy.issue_date || null,
                         expiry_date: previousPolicy.expiry_date || null,
-                        status: "active",
+                        status: _prevStatus,
                         agentName: previousPolicy.agentName || _AgentName || '',
                         agentCode: previousPolicy.agentCode || _AgentCode || '',
                         agentContactNumber: previousPolicy.agentContactNumber || _AgentContactNumber || '',
