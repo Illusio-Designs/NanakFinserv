@@ -80,6 +80,58 @@ card; a small helper to derive tasks from the counts/renewal/consumer endpoints.
 
 ---
 
+## 3a) Gap analysis (backend-verified)
+
+**Notifications — what fires today (`createNotification` call sites):**
+Only on **add/create**: consumer added, loan/vehicle/mediclaim/life user added,
+builder consumer added, new role-user added, building-manager created & assigned.
+Model: `notification` = { title, message, type(vehicle|mediclaim|loan|builder|
+system), category(mostly `user_added`), user_id (actor), target_user_id (subject),
+record_id, is_read }.
+
+**Notification GAPS (clear):**
+1. **Feed is NOT role/recipient-filtered.** `getNotifications` filters only by
+   `type`/`is_read` from the query — it ignores `req.user`, so **every user sees
+   every notification**. Needs filtering by `target_user_id` / role (staff → their
+   assigned; consumer → their own).
+2. **No "assigned" notification** when a working person is assigned/reassigned to a
+   consumer service (only building-manager assign notifies). The "assign user"
+   event you want isn't fired on consumer add/edit assignment.
+3. **No renewal / expiry notifications.** Nothing fires for "policy due for
+   renewal / expiring soon" — there's no scheduled job/cron. Renewal reminders
+   are absent.
+4. **No update / renew / status-change notifications** (renewVehiclePolicy, policy
+   edits, status → completed don't notify).
+5. **No pending-task generation** — unassigned consumers / expiring policies aren't
+   surfaced; must be derived (client-side or new endpoints).
+6. **Coarse categories** — almost everything is `user_added`; no `policy_added`,
+   `assigned`, `renewal_due`, `user_updated` to drive per-type UI.
+
+**Dashboard stats — what's provided today:**
+`GET /user/data/counts` (admin: counts + loan pipeline + today's amounts),
+`GET /user/consumer/dashboard`, `GET /user/building-manager/dashboard-stats`,
+`GET /user/vehicle/renewal/stats`.
+
+**Dashboard GAPS (clear):**
+1. **counts is admin-only & global, not per-staff** — a staff user sees the whole
+   org's numbers, not the consumers/policies assigned to them (`user_role_id`).
+2. **Renewals due not in the main counts** — only Vehicle has renewal stats;
+   Mediclaim/Life/Loan have no expiry/renewal counts.
+3. **No pending-task counts** (unassigned consumers, expiring policies, new-to-assign).
+4. **Notification count not surfaced** on the dashboard.
+5. **Role variants not wired on the frontend** — backend has consumer &
+   building-manager dashboards, but the UI renders only the admin counts.
+
+**To close the gaps (backend + frontend):**
+- Backend: filter `getNotifications` by recipient/role; add `createNotification`
+  on **assign** (consumer service) and **renew/update**; add a **renewal-due**
+  generator (cron or compute-on-read) emitting `renewal_due`; optionally extend
+  `/user/data/counts` with renewals-due + pending-task counts (and a per-staff
+  variant).
+- Frontend: NotificationCenter bell (filtered feed + count), dashboard
+  Pending-tasks panel (derive from counts/renewal/consumer endpoints), and the
+  consumer / building-manager dashboard variants.
+
 ## 4) Pending work (build order)
 1. **Dashboard**: role variants (consumer / building-manager) + **Pending-tasks
    panel** + **NotificationCenter** (bell) + hide disabled-vertical cards.
