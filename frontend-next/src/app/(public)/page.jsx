@@ -1,11 +1,19 @@
 import Link from "next/link";
-import { ShieldCheck, Headset, BadgeIndianRupee, Zap, Phone, ArrowRight } from "lucide-react";
+import { ShieldCheck, Headset, BadgeIndianRupee, Zap, Phone, ArrowRight, BadgeCheck, Building2 } from "lucide-react";
+import ClientSlider from "@/components/public/ClientSlider";
+import BlogSlider from "@/components/public/BlogSlider";
 
 const POINTS = [
   { icon: ShieldCheck, title: "Comprehensive Coverage Options", desc: "A wide range of insurance plans — health, life, auto, home and business. Flexible policies so you get the protection you need without paying for what you don't." },
   { icon: Headset, title: "24/7 Customer Support", desc: "Our dedicated support team is available around the clock to assist with claims, policy changes, and any questions you may have." },
   { icon: BadgeIndianRupee, title: "Affordable & Transparent Pricing", desc: "High-quality coverage at competitive rates, with transparent pricing and no hidden fees — you know exactly what you're paying for." },
   { icon: Zap, title: "Fast & Easy Claims Process", desc: "Simple to file and manage claims for a hassle-free experience — our goal is to get you back on track as quickly as possible." },
+];
+
+const FEATURES = [
+  { img: "/Assets/customers-world-wide.jpg", title: "We handle customers all over India" },
+  { img: "/Assets/customers-world-wide.jpg", title: "Instant Claims Processing" },
+  { img: "/Assets/customers-world-wide.jpg", title: "Trusted since 1995 until present" },
 ];
 
 export default function HomePage() {
@@ -34,13 +42,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Feature strip */}
+      {/* Features — image cards */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {["We handle customers all over India", "Instant Claims Processing", "Trusted since 1995 until present"].map((t) => (
-            <div key={t} className="ui-card flex items-center gap-3 p-5">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-brand-600" />
-              <span className="text-[14px] font-medium text-ink">{t}</span>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {FEATURES.map((feat) => (
+            <div key={feat.title} className="relative h-44 overflow-hidden rounded-2xl shadow-card">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={feat.img} alt={feat.title} className="h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/75 to-ink/10" />
+              <h5 className="absolute bottom-4 left-4 right-4 text-[15px] font-semibold text-white">{feat.title}</h5>
             </div>
           ))}
         </div>
@@ -94,18 +104,66 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA with experience badge */}
-      <section className="bg-sidebar">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-12 text-center sm:px-6 md:flex-row md:text-left">
-          <div>
-            <h2 className="text-[24px] font-bold text-white">25 years of experience — protecting what matters most.</h2>
-            <p className="mt-1 text-[14px] text-sidebar-text/70">Talk to our certified team about the right plan for you.</p>
-          </div>
-          <a href="tel:+919925712341" className="press inline-flex items-center gap-2 rounded-md bg-brand-600 px-6 py-3 text-[14px] font-medium text-white hover:bg-brand-700">
-            <Phone size={16} /> +91 99257 12341
-          </a>
+      {/* Trusted companies */}
+      <section className="bg-subtle py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <h2 className="mb-8 text-center text-[24px] font-bold tracking-tight text-brand-700">
+            Trusted Companies We are Working With
+          </h2>
+          <ClientSlider />
         </div>
       </section>
+
+      {/* Contact info section */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <div className="grid items-center gap-10 lg:grid-cols-2">
+          <div>
+            <h2 className="text-[26px] font-bold tracking-tight text-ink">
+              Free your youth for a brighter and more purposeful future
+            </h2>
+            <p className="mt-4 text-[14px] text-muted">
+              We believe in providing young people with the freedom and security to pursue their passions,
+              knowing that their future is protected. Our comprehensive insurance plans safeguard their health,
+              education, and financial well-being — so they can focus on building a fulfilling life.
+            </p>
+            <div className="relative mt-6 max-w-md">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/Assets/happy-family.jpg" alt="Happy family" className="w-full rounded-2xl object-cover shadow-card" />
+              <div className="absolute -bottom-4 left-4 rounded-xl bg-brand-700 px-4 py-3 text-center text-white shadow-lg">
+                <div className="text-[20px] font-bold leading-none">25</div>
+                <div className="mt-1 text-[10px] uppercase tracking-widest">Years of Experience</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="ui-card flex gap-4 p-6">
+              <BadgeCheck size={28} className="shrink-0 text-brand-600" />
+              <div>
+                <h4 className="text-[16px] font-semibold text-ink">Certified Team</h4>
+                <p className="mt-1 text-[13px] text-muted">Trust our expertise to protect what matters most — and experience the peace of mind that comes with working with true insurance professionals.</p>
+              </div>
+            </div>
+            <div className="ui-card flex gap-4 p-6">
+              <Building2 size={28} className="shrink-0 text-brand-600" />
+              <div>
+                <h4 className="text-[16px] font-semibold text-ink">Trusted Company</h4>
+                <p className="mt-1 text-[13px] text-muted">We prioritize transparency in all our dealings, offering clear policies and straightforward advice so you always know what to expect.</p>
+              </div>
+            </div>
+            <a href="tel:+919925712341" className="ui-card flex items-center gap-4 p-6 hover:shadow-pop">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><Phone size={22} /></span>
+              <div>
+                <div className="text-[18px] font-bold text-ink">+91 99257 12341</div>
+                <div className="text-[12px] text-muted">Call Agent</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Recent blogs */}
+      <BlogSlider title="Recent Insights & Updates" />
     </>
   );
 }

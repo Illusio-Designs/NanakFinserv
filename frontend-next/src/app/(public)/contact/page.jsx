@@ -77,6 +77,17 @@ export default function ContactPage() {
           <Button type="submit" className="w-full">Send message</Button>
         </form>
       </div>
+
+      {/* Map */}
+      <div className="mt-10 overflow-hidden rounded-2xl border border-line shadow-card">
+        <iframe
+          title="Nanak Finserv location"
+          src="https://www.google.com/maps?q=NANAK%20FINSERV%20RK%20PRIME%20Nana%20Mava%20Circle%20Rajkot&output=embed"
+          className="h-[360px] w-full"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
+import ClientSlider from "@/components/public/ClientSlider";
+import BlogSlider from "@/components/public/BlogSlider";
 
 const STATS = [
   ["1.2 Million", "Loan Insurance customers"],
@@ -63,6 +65,19 @@ export default function AboutPage() {
               <div className="mt-1 text-[13px] text-muted">{l}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Recent blogs */}
+      <BlogSlider title="Recent Blogs" />
+
+      {/* Trusted companies */}
+      <section className="bg-subtle py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <h2 className="mb-8 text-center text-[24px] font-bold tracking-tight text-brand-700">
+            Trusted Companies We are Working With
+          </h2>
+          <ClientSlider />
         </div>
       </section>
     </>

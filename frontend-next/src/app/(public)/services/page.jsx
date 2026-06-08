@@ -1,5 +1,6 @@
 import { ShieldCheck, HandCoins, Car, HeartPulse } from "lucide-react";
 import LeadForm from "@/components/public/LeadForm";
+import ClientSlider from "@/components/public/ClientSlider";
 
 const SERVICES = [
   { icon: ShieldCheck, title: "Life Insurance", desc: "Life insurance provides financial security to your loved ones in the event of your passing. It ensures they are supported during challenging times, covering expenses such as daily living costs, education, debts, and more." },
@@ -7,8 +8,6 @@ const SERVICES = [
   { icon: Car, title: "Vehicle Insurance", desc: "Vehicle insurance provides financial protection for your car, bike, or any motor vehicle in case of accidents, theft, natural disasters, or third-party liabilities. It's not just a legal requirement but also a smart way to safeguard your investment." },
   { icon: HeartPulse, title: "Mediclaim", desc: "Mediclaim insurance provides financial coverage for hospitalization, medical treatments, and related expenses. It ensures you can focus on recovery without worrying about the financial burden of medical bills." },
 ];
-
-const COMPANY_LOGOS = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `/Assets/slider${n}.png`);
 
 export default function ServicesPage() {
   return (
@@ -49,14 +48,7 @@ export default function ServicesPage() {
         <h2 className="mb-8 text-center text-[24px] font-bold tracking-tight text-brand-700">
           Trusted Companies We are Working With
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-          {COMPANY_LOGOS.map((src) => (
-            <div key={src} className="flex h-20 items-center justify-center rounded-lg border border-line bg-surface p-3 shadow-card">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt="Insurance partner" className="max-h-full max-w-full object-contain grayscale transition hover:grayscale-0" />
-            </div>
-          ))}
-        </div>
+        <ClientSlider />
       </section>
 
       {/* Focus services */}
