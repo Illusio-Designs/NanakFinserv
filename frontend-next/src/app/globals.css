@@ -26,6 +26,11 @@
   --warning: 180 83 9;
   --danger: 239 68 68;
 
+  /* Dark sidebar (deep indigo — same brand family) */
+  --sidebar: 27 24 66;        /* indigo-950-ish */
+  --sidebar-hover: 49 46 129; /* indigo-900 */
+  --sidebar-text: 199 210 254;/* indigo-200 */
+
   --control-h: 40px;
   --sidebar-w: 256px;
   --header-h: 60px;

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Car, HeartPulse, HandCoins } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import api, { showError } from "@/lib/api";
@@ -27,7 +27,7 @@ export default function LoginPage() {
       window.initSendOTP({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, exposeMethods: true });
       inited.current = true;
     } catch (e) {
-      /* widget loads via <Script>; init retried on send */
+      /* retried on send */
     }
   });
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
           setLoading(false);
         }
       },
-      (e) => {
+      () => {
         setLoading(false);
         toast.error("OTP verification failed");
       }
@@ -77,51 +77,93 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-subtle p-4">
+    <div className="grid min-h-screen lg:grid-cols-2">
       <Script src="https://control.msg91.com/app/assets/otp-provider/otp-provider.js" strategy="afterInteractive" />
-      <div className="w-full max-w-md animate-scale-in rounded-2xl border border-line bg-surface p-7 shadow-pop">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-white">
-            <ShieldCheck size={24} />
+
+      {/* Left — dark indigo brand panel */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex">
+        {/* glow accents */}
+        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-600/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" />
+
+        <div className="relative flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-[18px] font-bold shadow-lg shadow-brand-600/40">
+            N
           </div>
-          <h1 className="text-[20px] font-semibold">Sign in to NanakFinserv</h1>
-          <p className="mt-1 text-[13px] text-muted">OTP-based secure login</p>
+          <div>
+            <div className="text-[16px] font-semibold">NanakFinserv</div>
+            <div className="text-[11px] uppercase tracking-widest text-sidebar-text/60">Production CRM</div>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <Input
-            label="Mobile Number"
-            inputMode="numeric"
-            maxLength={10}
-            placeholder="10-digit mobile"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-            disabled={otpSent}
-          />
-          {otpSent && (
+        <div className="relative max-w-md">
+          <h2 className="text-[30px] font-semibold leading-tight">
+            One place for loans, mediclaim, vehicle & life insurance.
+          </h2>
+          <p className="mt-3 text-[14px] text-sidebar-text/70">
+            Onboard consumers, manage households and policies, and track renewals — fast.
+          </p>
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {[
+              [HandCoins, "Loans"],
+              [HeartPulse, "Mediclaim"],
+              [Car, "Vehicle"],
+              [ShieldCheck, "Life"],
+            ].map(([Icon, label], i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
+                <Icon size={18} className="text-brand-100" />
+                <span className="text-[13px] font-medium">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative text-[12px] text-sidebar-text/50">© {new Date().getFullYear()} NanakFinserv</div>
+      </div>
+
+      {/* Right — light form */}
+      <div className="flex items-center justify-center bg-subtle p-6">
+        <div className="w-full max-w-sm animate-scale-in">
+          {/* mobile brand */}
+          <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 font-bold text-white">N</div>
+            <span className="text-[16px] font-semibold">NanakFinserv</span>
+          </div>
+
+          <h1 className="text-[24px] font-semibold tracking-tight">Sign in</h1>
+          <p className="mt-1 text-[13px] text-muted">Secure OTP login to your dashboard.</p>
+
+          <div className="mt-7 space-y-4">
             <Input
-              label="OTP"
+              label="Mobile Number"
               inputMode="numeric"
-              maxLength={6}
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              maxLength={10}
+              placeholder="10-digit mobile"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
+              disabled={otpSent}
             />
-          )}
-          {!otpSent ? (
-            <Button className="w-full" onClick={sendOtp}>
-              Send OTP
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <Button className="w-full" onClick={verifyAndLogin} loading={loading}>
-                Verify & Login
-              </Button>
-              <button onClick={sendOtp} className="w-full text-[13px] text-brand-600 hover:underline">
-                Resend OTP
-              </button>
-            </div>
-          )}
+            {otpSent && (
+              <Input
+                label="OTP"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="Enter OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+              />
+            )}
+            {!otpSent ? (
+              <Button className="w-full" onClick={sendOtp}>Send OTP</Button>
+            ) : (
+              <div className="space-y-2">
+                <Button className="w-full" onClick={verifyAndLogin} loading={loading}>Verify & Login</Button>
+                <button onClick={sendOtp} className="w-full text-[13px] font-medium text-brand-600 hover:underline">
+                  Resend OTP
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

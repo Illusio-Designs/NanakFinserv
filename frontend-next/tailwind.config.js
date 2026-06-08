@@ -20,6 +20,9 @@ export default {
         success: "rgb(var(--success) / <alpha-value>)",
         warning: "rgb(var(--warning) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
+        sidebar: "rgb(var(--sidebar) / <alpha-value>)",
+        "sidebar-hover": "rgb(var(--sidebar-hover) / <alpha-value>)",
+        "sidebar-text": "rgb(var(--sidebar-text) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
