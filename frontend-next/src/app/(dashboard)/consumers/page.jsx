@@ -72,6 +72,7 @@ export default function ConsumersPage() {
   const [viewRow, setViewRow] = useState(null);
   const [familyList, setFamilyList] = useState([]);
   const [famDraft, setFamDraft] = useState({ username: "", phone_number: "", email: "", picked: {} });
+  const [joinHeadId, setJoinHeadId] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -125,8 +126,15 @@ export default function ConsumersPage() {
     setAssignees({});
     setFamilyList([]);
     setFamDraft({ username: "", phone_number: "", email: "", picked: {} });
+    setJoinHeadId("");
     setAddOpen(true);
   };
+
+  // Existing consumers that a new user can join (as a family member under a head).
+  const headOptions = useMemo(
+    () => rows.map((r) => ({ value: r.user_id, label: `${r.username || "—"} · ${r.mobileNumber || ""}` })),
+    [rows]
+  );
 
   const openEdit = (r) => {
     setEditRow(r);
@@ -152,6 +160,22 @@ export default function ConsumersPage() {
     setSubmitting(true);
     try {
       const category = VERTICALS.filter((v) => picked[v.key]).map((v) => ({ category_id: v.id, user_role_id: assignees[v.key] || undefined }));
+
+      // Joining an existing consumer → create as a family member under that head.
+      if (joinHeadId) {
+        await api.post("/user/data/consumer/family/add", {
+          head_user_id: joinHeadId,
+          username: form.username,
+          phone_number: form.phone_number,
+          email: form.email,
+          category: category.map((c) => ({ category_id: c.category_id })),
+        });
+        toast.success("Consumer added to the selected household");
+        setAddOpen(false);
+        load();
+        return;
+      }
+
       const res = await api.post("/user/data/add/consumer", { ...form, category });
       const headId = res.data?.userData?.user_id;
 
@@ -218,11 +242,26 @@ export default function ConsumersPage() {
         return true;
       },
       render: () => (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Name" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
-          <PhoneInput label="Mobile Number" value={form.phone_number} onChange={(v) => setForm({ ...form, phone_number: v })} />
-          <Input label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input label="Reference" value={form.referenceName} onChange={(e) => setForm({ ...form, referenceName: e.target.value })} />
+        <div className="space-y-4">
+          {headOptions.length > 0 && (
+            <div className="rounded-lg border border-line bg-subtle/40 p-3">
+              <Dropdown
+                searchable
+                label="Join an existing consumer (optional)"
+                placeholder="Standalone — not joining anyone"
+                options={headOptions}
+                value={joinHeadId}
+                onChange={setJoinHeadId}
+              />
+              {joinHeadId && <p className="mt-2 text-[12px] text-brand-700">This user will be added as a family member of the selected consumer.</p>}
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Name" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+            <PhoneInput label="Mobile Number" value={form.phone_number} onChange={(v) => setForm({ ...form, phone_number: v })} />
+            <Input label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input label="Reference" value={form.referenceName} onChange={(e) => setForm({ ...form, referenceName: e.target.value })} />
+          </div>
         </div>
       ),
     },
@@ -287,7 +326,8 @@ export default function ConsumersPage() {
           <Row label="Email" value={form.email} />
           <Row label="Reference" value={form.referenceName || "—"} />
           <Row label="Services" value={VERTICALS.filter((v) => picked[v.key]).map((v) => v.label).join(", ") || "None"} />
-          <Row label="Family members" value={familyList.length ? familyList.map((f) => f.username).join(", ") : "None"} />
+          <Row label="Joining" value={joinHeadId ? (headOptions.find((h) => h.value === joinHeadId)?.label || "Existing consumer") : "Standalone"} />
+          <Row label="Family members" value={joinHeadId ? "—" : (familyList.length ? familyList.map((f) => f.username).join(", ") : "None")} />
         </div>
       ),
     },
