@@ -7,6 +7,13 @@ const nextConfig = {
       { protocol: "https", hostname: "api.nanakfinserv.com" },
     ],
   },
+  webpack: (config, { dev }) => {
+    // On Windows the filesystem pack cache frequently corrupts (".pack.gz"
+    // ENOENT / "Cannot find module './NNN.js'"). Use an in-memory cache in dev
+    // to avoid it entirely.
+    if (dev) config.cache = { type: "memory" };
+    return config;
+  },
 };
 
 export default nextConfig;
