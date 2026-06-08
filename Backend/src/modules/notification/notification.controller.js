@@ -70,18 +70,30 @@ const {
 } = require("../shared/context");
 const notificationService = require("./notification.service");
 const logger = require("../../config/logger");
+const { ROLE_IDS } = require("../../config/ids");
+
+/**
+ * Build the recipient filter: super admins see everything; everyone else sees
+ * notifications addressed to them (target) or raised by them (actor).
+ */
+function recipientWhere(req) {
+  const role = req.user && req.user.Role;
+  const uid = req.user && req.user.id;
+  if (!uid || role === ROLE_IDS.SUPER_ADMIN) return {};
+  return { [Op.or]: [{ target_user_id: uid }, { user_id: uid }] };
+}
 
 exports.getNotifications = async (req, res) => {
     try {
       const { page = 1, limit = 10, type, is_read } = req.query;
       const offset = (page - 1) * limit;
-  
-      let whereClause = {};
-  
+
+      let whereClause = { ...recipientWhere(req) };
+
       if (type) {
         whereClause.type = type;
       }
-  
+
       if (is_read !== undefined) {
         whereClause.is_read = is_read === "true";
       }
@@ -257,7 +269,7 @@ exports.markAllNotificationsAsRead = async (req, res) => {
 
 exports.getNotificationCount = async (req, res) => {
     try {
-        const data = await notificationService.getCounts();
+        const data = await notificationService.getCounts(recipientWhere(req));
         res.status(200).json({
             message: 'Notification count retrieved successfully',
             status: true,

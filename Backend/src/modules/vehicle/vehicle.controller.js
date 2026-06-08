@@ -3266,6 +3266,19 @@ exports.renewVehiclePolicy = async (req, res) => {
 
     try { await vehicleService.reconcileVehiclePolicies(vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after renew failed"); }
 
+    // Notify the consumer that their policy was renewed.
+    try {
+      const veh = await vehicleUser.findOne({ where: { vehicle_user_id } });
+      await createNotification({
+        title: "Policy renewed",
+        message: "Your vehicle policy has been renewed.",
+        type: "vehicle",
+        category: "renewal",
+        user_id: req.user && req.user.id,
+        target_user_id: (veh && veh.user_id) || null,
+      });
+    } catch (e) { logger.error({ err: e }, "renew notification failed"); }
+
     return res.status(200).json({
       status: true,
       message: "Policy renewed successfully — running policy moved to previous",

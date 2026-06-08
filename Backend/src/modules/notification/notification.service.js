@@ -11,10 +11,10 @@ async function markAsRead(notificationId) {
   return true;
 }
 
-async function getCounts() {
+async function getCounts(where = {}) {
   const [total, unread] = await Promise.all([
-    db.notification.count(),
-    db.notification.count({ where: { is_read: false } }),
+    db.notification.count({ where }),
+    db.notification.count({ where: { ...where, is_read: false } }),
   ]);
   return { total, unread };
 }
