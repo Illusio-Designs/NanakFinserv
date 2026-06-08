@@ -6,6 +6,8 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { ShieldCheck, Car, HeartPulse, HandCoins } from "lucide-react";
 import Input from "@/components/ui/Input";
+import PhoneInput from "@/components/ui/PhoneInput";
+import OtpInput from "@/components/ui/OtpInput";
 import Button from "@/components/ui/Button";
 import api, { showError } from "@/lib/api";
 import { firstError, field, checks } from "@/utils/validators";
@@ -35,15 +37,15 @@ export default function LoginPage() {
     const err = firstError([field("mobile", { label: "Mobile number", required: true, checks: [checks.mobile10] })], { mobile });
     if (err) return toast.error(err);
     const identifier = `91${mobile}`;
-    const success = () => {
-      setOtpSent(true);
-      toast.success("OTP sent");
-    };
-    const failure = (e) => toast.error(`Failed to send OTP: ${e?.message || "try again"}`);
+    // Open the OTP field immediately so it's always usable (the MSG91 widget can
+    // be domain-restricted on localhost and its success callback may not fire).
+    setOtpSent(true);
+    const success = () => toast.success("OTP sent");
+    const failure = (e) => toast.error(`Could not send OTP: ${e?.message || "check MSG91 widget / domain"}`);
     if (window.sendOtp) window.sendOtp(identifier, success, failure);
     else if (window.initSendOTP)
       window.initSendOTP({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, exposeMethods: true, identifier, success, failure });
-    else toast.error("OTP service not loaded. Refresh and try again.");
+    else toast("Enter the OTP you received.", { icon: "✉️" });
   };
 
   const verifyAndLogin = () => {
@@ -135,24 +137,12 @@ export default function LoginPage() {
           <p className="mt-1 text-[13px] text-muted">Secure OTP login to your dashboard.</p>
 
           <div className="mt-7 space-y-4">
-            <Input
-              label="Mobile Number"
-              inputMode="numeric"
-              maxLength={10}
-              placeholder="10-digit mobile"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
-              disabled={otpSent}
-            />
+            <PhoneInput label="Mobile Number" value={mobile} onChange={setMobile} placeholder="10-digit mobile" />
             {otpSent && (
-              <Input
-                label="OTP"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              />
+              <div>
+                <label className="ui-label">Enter OTP</label>
+                <OtpInput value={otp} onChange={setOtp} />
+              </div>
             )}
             {!otpSent ? (
               <Button className="w-full" onClick={sendOtp}>Send OTP</Button>

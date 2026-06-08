@@ -90,6 +90,40 @@
 }
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 
+/* Custom tooltip */
+.crm-tip { position: relative; display: inline-flex; }
+.crm-tip > .crm-tip-bubble {
+  position: absolute;
+  z-index: 60;
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  background: #111827;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.18);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.crm-tip:hover > .crm-tip-bubble { opacity: 1; transform: translateY(0); }
+.crm-tip > .crm-tip-bubble::after {
+  content: "";
+  position: absolute;
+  width: 7px; height: 7px;
+  background: #111827;
+  transform: rotate(45deg);
+}
+/* sides */
+.crm-tip-bubble.top { bottom: 100%; left: 50%; margin-bottom: 8px; transform: translate(-50%, 2px); }
+.crm-tip:hover > .crm-tip-bubble.top { transform: translate(-50%, 0); }
+.crm-tip-bubble.top::after { bottom: -3px; left: 50%; margin-left: -3.5px; }
+.crm-tip-bubble.right { left: 100%; top: 50%; margin-left: 8px; transform: translate(2px, -50%); }
+.crm-tip:hover > .crm-tip-bubble.right { transform: translate(0, -50%); }
+.crm-tip-bubble.right::after { left: -3px; top: 50%; margin-top: -3.5px; }
+
 /* Auto-scrolling logo marquee (Trusted Companies) */
 @keyframes marquee {
   from { transform: translateX(0); }

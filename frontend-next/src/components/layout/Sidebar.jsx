@@ -3,8 +3,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Building2, Car, ShieldCheck, HandCoins, HeartPulse,
-  UserCog, Settings, FileText, X,
+  UserCog, Settings, X, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import Tooltip from "@/components/ui/Tooltip";
 import { cn } from "@/lib/cn";
 
 const NAV = [
@@ -29,7 +30,7 @@ const NAV = [
   },
 ];
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) {
   const pathname = usePathname();
 
   return (
@@ -38,53 +39,64 @@ export default function Sidebar({ open, onClose }) {
 
       <aside
         className={cn(
-          "fixed z-40 flex h-screen w-[var(--sidebar-w)] flex-col bg-sidebar text-sidebar-text transition-transform duration-200 lg:static lg:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
+          "fixed z-40 flex h-screen flex-col bg-sidebar text-sidebar-text transition-all duration-200 lg:static lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full",
+          collapsed ? "w-[76px]" : "w-[var(--sidebar-w)]"
         )}
       >
         {/* Brand */}
-        <div className="flex h-[var(--header-h)] items-center justify-between px-5">
+        <div className={cn("flex h-[var(--header-h)] items-center", collapsed ? "justify-center px-2" : "justify-between px-5")}>
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-lg">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/Assets/cropped-logo.png" alt="NanakFinserv" className="h-full w-full object-contain" />
             </div>
-            <div className="leading-tight">
-              <div className="text-[14px] font-semibold text-white">NanakFinserv</div>
-              <div className="text-[10px] uppercase tracking-widest text-sidebar-text/60">CRM</div>
-            </div>
+            {!collapsed && (
+              <div className="leading-tight">
+                <div className="text-[14px] font-semibold text-white">NanakFinserv</div>
+                <div className="text-[10px] uppercase tracking-widest text-sidebar-text/60">CRM</div>
+              </div>
+            )}
           </Link>
-          <button className="press rounded-md p-1.5 text-sidebar-text hover:bg-sidebar-hover lg:hidden" onClick={onClose}>
-            <X size={18} />
-          </button>
+          {!collapsed && (
+            <button className="press rounded-md p-1.5 text-sidebar-text hover:bg-sidebar-hover lg:hidden" onClick={onClose}>
+              <X size={18} />
+            </button>
+          )}
         </div>
 
-        {/* Nav grouped by section */}
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+        {/* Nav — when collapsed, allow overflow so the right-side tooltips
+            aren't clipped; expanded uses vertical scroll. */}
+        <nav className={cn("flex-1 space-y-5 px-3 py-4", collapsed ? "overflow-visible" : "overflow-y-auto")}>
           {NAV.map((group) => (
             <div key={group.section}>
-              <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/40">
-                {group.section}
-              </div>
+              {!collapsed && (
+                <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/40">
+                  {group.section}
+                </div>
+              )}
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const active = pathname === item.href || pathname.startsWith(item.href + "/");
                   const Icon = item.icon;
-                  return (
+                  const link = (
                     <Link
-                      key={item.href}
                       href={item.href}
                       onClick={onClose}
                       className={cn(
-                        "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[14px] font-medium transition-all",
-                        active
-                          ? "bg-brand-600 text-white shadow-lg shadow-brand-600/25"
-                          : "text-sidebar-text hover:bg-sidebar-hover hover:text-white"
+                        "group flex items-center rounded-lg text-[14px] font-medium transition-all",
+                        collapsed ? "h-10 w-10 justify-center" : "gap-3 px-3 py-2.5",
+                        active ? "bg-brand-600 text-white shadow-lg shadow-brand-600/25" : "text-sidebar-text hover:bg-sidebar-hover hover:text-white"
                       )}
                     >
                       <Icon size={18} className={cn(active ? "text-white" : "text-sidebar-text/80 group-hover:text-white")} />
-                      {item.label}
+                      {!collapsed && item.label}
                     </Link>
+                  );
+                  return (
+                    <div key={item.href} className={collapsed ? "flex justify-center" : ""}>
+                      {collapsed ? <Tooltip label={item.label} side="right">{link}</Tooltip> : link}
+                    </div>
                   );
                 })}
               </div>
@@ -92,7 +104,17 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        <div className="px-5 py-4 text-[11px] text-sidebar-text/50">v1.0 · Production CRM</div>
+        {/* Collapse toggle (desktop) */}
+        <div className={cn("hidden border-t border-white/10 p-3 lg:flex", collapsed && "justify-center")}>
+          <Tooltip label={collapsed ? "Expand" : "Collapse"} side="right">
+            <button
+              onClick={onToggleCollapse}
+              className="press flex h-9 items-center gap-2 rounded-md px-3 text-[13px] text-sidebar-text hover:bg-sidebar-hover hover:text-white"
+            >
+              {collapsed ? <ChevronRight size={18} /> : <><ChevronLeft size={18} /> Collapse</>}
+            </button>
+          </Tooltip>
+        </div>
       </aside>
     </>
   );

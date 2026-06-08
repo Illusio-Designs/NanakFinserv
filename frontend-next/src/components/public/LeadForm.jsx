@@ -2,6 +2,8 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 import Dropdown from "@/components/ui/Dropdown";
+import PhoneInput from "@/components/ui/PhoneInput";
+import { API_URL } from "@/lib/api";
 import { firstError, field, checks } from "@/utils/validators";
 
 const SERVICE_OPTS = ["Life Insurance", "Loan", "Vehicle Insurance", "Mediclaim"].map((s) => ({ value: s, label: s }));
@@ -9,7 +11,9 @@ const SERVICE_OPTS = ["Life Insurance", "Loan", "Vehicle Insurance", "Mediclaim"
 export default function LeadForm() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", service: "" });
 
-  const submit = (e) => {
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
     e.preventDefault();
     const err = firstError(
       [
@@ -20,8 +24,25 @@ export default function LeadForm() {
       form
     );
     if (err) return toast.error(err);
-    toast.success("Thank you! Our team will reach out shortly.");
-    setForm({ name: "", email: "", phone: "", service: "" });
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/public/inquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: form.name, email: form.email, phone_number: form.phone, service: form.service }),
+      });
+      const json = await res.json();
+      if (json.status) {
+        toast.success("Thank you! Our team will reach out shortly.");
+        setForm({ name: "", email: "", phone: "", service: "" });
+      } else {
+        toast.error(json.message || "Could not submit");
+      }
+    } catch {
+      toast.error("Could not submit. Try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const fieldCls =
@@ -34,7 +55,7 @@ export default function LeadForm() {
     >
       <input className={fieldCls} placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
       <input className={fieldCls} placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-      <input className={fieldCls} placeholder="Phone Number" maxLength={10} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })} />
+      <PhoneInput light value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} placeholder="Phone Number" />
       <Dropdown
         variant="light"
         placeholder="Services"
@@ -43,8 +64,8 @@ export default function LeadForm() {
         onChange={(v) => setForm({ ...form, service: v })}
       />
       <div className="sm:col-span-2 flex justify-center">
-        <button type="submit" className="press rounded-full bg-white px-10 py-2.5 text-[14px] font-semibold text-brand-700 hover:bg-white/90">
-          SUBMIT
+        <button type="submit" disabled={busy} className="press rounded-full bg-white px-10 py-2.5 text-[14px] font-semibold text-brand-700 hover:bg-white/90 disabled:opacity-70">
+          {busy ? "SUBMITTING…" : "SUBMIT"}
         </button>
       </div>
     </form>

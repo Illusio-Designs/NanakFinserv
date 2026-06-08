@@ -4,6 +4,7 @@ import { Search, Pencil, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-r
 import { motion } from "framer-motion";
 import Dropdown from "./Dropdown";
 import EmptyState from "./EmptyState";
+import Tooltip from "./Tooltip";
 import { cn } from "@/lib/cn";
 
 /**
@@ -194,16 +195,17 @@ export default function DataTable({
 
 function RowBtn({ icon: Icon, onClick, title, danger, disabled }) {
   return (
-    <button
-      onClick={onClick}
-      title={title}
-      disabled={disabled}
-      className={cn(
-        "press rounded-md p-2 text-muted transition-colors hover:bg-subtle hover:text-ink disabled:opacity-40",
-        danger && "hover:bg-red-50 hover:text-danger"
-      )}
-    >
-      <Icon size={16} />
-    </button>
+    <Tooltip label={title} side="top">
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          "press rounded-md p-2 text-muted transition-colors hover:bg-subtle hover:text-ink disabled:opacity-40",
+          danger && "hover:bg-red-50 hover:text-danger"
+        )}
+      >
+        <Icon size={16} />
+      </button>
+    </Tooltip>
   );
 }

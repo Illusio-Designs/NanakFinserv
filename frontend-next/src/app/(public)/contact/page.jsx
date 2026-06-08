@@ -3,7 +3,9 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Phone, Mail, MapPin } from "lucide-react";
 import Input from "@/components/ui/Input";
+import PhoneInput from "@/components/ui/PhoneInput";
 import Button from "@/components/ui/Button";
+import { API_URL } from "@/lib/api";
 import { firstError, field, checks } from "@/utils/validators";
 
 const INFO = [
@@ -20,7 +22,9 @@ const INFO = [
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", service: "" });
 
-  const submit = (e) => {
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
     e.preventDefault();
     const err = firstError(
       [
@@ -31,8 +35,25 @@ export default function ContactPage() {
       form
     );
     if (err) return toast.error(err);
-    toast.success("Thanks! We'll get back to you within 24 hours.");
-    setForm({ name: "", email: "", phone: "", service: "" });
+    setBusy(true);
+    try {
+      const res = await fetch(`${API_URL}/public/inquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: form.name, email: form.email, phone_number: form.phone, service: form.service }),
+      });
+      const json = await res.json();
+      if (json.status) {
+        toast.success("Thanks! We'll get back to you within 24 hours.");
+        setForm({ name: "", email: "", phone: "", service: "" });
+      } else {
+        toast.error(json.message || "Could not submit");
+      }
+    } catch {
+      toast.error("Could not submit. Try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -73,8 +94,8 @@ export default function ContactPage() {
           <p className="-mt-2 text-[13px] text-muted">Fill out the form and we'll get back to you within 24 hours.</p>
           <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Input label="Email Address" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input label="Phone Number" maxLength={10} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })} />
-          <Button type="submit" className="w-full">Send message</Button>
+          <PhoneInput label="Phone Number" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+          <Button type="submit" className="w-full" loading={busy}>Send message</Button>
         </form>
       </div>
 

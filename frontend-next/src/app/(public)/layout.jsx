@@ -1,5 +1,6 @@
 import Navbar from "@/components/public/Navbar";
 import Footer from "@/components/public/Footer";
+import PromoPopup from "@/components/public/PromoPopup";
 
 export default function PublicLayout({ children }) {
   return (
@@ -7,6 +8,7 @@ export default function PublicLayout({ children }) {
       <Navbar />
       <main className="flex-1">{children}</main>
       <Footer />
+      <PromoPopup />
     </div>
   );
 }
