@@ -1,4 +1,5 @@
 import { DOCUMENT_IDS } from "../../config/ids";
+import { checks as V, field as vField, firstError } from "../../utils/validators";
 import React, { useEffect, useState } from "react";
 import "../../styles/pages/dashboard/Consumer.css";
 import Table from "../../components/common/Table";
@@ -3158,13 +3159,15 @@ const VehicleInsurance = () => {
       return;
     }
 
-    // Validate critical fields
-    if (!formData.Name || !formData.Email || !formData.MobileNumber) {
-      toast.error(
-        "Please fill all required consumer details: Name, Email, and Mobile Number."
-      );
-      return;
-    }
+    // Validate critical fields (same rules as the API).
+    const vErr = firstError([
+      vField("Name", { label: "Name", required: true, checks: [V.maxLen(100)] }),
+      vField("Email", { label: "Email", required: true, checks: [V.email] }),
+      vField("MobileNumber", { label: "Mobile number", required: true, checks: [V.mobile10] }),
+      vField("VehicleNumber", { label: "Vehicle number", required: true, checks: [V.maxLen(20)] }),
+      vField("ManufacturingYear", { label: "Manufacturing year", checks: [V.year] }),
+    ], formData);
+    if (vErr) { toast.error(vErr); return; }
 
     // Validate nominee if applicable
     if (formData.hasNominee === "yes" && !formData.NomineeRelation) {

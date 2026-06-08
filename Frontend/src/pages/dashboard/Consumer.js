@@ -9,6 +9,7 @@ import Select from '../../components/common/Select';
 import DashboardLayout from '../../components/DashboardLayout';
 import { getAllConsumers, getAllVerticle, getAllVerticleUser, addConsumerUser, updateConsumerUser, getAllBuilders, getUserCountList, getHousehold, addFamilyMember } from '../../serviceAPI/userAPI';
 import toast from 'react-hot-toast';
+import { checks as V, field as vField, firstError } from '../../utils/validators';
 import Cookies from 'js-cookie';
 
 const Consumer = () => {
@@ -630,8 +631,18 @@ const Consumer = () => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+
+  // Client-side validation (same rules as the API).
+  const verr = firstError([
+    vField('username', { label: 'Name', required: true, checks: [V.maxLen(50)] }),
+    vField('email', { label: 'Email', required: true, checks: [V.email] }),
+    vField('phone_number', { label: 'Mobile number', required: true, checks: [V.mobile10] }),
+    vField('referenceName', { label: 'Reference', checks: [V.maxLen(100)] }),
+  ], formData);
+  if (verr) { toast.error(verr); return; }
+
   setLoading(true);
-  
+
   try {
     const payload = {
       ...formData,
@@ -776,14 +787,12 @@ const handleSubmit = async (e) => {
 
   const submitFamilyMember = async (e) => {
     e.preventDefault();
-    if (!familyForm.username || !familyForm.phone_number) {
-      toast.error('Name and mobile number are required');
-      return;
-    }
-    if (!/^\d{10}$/.test(familyForm.phone_number)) {
-      toast.error('Mobile number must be 10 digits');
-      return;
-    }
+    const ferr = firstError([
+      vField('username', { label: 'Name', required: true, checks: [V.maxLen(50)] }),
+      vField('phone_number', { label: 'Mobile number', required: true, checks: [V.mobile10] }),
+      vField('email', { label: 'Email', checks: [V.email] }),
+    ], familyForm);
+    if (ferr) { toast.error(ferr); return; }
     const res = await addFamilyMember({
       head_user_id: familyHead.user_id,
       username: familyForm.username,
