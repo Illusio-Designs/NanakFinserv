@@ -10,21 +10,37 @@ import Input from "@/components/ui/Input";
 import PhoneInput from "@/components/ui/PhoneInput";
 import Dropdown from "@/components/ui/Dropdown";
 import api, { showError } from "@/lib/api";
+import { ROLE_IDS } from "@/config/ids";
 import { firstError, field, checks } from "@/utils/validators";
+
+// Seeded roles (no backend dependency) — labels for display + the Add/Edit dropdown.
+const ROLE_LABELS = {
+  [ROLE_IDS.SUPER_ADMIN]: "Super Admin",
+  [ROLE_IDS.STAFF]: "Staff",
+  [ROLE_IDS.BUILDER]: "Builder",
+  [ROLE_IDS.CONSUMER]: "Consumer",
+  [ROLE_IDS.BUILDER_CONSUMER]: "Builder Consumer",
+  [ROLE_IDS.BUILDING_MANAGER]: "Building Manager",
+};
+const ROLE_OPTIONS = [
+  { value: ROLE_IDS.SUPER_ADMIN, label: "Super Admin" },
+  { value: ROLE_IDS.STAFF, label: "Staff" },
+  { value: ROLE_IDS.BUILDER, label: "Builder" },
+  { value: ROLE_IDS.BUILDING_MANAGER, label: "Building Manager" },
+];
 
 const norm = (r) => ({
   ...r,
   name: r.username || r.name || "—",
   email: r.email || "—",
   mobile: r.mobileNumber || r.phone_number || "—",
-  roleName: r.role_name || r.roleName || (r.role && r.role.role_name) || "—",
+  roleName: ROLE_LABELS[r.role_id] || r.role_name || r.roleName || (r.role && r.role.role_name) || "—",
 });
 
 const empty = { username: "", email: "", phone_number: "", role: "" };
 
 export default function UsersPage() {
   const [rows, setRows] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
@@ -46,7 +62,6 @@ export default function UsersPage() {
 
   useEffect(() => {
     load();
-    api.get("/user/role/list").then((r) => setRoles((r.data?.data || []).map((x) => ({ value: x.role_id, label: x.role_name })))).catch(() => setRoles([]));
   }, []);
 
   const columns = useMemo(
@@ -104,7 +119,7 @@ export default function UsersPage() {
       <Input label="Name" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
       <PhoneInput label="Mobile Number" value={form.phone_number} onChange={(v) => setForm({ ...form, phone_number: v })} />
       <Input label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-      <Dropdown label="Role" placeholder="Select role" options={roles} value={form.role} onChange={(v) => setForm({ ...form, role: v })} />
+      <Dropdown label="Role" placeholder="Select role" options={ROLE_OPTIONS} value={form.role} onChange={(v) => setForm({ ...form, role: v })} />
     </div>
   );
 
