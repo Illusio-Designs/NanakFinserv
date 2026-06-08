@@ -20,13 +20,15 @@ Legend: ✅ done · 🟡 partial · ⬜ pending
 | Consumers | ✅ | list, add (standalone **or join existing**), services+**assignee**, family, KYC docs, edit, view, upload |
 | Vehicle | ✅ | full add/edit, nature, TP/Full plan, **TP+OD timelines**, nominee, previous policy, docs, renewals, add-next, auto timeline reconcile |
 | Settings | ✅ | vertical toggles + data wipe |
-| Users & Roles | ✅ | list + **add/edit role-user** (role dropdown) |
+| Users & Roles | ✅ | list + **add/edit** with **vertical-manager roles** (Loan/Mediclaim/Vehicle/Life Manager) replacing Staff |
 | Inquiries | ✅ | list (`/user/data/inquiery`) |
 | Mediclaim | 🟡 | **Policies + Companies CRUD + Products CRUD** (tabs); policy create + all-policies + renewals ⬜ |
-| Loan | 🟡 | pipeline-as-tabs + view; **create + status actions + config** ⬜ |
-| Life | 🟡 | list only; **create/edit + renewal** ⬜ |
-| Builder / Unit / Building | ⬜ | list (builder) only |
-| Blog admin / Support | ⬜ | public inquiry + public blog exist |
+| Loan | ✅ | pipeline tabs + **status update** action + view; loan config (PDF) ⬜ |
+| Life | ✅ | **add/edit** (proposer/life-assured/nominee/policy) + view; renewal sheet ⬜ |
+| Builder | ✅ | list + **add/edit**; Unit/Building ⬜ |
+| Blog admin | ✅ | **CRUD** (`/blog-admin`) with image upload |
+| Support | ✅ | help + contact page |
+| Data wipe | ✅ | wipes business data + consumers, keeps back-office users |
 
 ---
 
