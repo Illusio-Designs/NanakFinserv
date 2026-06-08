@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Users, HandCoins, Car, HeartPulse, ShieldCheck, Building2, IndianRupee, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Users, HandCoins, Car, HeartPulse, ShieldCheck, Building2, IndianRupee, TrendingUp, RefreshCw, UserCog, ListChecks, ChevronRight } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import { StatCard, Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -12,6 +13,7 @@ const inr = (n) =>
 export default function DashboardPage() {
   const [counts, setCounts] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState({ renewalsDue: 0, unassigned: 0, unread: 0 });
 
   useEffect(() => {
     (async () => {
@@ -24,6 +26,25 @@ export default function DashboardPage() {
       } finally {
         setLoading(false);
       }
+    })();
+
+    // Pending tasks (best-effort; each is independent).
+    (async () => {
+      const next = { renewalsDue: 0, unassigned: 0, unread: 0 };
+      try {
+        const r = await api.get("/user/vehicle/renewal/stats");
+        const d = r.data?.data || r.data || {};
+        next.renewalsDue = d.dueSoon ?? d.due ?? d.total ?? Object.values(d).filter((v) => typeof v === "number").reduce((a, b) => a + b, 0);
+      } catch {}
+      try {
+        const n = await api.get("/user/notifications/count");
+        next.unread = n.data?.data?.unread || 0;
+      } catch {}
+      try {
+        const c = await api.get("/user/list/consumer");
+        next.unassigned = (c.data?.data || []).filter((u) => (u.category || []).some((m) => !m.user_role_id)).length;
+      } catch {}
+      setTasks(next);
     })();
   }, []);
 
@@ -64,6 +85,19 @@ export default function DashboardPage() {
           ? [...Array(6)].map((_, i) => <div key={i} className="skeleton h-[78px] rounded-lg" />)
           : stats.map((s) => <StatCard key={s.title} {...s} value={s.value ?? 0} />)}
       </div>
+
+      {/* Pending tasks */}
+      <Card className="mt-6">
+        <div className="mb-3 flex items-center gap-2">
+          <ListChecks size={18} className="text-brand-600" />
+          <h3 className="text-[15px] font-semibold">Pending tasks</h3>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <TaskTile href="/vehicle" icon={RefreshCw} label="Renewals due" value={tasks.renewalsDue} tone="warning" />
+          <TaskTile href="/consumers" icon={UserCog} label="Consumers to assign" value={tasks.unassigned} tone="brand" />
+          <TaskTile href="/dashboard" icon={ListChecks} label="Unread notifications" value={tasks.unread} tone="success" />
+        </div>
+      </Card>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Loan pipeline */}
@@ -109,5 +143,28 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+const TILE_TONES = {
+  brand: "bg-brand-50 text-brand-700",
+  success: "bg-green-50 text-green-700",
+  warning: "bg-amber-50 text-amber-700",
+};
+
+function TaskTile({ href, icon: Icon, label, value, tone = "brand" }) {
+  return (
+    <Link href={href} className="press flex items-center justify-between rounded-lg border border-line p-4 transition-shadow hover:shadow-pop">
+      <div className="flex items-center gap-3">
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${TILE_TONES[tone]}`}>
+          <Icon size={18} />
+        </span>
+        <div>
+          <div className="text-[20px] font-semibold leading-none text-ink">{value ?? 0}</div>
+          <div className="mt-1 text-[12px] text-muted">{label}</div>
+        </div>
+      </div>
+      <ChevronRight size={16} className="text-muted" />
+    </Link>
   );
 }

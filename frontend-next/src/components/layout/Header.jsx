@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
-import { Menu, Search, Bell, LogOut, ChevronDown } from "lucide-react";
+import { Menu, Search, LogOut, ChevronDown } from "lucide-react";
 import { useSearch } from "@/lib/search";
+import NotificationCenter from "./NotificationCenter";
 
 export default function Header({ onMenu }) {
   const router = useRouter();
@@ -49,10 +50,7 @@ export default function Header({ onMenu }) {
       </div>
 
       <div className="ml-auto flex items-center gap-1">
-        <button className="press relative rounded-md p-2 text-muted hover:bg-subtle">
-          <Bell size={19} />
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger" />
-        </button>
+        <NotificationCenter />
 
         <div className="relative">
           <button
