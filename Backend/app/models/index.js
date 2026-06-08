@@ -63,6 +63,7 @@ db.lifeInsuranceDocument = require("./lifeInsuranceDocument.model")(sequelize, S
 db.notification = require("./notification.model")(sequelize, Sequelize)
 db.appSetting = require("./appSetting.model")(sequelize, Sequelize)
 db.buildingManager = require("./buildingManager.model")(sequelize, Sequelize)
+db.consumerDocument = require("./consumerDocument.model")(sequelize, Sequelize)
 
 db.mediclaimProduct.hasMany(db.mediclaimproductpdf , { foreignKey : "mediclaim_product_id"})
 db.mediclaimproductpdf.hasOne(db.mediclaimProduct, { foreignKey: "mediclaim_product_id"})
@@ -317,5 +318,11 @@ db.lifeInsurance.belongsTo(db.user, { foreignKey: 'updated_by', as: 'updatedByUs
 
 db.user.hasMany(db.lifeInsuranceDocument, { foreignKey: 'uploaded_by', as: 'uploadedDocuments' });
 db.lifeInsuranceDocument.belongsTo(db.user, { foreignKey: 'uploaded_by', as: 'uploadedByUser' });
+
+// Consumer-level KYC documents (one store reused across verticals).
+db.user.hasMany(db.consumerDocument, { foreignKey: 'user_id', as: 'consumerDocuments' });
+db.consumerDocument.belongsTo(db.user, { foreignKey: 'user_id' });
+db.documents.hasMany(db.consumerDocument, { foreignKey: 'categoryId' });
+db.consumerDocument.belongsTo(db.documents, { foreignKey: 'categoryId' });
 
 module.exports = db;

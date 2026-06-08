@@ -67,7 +67,9 @@ const {
   vehiclePreviousPolicy,
   vehicleUser,
   vehicle_document,
-  vehicles
+  vehicles,
+  ConsumerDocument,
+  upsertConsumerDocument
 } = require("../shared/context");
 const consumerService = require("./consumer.service");
 const logger = require("../../config/logger");
@@ -1403,6 +1405,57 @@ exports.getHousehold = async (req, res) => {
   } catch (e) {
     logger.error({ err: e }, "getHousehold failed");
     return res.status(400).send({ message: "error fetching household", status: false });
+  }
+};
+
+/**
+ * GET /user/consumer/documents/:userId
+ * The consumer's stored KYC documents (Aadhar/PAN/GST...). Policy forms call
+ * this to show what's already attached and only prompt for missing ones.
+ */
+exports.getConsumerDocuments = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const docs = await ConsumerDocument.findAll({
+      where: { user_id: userId },
+      include: [{ model: documents, attributes: ["doc_name"] }],
+      raw: true,
+      nest: true,
+    });
+    return res.status(200).send({ message: "consumer documents", data: docs, status: true });
+  } catch (e) {
+    logger.error({ err: e }, "getConsumerDocuments failed");
+    return res.status(400).send({ message: "error fetching documents", status: false });
+  }
+};
+
+/**
+ * POST /user/consumer/documents/upload  (multipart: file, user_id, categoryId)
+ * Store/replace a single consumer-level KYC document.
+ */
+exports.uploadConsumerDocument = async (req, res) => {
+  try {
+    const { user_id, categoryId } = req.body;
+    if (!user_id || !categoryId) {
+      return res.status(400).send({ message: "user_id and categoryId are required", status: false });
+    }
+    if (!req.files || !req.files.file) {
+      return res.status(400).send({ message: "file is required", status: false });
+    }
+    const fileObj = req.files.file;
+    const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+    const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
+    const uploadPath = path.join(uploadsDir, uniqueName);
+    if (fileObj.mv) {
+      await fileObj.mv(uploadPath);
+    } else {
+      await fsExtra.writeFile(uploadPath, fileObj.data);
+    }
+    const doc = await upsertConsumerDocument(user_id, categoryId, uniqueName);
+    return res.status(200).send({ message: "Document saved", data: doc, status: true });
+  } catch (e) {
+    logger.error({ err: e }, "uploadConsumerDocument failed");
+    return res.status(400).send({ message: "error saving document", status: false });
   }
 };
 

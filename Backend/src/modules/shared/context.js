@@ -166,4 +166,23 @@ async function ensureCategoryMapping(user_consumer_id, category_id, user_role_id
   return row;
 }
 
-module.exports = { ensureCategoryMapping, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
+const ConsumerDocument = db.consumerDocument;
+
+/**
+ * Store/replace a consumer-level document (KYC). One row per (user_id,
+ * categoryId): re-uploading the same type replaces the file. Used so KYC docs
+ * live on the consumer and are reused across verticals instead of re-asked per
+ * policy.
+ */
+async function upsertConsumerDocument(user_id, categoryId, file) {
+  if (!user_id || !categoryId || !file) return null;
+  const existing = await ConsumerDocument.findOne({ where: { user_id, categoryId } });
+  if (existing) {
+    existing.file = file;
+    await existing.save();
+    return existing;
+  }
+  return ConsumerDocument.create({ user_id, categoryId, file });
+}
+
+module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };

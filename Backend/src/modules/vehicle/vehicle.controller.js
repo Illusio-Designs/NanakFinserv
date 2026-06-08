@@ -67,7 +67,8 @@ const {
   vehiclePreviousPolicy,
   vehicleUser,
   vehicle_document,
-  vehicles
+  vehicles,
+  upsertConsumerDocument
 } = require("../shared/context");
 const vehicleService = require("./vehicle.service");
 const logger = require("../../config/logger");
@@ -456,6 +457,10 @@ AgentContactNumber: _AgentContactNumber
                 { fieldName: 'rcbook', categoryId: DOCUMENT_IDS.RC_BOOK }
             ];
 
+            // KYC docs (Aadhar/PAN/GST) belong to the CONSUMER — stored once and
+            // reused across policies/verticals. RC Book is vehicle-specific.
+            const KYC_DOC_IDS = [DOCUMENT_IDS.AADHAR, DOCUMENT_IDS.PAN, DOCUMENT_IDS.GST];
+
             for (const doc of standardDocuments) {
                 if (req.files && req.files[doc.fieldName]) {
                     const fileObj = req.files[doc.fieldName];
@@ -475,14 +480,20 @@ AgentContactNumber: _AgentContactNumber
                         throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
                     }
 
-                    // Save document record to database
-                    await vehicle_document.create({
-                        user_id: userData.user_id,
-                        vehicle_user_id: vehicle.vehicle_user_id,
-                        categoryId: doc.categoryId,
-                        file: uniqueName
-                    });
-                    logger.debug(`[VehicleUserCreate] ${doc.fieldName} document saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
+                    if (KYC_DOC_IDS.includes(doc.categoryId)) {
+                        // Consumer-level KYC: store/replace once on the consumer.
+                        await upsertConsumerDocument(userData.user_id, doc.categoryId, uniqueName);
+                        logger.debug(`[VehicleUserCreate] ${doc.fieldName} saved as CONSUMER document for user_id: ${userData.user_id}`);
+                    } else {
+                        // Vehicle-specific (RC Book): per policy.
+                        await vehicle_document.create({
+                            user_id: userData.user_id,
+                            vehicle_user_id: vehicle.vehicle_user_id,
+                            categoryId: doc.categoryId,
+                            file: uniqueName
+                        });
+                        logger.debug(`[VehicleUserCreate] ${doc.fieldName} document saved for vehicle_user_id: ${vehicle.vehicle_user_id}`);
+                    }
                 }
             }
 
