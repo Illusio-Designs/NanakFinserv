@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Users, Building2, Car, ShieldCheck, HandCoins, HeartPulse,
-  UserCog, Settings, X, ChevronLeft, ChevronRight, MessageSquare, LifeBuoy,
+  UserCog, Settings, X, ChevronLeft, ChevronRight, MessageSquare, LifeBuoy, FileText,
 } from "lucide-react";
 import Tooltip from "@/components/ui/Tooltip";
 import { cn } from "@/lib/cn";
@@ -25,6 +25,7 @@ const NAV = [
     section: "Admin",
     items: [
       { label: "Users & Roles", href: "/users", icon: UserCog },
+      { label: "Blog", href: "/blog-admin", icon: FileText },
       { label: "Inquiries", href: "/inquiries", icon: MessageSquare },
       { label: "Support", href: "/support", icon: LifeBuoy },
       { label: "Settings", href: "/settings", icon: Settings },

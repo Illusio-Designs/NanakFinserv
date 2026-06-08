@@ -120,8 +120,8 @@ export default function DataTable({
       )}
 
       {/* Desktop table */}
-      <div className="hidden md:block">
-        <table className="w-full text-left text-[14px]">
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[640px] text-left text-[14px]">
           <thead>
             <tr className="border-b border-line bg-subtle text-[11px] uppercase tracking-wider text-muted">
               {columns.map((c) => (
