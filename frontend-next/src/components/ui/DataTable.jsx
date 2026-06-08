@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Search, Pencil, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Dropdown from "./Dropdown";
+import DateRange from "./DateRange";
 import EmptyState from "./EmptyState";
 import Tooltip from "./Tooltip";
 import { cn } from "@/lib/cn";
@@ -39,11 +40,24 @@ export default function DataTable({
         searchKeys.some((k) => String(r[k] ?? "").toLowerCase().includes(needle))
       );
     }
-    for (const [k, v] of Object.entries(activeFilters)) {
-      if (v) rows = rows.filter((r) => String(r[k] ?? "") === String(v));
+    for (const f of filters) {
+      const v = activeFilters[f.key];
+      if (!v) continue;
+      if (f.type === "dateRange") {
+        const { from, to } = v || {};
+        if (!from && !to) continue;
+        rows = rows.filter((r) => {
+          const raw = r[f.key];
+          if (!raw) return false;
+          const d = String(raw).slice(0, 10);
+          return (!from || d >= from) && (!to || d <= to);
+        });
+      } else {
+        rows = rows.filter((r) => String(r[f.key] ?? "") === String(v));
+      }
     }
     return rows;
-  }, [data, q, searchKeys, activeFilters]);
+  }, [data, q, searchKeys, activeFilters, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -68,19 +82,31 @@ export default function DataTable({
               />
             </div>
           )}
-          {filters.map((f) => (
-            <div key={f.key} className="sm:w-48">
-              <Dropdown
-                placeholder={f.label}
-                options={f.options}
-                value={activeFilters[f.key] || ""}
-                onChange={(v) => {
-                  setActiveFilters((s) => ({ ...s, [f.key]: v }));
-                  setPage(1);
-                }}
-              />
-            </div>
-          ))}
+          {filters.map((f) =>
+            f.type === "dateRange" ? (
+              <div key={f.key} className="sm:w-auto">
+                <DateRange
+                  value={activeFilters[f.key] || {}}
+                  onChange={(v) => {
+                    setActiveFilters((s) => ({ ...s, [f.key]: v }));
+                    setPage(1);
+                  }}
+                />
+              </div>
+            ) : (
+              <div key={f.key} className="sm:w-48">
+                <Dropdown
+                  placeholder={f.label}
+                  options={f.options}
+                  value={activeFilters[f.key] || ""}
+                  onChange={(v) => {
+                    setActiveFilters((s) => ({ ...s, [f.key]: v }));
+                    setPage(1);
+                  }}
+                />
+              </div>
+            )
+          )}
         </div>
       )}
 
