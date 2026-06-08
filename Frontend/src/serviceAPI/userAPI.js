@@ -3013,3 +3013,32 @@ export const getHousehold = async (mobile) => {
     return { data: null, status: false };
   }
 };
+
+// ── Consumer-level documents (KYC stored once, reused) ────────────────────
+/** Get a consumer's stored KYC documents (Aadhar/PAN/GST...). */
+export const getConsumerDocuments = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/user/consumer/documents/${userId}`, authHeaders());
+    return response.data; // { data: [{ categoryId, file, document:{doc_name} }], status }
+  } catch (error) {
+    errorHandel(error);
+    return { data: [], status: false };
+  }
+};
+
+/** Upload/replace a single consumer KYC document. fields: file, user_id, categoryId. */
+export const uploadConsumerDocument = async ({ file, user_id, categoryId }) => {
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('user_id', user_id);
+    fd.append('categoryId', categoryId);
+    const response = await axios.post(`${API_URL}/user/consumer/documents/upload`, fd, {
+      headers: { token: Cookies.get('token') },
+    });
+    return response.data;
+  } catch (error) {
+    errorHandel(error);
+    return { status: false };
+  }
+};
