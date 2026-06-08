@@ -9,7 +9,9 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Dropdown from "@/components/ui/Dropdown";
 import Tabs from "@/components/ui/Tabs";
+import { Plus as PlusIcon } from "lucide-react";
 import api, { showError } from "@/lib/api";
+import MediclaimPolicyModal from "./MediclaimPolicyModal";
 
 export default function MediclaimPage() {
   const [tab, setTab] = useState("policies");
@@ -36,28 +38,37 @@ export default function MediclaimPage() {
 function Policies() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get("/user/mediclaim/user/list");
-        const d = res.data?.data || res.data || [];
-        setRows((Array.isArray(d) ? d : []).map((r) => ({ ...r, name: r.username || r.Name || r.name || "—", mobile: r.mobileNumber || r.MobileNumber || "—", email: r.email || "—" })));
-      } catch (e) { showError(e, "Could not load policies"); setRows([]); }
-      finally { setLoading(false); }
-    })();
-  }, []);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/user/mediclaim/user/list");
+      const d = res.data?.data || res.data || [];
+      setRows((Array.isArray(d) ? d : []).map((r) => ({ ...r, name: r.username || r.Name || r.name || "—", mobile: r.mobileNumber || r.MobileNumber || "—", email: r.email || "—" })));
+    } catch (e) { showError(e, "Could not load policies"); setRows([]); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
+
   return (
-    <DataTable
-      columns={[
-        { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
-        { key: "mobile", title: "Mobile" },
-        { key: "email", title: "Email" },
-      ]}
-      data={rows}
-      loading={loading}
-      rowKey="user_id"
-      searchKeys={["name", "mobile", "email"]}
-    />
+    <div>
+      <div className="mb-3 flex justify-end">
+        <Button icon={PlusIcon} onClick={() => setAddOpen(true)}>Add Policy</Button>
+      </div>
+      <DataTable
+        columns={[
+          { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
+          { key: "mobile", title: "Mobile" },
+          { key: "email", title: "Email" },
+        ]}
+        data={rows}
+        loading={loading}
+        rowKey="user_id"
+        searchKeys={["name", "mobile", "email"]}
+      />
+      <MediclaimPolicyModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={load} />
+    </div>
   );
 }
 
