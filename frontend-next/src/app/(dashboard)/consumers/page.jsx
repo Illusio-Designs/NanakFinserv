@@ -12,6 +12,7 @@ import Badge from "@/components/ui/Badge";
 import api, { showError } from "@/lib/api";
 import { CATEGORY_IDS } from "@/config/ids";
 import { firstError, field, checks } from "@/utils/validators";
+import ConsumerManageModal from "./ConsumerManageModal";
 
 const VERTICALS = [
   { key: "loan", label: "Loan", id: CATEGORY_IDS.LOAN },
@@ -30,6 +31,7 @@ export default function ConsumersPage() {
   const [form, setForm] = useState(emptyForm);
   const [picked, setPicked] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [manageRow, setManageRow] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -199,7 +201,7 @@ export default function ConsumersPage() {
           setEditRow(r);
           setForm({ username: r.username || "", email: r.email || "", phone_number: r.mobileNumber || "", referenceName: r.referenceName || "" });
         }}
-        onView={(r) => toast(`${r.username} · ${r.mobileNumber}`)}
+        onView={(r) => setManageRow(r)}
       />
 
       {/* Add — stepper modal */}
@@ -224,6 +226,14 @@ export default function ConsumersPage() {
           <Input label="Reference" value={form.referenceName} onChange={(e) => setForm({ ...form, referenceName: e.target.value })} />
         </div>
       </Modal>
+
+      {/* Manage — family + documents (tabbed) */}
+      <ConsumerManageModal
+        consumer={manageRow}
+        open={!!manageRow}
+        onClose={() => setManageRow(null)}
+        onChanged={load}
+      />
     </div>
   );
 }

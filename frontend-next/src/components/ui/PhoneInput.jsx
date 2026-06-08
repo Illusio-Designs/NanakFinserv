@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import Popover from "./Popover";
 import { cn } from "@/lib/cn";
 
 // iso2 is used for the flag image (flagcdn) — emoji flags don't render on Windows.
@@ -25,49 +26,42 @@ function Flag({ iso }) {
 export default function PhoneInput({ label, value = "", onChange, onCountryChange, error, maxLength = 10, placeholder = "Enter mobile number", light = false }) {
   const [country, setCountry] = useState(COUNTRIES[0]);
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const onDoc = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false);
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
+  const anchorRef = useRef(null);
 
   const wrapBase = light
     ? "flex items-center rounded-md bg-white/95"
     : cn("flex items-center rounded-md border border-line bg-surface transition-all focus-within:border-brand-600 focus-within:ring-2 focus-within:ring-brand-100", error && "border-danger ring-2 ring-danger/15");
 
   return (
-    <div className="w-full" ref={ref}>
+    <div className="w-full">
       {label && <label className="ui-label">{label}</label>}
       <div className={wrapBase} style={{ height: "var(--control-h)" }}>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            className="flex h-full items-center gap-1 rounded-l-md px-2.5 text-[14px] text-ink hover:bg-subtle/60"
-            style={{ height: "var(--control-h)" }}
-          >
-            <Flag iso={country.iso} />
-            <span className="text-muted">{country.dial}</span>
-            <ChevronDown size={14} className="text-muted" />
-          </button>
-          {open && (
-            <ul className="absolute z-40 mt-1 w-44 animate-scale-in overflow-hidden rounded-md border border-line bg-surface p-1 shadow-pop">
-              {COUNTRIES.map((c) => (
-                <li key={c.code}>
-                  <button
-                    type="button"
-                    onClick={() => { setCountry(c); setOpen(false); onCountryChange?.(c.dial); }}
-                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-[14px] text-ink hover:bg-subtle"
-                  >
-                    <Flag iso={c.iso} /> {c.code} <span className="ml-auto text-muted">{c.dial}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <button
+          ref={anchorRef}
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-full items-center gap-1 rounded-l-md px-2.5 text-[14px] text-ink hover:bg-subtle/60"
+          style={{ height: "var(--control-h)" }}
+        >
+          <Flag iso={country.iso} />
+          <span className="text-muted">{country.dial}</span>
+          <ChevronDown size={14} className="text-muted" />
+        </button>
+        <Popover open={open} onClose={() => setOpen(false)} anchorRef={anchorRef} matchWidth={false}>
+          <ul className="w-44 overflow-hidden rounded-md border border-line bg-surface p-1 shadow-pop">
+            {COUNTRIES.map((c) => (
+              <li key={c.code}>
+                <button
+                  type="button"
+                  onClick={() => { setCountry(c); setOpen(false); onCountryChange?.(c.dial); }}
+                  className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-[14px] text-ink hover:bg-subtle"
+                >
+                  <Flag iso={c.iso} /> {c.code} <span className="ml-auto text-muted">{c.dial}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Popover>
         <span className="h-5 w-px bg-line" />
         <input
           inputMode="numeric"
