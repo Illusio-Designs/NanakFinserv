@@ -75,3 +75,52 @@ The whole **Previous Policy Details** section (used for Renewal & Portability, i
 
 > The current form covers Fresh policies with core fields. The above adds full
 > Renewal/Portability + TP/Full plan + past-policy management to match the old app.
+
+---
+
+## 8) Indian TP/OD timeline + status-by-date (backend check)
+
+**What the backend actually stores** (models in `app/models/vehicle_details/`):
+- `vehcileRunningPolicy` / `vehiclePreviousPolicy`: `policy_type_id`, `company_id`,
+  **`policy_plan_id`** (this is the TP / Comprehensive / SAOD plan — from
+  `GET /user/data/policyplan`), **`PolicyTenure`** (INTEGER years), `PremiumAmount`,
+  `PolicyFrom`, `PolicyTo`, `PolicyIssuedDate`, **`ExpiryDate`**, `IDV`, `NCB`,
+  nominee fields, `CurrentPolicyFile`, agent fields.
+- `vehiclePreviousPolicy` additionally has a **`status`** column.
+- `vehicleUser`: `vehicle_policy_type` (Fresh/Renewal/Portability),
+  `policy_plan_type`, `status`, `vehicle_type`.
+
+**Important reality:** the backend has **only one expiry timeline**
+(`PolicyFrom/PolicyTo/ExpiryDate` + `PolicyTenure`). There are **no separate
+`tp_expiry` / `od_expiry` columns**. So the Indian long-term pattern —
+**TP valid 3 yrs (car) / 5 yrs (2-wheeler) bundled with 1-yr OD (Full)** — is
+represented by:
+- `policy_plan_id` = TP vs Comprehensive/Full (the plan), and
+- `PolicyTenure` = the term in years (e.g. 1 for OD/Comprehensive, 3 for long-term TP).
+
+To track TP-3yr and OD-1yr as **two distinct expiry dates on one vehicle**, the
+backend would need new fields (e.g. `tp_expiry_date`, `od_expiry_date`) — it does
+NOT have them today. **Decision needed:**
+- **(A)** Match backend as-is: one plan + one tenure + one expiry per policy
+  record (a long-term-TP-only policy is its own record with tenure 3; the OD/Full
+  is another record/renewal). Simplest, no backend change.
+- **(B)** Add `tp_expiry_date` + `od_expiry_date` to the running/previous policy
+  models + controller to model the 1+3 bundle on a single policy (backend change).
+
+**Status by date (running vs completed):** the old app derives status from
+`ExpiryDate` vs today — `VehicleRenewalSheet` buckets rows as **expired / running**
+(and week/month/year windows) by comparing `runningPolicy.ExpiryDate` to now. The
+previous-policy `status` column stores this. So when **adding a past record**:
+- compute `status = (today <= PolicyTo/ExpiryDate) ? "running" : "completed"`
+  (i.e. running while within the period, completed once the expiry date has passed),
+- send it on the `previousPolicy.status` (and reflect on the running policy view).
+
+➡️ New form: doesn't set/derive status by date yet, doesn't capture `PolicyTenure`
+or `policy_plan_id`. To match: capture **plan (TP/Full)** + **tenure (years)** +
+**from/to + expiry**, and **auto-set running/completed from the expiry vs today**
+when entering past/previous policies.
+
+### Open question for you
+Do you want **(A)** keep the single-expiry backend (plan + tenure represent
+TP/OD), or **(B)** I extend the backend with separate `tp_expiry_date` /
+`od_expiry_date` so one policy shows both the 3-yr TP and 1-yr OD timelines?
