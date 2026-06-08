@@ -9,6 +9,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
 import Checkbox from "@/components/ui/Checkbox";
 import Switch from "@/components/ui/Switch";
+import FileUpload from "@/components/ui/FileUpload";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Spinner from "@/components/ui/Spinner";
@@ -66,14 +67,49 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
   const [companies, setCompanies] = useState([]);
   const [policyTypes, setPolicyTypes] = useState([]);
   const [policyPlans, setPolicyPlans] = useState([]);
+  const [files, setFiles] = useState({ rcbook: null, CurrentPolicyFile: null, PreviousCurrentPolicyFile: null });
   const [submitting, setSubmitting] = useState(false);
 
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+  const setFile = (k) => (f) => setFiles((s) => ({ ...s, [k]: f }));
+
+  // Create-from-dropdown handlers (return the new option's value to auto-select).
+  const createCompany = async (name) => {
+    try {
+      await api.post("/user/data/company-type", { company_name: name });
+      const res = await api.get("/user/data/company-type");
+      const opts = (res.data?.data || []).map((r) => ({ value: r.company_id, label: r.company_name }));
+      setCompanies(opts);
+      toast.success("Company added");
+      return opts.find((o) => o.label === name)?.value;
+    } catch (e) { showError(e, "Could not add company"); }
+  };
+  const createPolicyType = async (name) => {
+    try {
+      await api.post("/user/data/policytype", { policy_type_name: name });
+      const res = await api.get("/user/data/policytype");
+      const opts = (res.data?.data || []).map((r) => ({ value: r.policy_type_id, label: r.policy_type_name }));
+      setPolicyTypes(opts);
+      toast.success("Policy type added");
+      return opts.find((o) => o.label === name)?.value;
+    } catch (e) { showError(e, "Could not add policy type"); }
+  };
+  const createPolicyPlan = async (name) => {
+    try {
+      await api.post("/user/data/policyplan", { policy_name: name });
+      const res = await api.get("/user/data/policyplan");
+      const opts = (res.data?.data || []).map((r) => ({ value: r.policy_plan_id, label: r.policy_name }));
+      setPolicyPlans(opts);
+      toast.success("Plan added");
+      return opts.find((o) => o.label === name)?.value;
+    } catch (e) { showError(e, "Could not add plan"); }
+  };
   const setRp = (k) => (v) => setForm((f) => ({ ...f, rp: { ...f.rp, [k]: v } }));
   const setPp = (k) => (v) => setForm((f) => ({ ...f, pp: { ...f.pp, [k]: v } }));
 
   useEffect(() => {
     if (!open) return;
+    setFiles({ rcbook: null, CurrentPolicyFile: null, PreviousCurrentPolicyFile: null });
     if (isEdit) {
       const r = editRow;
       setForm({
@@ -158,11 +194,24 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
         isNomineeFlag: form.isNomineeFlag ? "1" : "0",
         runningPolicy, previousPolicy, documentsData: [],
       };
+      const hasFiles = files.rcbook || files.CurrentPolicyFile || files.PreviousCurrentPolicyFile;
+      let payload;
+      if (hasFiles) {
+        const fd = new FormData();
+        fd.append("data", JSON.stringify(data));
+        if (!isEdit && headUserId) fd.append("head_user_id", headUserId);
+        if (files.rcbook) fd.append("rcbook", files.rcbook);
+        if (files.CurrentPolicyFile) fd.append("CurrentPolicyFile", files.CurrentPolicyFile);
+        if (files.PreviousCurrentPolicyFile) fd.append("PreviousCurrentPolicyFile", files.PreviousCurrentPolicyFile);
+        payload = fd;
+      } else {
+        payload = isEdit ? { data } : { data, head_user_id: headUserId };
+      }
       if (isEdit) {
-        await api.put(`/user/vehicle/user/update/${editRow.vehicle_user_id}`, { data });
+        await api.put(`/user/vehicle/user/update/${editRow.vehicle_user_id}`, payload);
         toast.success("Vehicle policy updated");
       } else {
-        await api.post("/user/vehicle/user/add", { data, head_user_id: headUserId });
+        await api.post("/user/vehicle/user/add", payload);
         toast.success("Vehicle policy added");
       }
       onClose();
@@ -179,9 +228,9 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
   const policyFields = (p, setP) => (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Input label="Policy Number" value={p.PolicyNumber} onChange={(e) => setP("PolicyNumber")(e.target.value)} />
-      <Dropdown label="Policy Type" placeholder="Select type" options={policyTypes} value={p.PolicyTypeId} onChange={setP("PolicyTypeId")} />
-      <Dropdown label="Plan (TP / Comprehensive / Full)" placeholder="Select plan" options={policyPlans} value={p.PolicyPlanTypeId} onChange={setP("PolicyPlanTypeId")} />
-      <Dropdown label="Company" placeholder="Select company" options={companies} value={p.CompanyId} onChange={setP("CompanyId")} />
+      <Dropdown label="Policy Type" placeholder="Select type" options={policyTypes} value={p.PolicyTypeId} onChange={setP("PolicyTypeId")} onCreate={createPolicyType} />
+      <Dropdown label="Plan (TP / Comprehensive / Full)" placeholder="Select plan" options={policyPlans} value={p.PolicyPlanTypeId} onChange={setP("PolicyPlanTypeId")} onCreate={createPolicyPlan} />
+      <Dropdown label="Company" placeholder="Select company" options={companies} value={p.CompanyId} onChange={setP("CompanyId")} onCreate={createCompany} />
       <Input label="Premium Amount" value={p.PremiumAmount} onChange={(e) => setP("PremiumAmount")(e.target.value.replace(/[^\d.]/g, ""))} />
       <Input label="Vendor" value={p.Vendor} onChange={(e) => setP("Vendor")(e.target.value)} />
       <DatePicker label="Policy From" value={p.PolicyFrom} onChange={setP("PolicyFrom")} />
@@ -305,6 +354,19 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
           ),
         }]
       : []),
+    {
+      title: "Documents",
+      render: () => (
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted">Upload policy documents (optional). KYC (Aadhar/PAN/GST) is managed on the consumer and reused across policies.</p>
+          <FileUpload label="RC Book" accept=".pdf,.jpg,.jpeg,.png" onChange={setFile("rcbook")} />
+          <FileUpload label="Running Policy PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setFile("CurrentPolicyFile")} />
+          {form.policyRadio !== "Fresh" && (
+            <FileUpload label="Previous Policy PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setFile("PreviousCurrentPolicyFile")} />
+          )}
+        </div>
+      ),
+    },
     {
       title: "Review",
       render: () => (
