@@ -93,4 +93,55 @@ function parseUpdatePayload(body, contentType) {
   return { Data };
 }
 
-module.exports = { updateRemark, normalizePayload, parseUpdatePayload };
+const VehcileRunningPolicy = db.vehcileRunningPolicy;
+const VehiclePreviousPolicy = db.vehiclePreviousPolicy;
+
+/** "running" while within the period, "completed" once the expiry has passed. */
+function policyStatus(p) {
+  const end = p.od_expiry_date || p.ExpiryDate || p.PolicyTo;
+  if (!end) return "running";
+  const d = new Date(end);
+  if (isNaN(d.getTime())) return "running";
+  return d >= new Date() ? "running" : "completed";
+}
+
+/** Sort key: most recent policy start first. */
+function policyStart(p) {
+  const s = p.PolicyFrom || p.PolicyIssuedDate || p.PolicyTo || "";
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+/**
+ * Auto-organize a vehicle's policy timeline year-by-year:
+ *  - if more than one running policy exists, keep the most recent as running and
+ *    archive the older ones into the previous-policies (history) table;
+ *  - recompute every record's status (running/completed) from its expiry vs today.
+ * Safe to call after any add/update/renew.
+ */
+async function reconcileVehiclePolicies(vehicleUserId) {
+  if (!vehicleUserId) return;
+  const running = await VehcileRunningPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
+
+  if (running.length > 1) {
+    const sorted = [...running].sort((a, b) => policyStart(b.get({ plain: true })) - policyStart(a.get({ plain: true })));
+    const keep = sorted[0];
+    for (const old of sorted.slice(1)) {
+      const o = old.get({ plain: true });
+      delete o.id;
+      await VehiclePreviousPolicy.create({ ...o, status: policyStatus(o) });
+      await old.destroy();
+    }
+    await keep.update({ status: policyStatus(keep.get({ plain: true })) });
+  } else if (running.length === 1) {
+    await running[0].update({ status: policyStatus(running[0].get({ plain: true })) });
+  }
+
+  const previous = await VehiclePreviousPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
+  for (const pp of previous) {
+    const next = policyStatus(pp.get({ plain: true }));
+    if (pp.status !== next) await pp.update({ status: next });
+  }
+}
+
+module.exports = { updateRemark, normalizePayload, parseUpdatePayload, reconcileVehiclePolicies };

@@ -787,6 +787,10 @@ AgentContactNumber: _AgentContactNumber
                 }
             });
 
+            // Auto-organize the policy timeline (archive extra running, recompute
+            // running/completed by date) so records stay consistent year-by-year.
+            try { await vehicleService.reconcileVehiclePolicies(vehicle.vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after add failed"); }
+
             res.status(200).send({
                 message: "Vehicle user successfully added!",
                 status: true,
@@ -1431,6 +1435,7 @@ exports.updateVehicleUserData = async (req, res) => {
                 { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
             ]
         });
+        try { await vehicleService.reconcileVehiclePolicies(req.params.vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after update failed"); }
         const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: req.params.vehicle_user_id } });
         return res.status(200).send({
             message: "Vehicle successfully updated!",
@@ -3258,6 +3263,8 @@ exports.renewVehiclePolicy = async (req, res) => {
       Vendor: "",
       CurrentPolicyFile: "",
     });
+
+    try { await vehicleService.reconcileVehiclePolicies(vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after renew failed"); }
 
     return res.status(200).json({
       status: true,
