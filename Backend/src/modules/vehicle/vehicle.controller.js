@@ -71,6 +71,7 @@ const {
   upsertConsumerDocument
 } = require("../shared/context");
 const vehicleService = require("./vehicle.service");
+const vehicleValidator = require("./vehicle.validator");
 const logger = require("../../config/logger");
 
 exports.getAllVehicleInsUser = async (req, res) => {
@@ -225,6 +226,24 @@ AgentContactNumber: _AgentContactNumber
     const _VehicleId = VehicleId || vehicle_id || null;
     const _user_id = user_id || null;
     const _documents = documents || null;
+
+    // Field validation (universal validator). Required: Name, Mobile, Vehicle no.;
+    // others format-checked only when present.
+    const _vErrors = vehicleValidator.validateVehicleData({
+        Name: _Name,
+        MobileNumber: _MobileNumber,
+        VehicleNumber: _VehicleNumber,
+        Email: _Email,
+        ContactPersonNo: _ContactPersonNo,
+        ManufacturingYear: _ManufacturingYear,
+        EngineNumber: _EngineNumber,
+        ChassisNumber: _ChassisNumber,
+        Make: _Make,
+        Model: _Model,
+    });
+    if (_vErrors.length) {
+        return res.status(400).json({ message: _vErrors.join("; "), status: false });
+    }
 
     logger.debug('🔧 [addVehicleUserData] Extracted values:', {
         Name: _Name,

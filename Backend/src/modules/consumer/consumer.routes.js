@@ -11,14 +11,14 @@ const v = require("./consumer.validator");
 const router = express.Router();
 const builderOps = requireRole(...BUILDER_OPS);
 
-router.post("/user/data/add/consumer", verifyToken, builderOps, controller.addConsumerData);
+router.post("/user/data/add/consumer", verifyToken, builderOps, v.validateAddConsumer, controller.addConsumerData);
 router.put("/user/data/add/consumer/loan", verifyToken, builderOps, controller.updateLoanConsumerData);
 router.put("/user/data/update/consumer", verifyToken, builderOps, controller.updateConsumerData);
 router.post("/user/data/consumer/add", verifyToken, builderOps, v.validateAddConsumer, controller.addConsumer);
 router.put("/user/data/consumer/update/:id", verifyToken, builderOps, v.validateUpdateConsumer, controller.updateConsumer);
 
 // Household / family members (members are full users linked to a head).
-router.post("/user/data/consumer/family/add", verifyToken, builderOps, controller.addFamilyMember);
+router.post("/user/data/consumer/family/add", verifyToken, builderOps, v.validateFamilyMember, controller.addFamilyMember);
 router.get("/user/household/:mobile", verifyToken, builderOps, controller.getHousehold);
 
 // Consumer-level KYC documents (stored once on the consumer, reused everywhere).

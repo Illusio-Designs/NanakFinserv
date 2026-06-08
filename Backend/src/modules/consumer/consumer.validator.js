@@ -1,31 +1,43 @@
-/** Validators for the consumer module. */
-const isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
-const isEmail = (v) => typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-const isMobile10 = (v) =>
-  (typeof v === "string" || typeof v === "number") && /^\d{10}$/.test(String(v).trim());
-const isPresent = (v) => v !== undefined && v !== null && String(v).trim() !== "";
+/** Consumer validators — built on the universal validator service. */
+const { checks: C, field, validate, runChecks } = require("../shared/validators");
 
+const isPresent = (v) => v !== undefined && v !== null && String(v).trim() !== "";
 function fail(res, errors) {
   return res.status(400).json({ status: false, message: errors.join("; ") });
 }
 
-const validateAddConsumer = (req, res, next) => {
-  const b = req.body || {};
-  const errors = [];
-  if (!isNonEmptyString(b.username)) errors.push("username is required");
-  if (!isEmail(b.email)) errors.push("a valid email is required");
-  if (!isMobile10(b.mobileNumber)) errors.push("mobileNumber must be 10 digits");
-  if (!isPresent(b.role_id)) errors.push("role_id is required");
-  if (!isPresent(b.unit_id)) errors.push("unit_id is required");
-  if (!isPresent(b.category_id)) errors.push("category_id is required");
+// Add consumer (used by /user/data/add/consumer and /user/data/consumer/add).
+// Matches the real payload: username, email, phone_number (+ optional reference).
+const consumerFields = [
+  field("username", { label: "Name", required: true, checks: [C.maxLen(50)] }),
+  field("email", { label: "Email", required: true, checks: [C.email] }),
+  field(["phone_number", "mobileNumber"], { label: "Mobile number", required: true, checks: [C.mobile10] }),
+  field("referenceName", { label: "Reference", checks: [C.maxLen(100)] }),
+];
+const validateAddConsumer = validate(consumerFields);
+
+// Update consumer by :id — id required; any provided fields are format-checked.
+const validateUpdateConsumer = (req, res, next) => {
+  if (!isPresent((req.params || {}).id)) return fail(res, ["consumer id is required"]);
+  const errors = runChecks(
+    [
+      field("email", { label: "Email", checks: [C.email] }),
+      field(["phone_number", "mobileNumber"], { label: "Mobile number", checks: [C.mobile10] }),
+      field("username", { label: "Name", checks: [C.maxLen(50)] }),
+      field("referenceName", { label: "Reference", checks: [C.maxLen(100)] }),
+    ],
+    req.body || {}
+  );
   return errors.length ? fail(res, errors) : next();
 };
 
-const validateUpdateConsumer = (req, res, next) => {
-  if (!isPresent((req.params || {}).id)) {
-    return fail(res, ["consumer id is required"]);
-  }
-  return next();
-};
+// Add family member (full user linked to a head).
+const validateFamilyMember = validate([
+  field("head_user_id", { label: "Head consumer", required: true, checks: [C.uuid] }),
+  field("username", { label: "Name", required: true, checks: [C.maxLen(50)] }),
+  field("phone_number", { label: "Mobile number", required: true, checks: [C.mobile10] }),
+  field("email", { label: "Email", checks: [C.email] }),
+  field("referenceName", { label: "Relation", checks: [C.maxLen(100)] }),
+]);
 
-module.exports = { validateAddConsumer, validateUpdateConsumer };
+module.exports = { validateAddConsumer, validateUpdateConsumer, validateFamilyMember };

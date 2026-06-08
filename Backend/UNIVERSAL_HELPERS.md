@@ -53,6 +53,24 @@ Family members are full users linked to a head via `user.family_head_id`.
 - `addFamilyMember` (POST `/user/data/consumer/family/add`)
 - `getHousehold` (GET `/user/household/:mobile`) → head + members + policies.
 
+## 6b. Universal validation — `src/modules/shared/validators.js`
+One validation service for every module. Reusable `checks` (email, mobile10,
+digits, number, year, uuid, maxLen(n), minLen(n), oneOf(arr), pattern(re)),
+`field(name|aliases, {label, required, checks})`, a `validate(fields, source)`
+Express middleware, and `runChecks(fields, data)` for in-controller validation
+(e.g. multipart payloads after normalization). A field is format-checked only
+when present; `required` errors when missing.
+
+```js
+const { checks: C, field, validate } = require("../shared/validators");
+router.post("/x", validate([
+  field("email", { label: "Email", required: true, checks: [C.email] }),
+  field(["phone_number","mobileNumber"], { required: true, checks: [C.mobile10] }),
+]), controller.x);
+```
+Already applied to: consumer add/update + family member (route middleware), and
+vehicle policy create (in-controller `validateVehicleData` after normalize).
+
 ## 6. Stable lookup IDs — `src/config/ids.js`
 `ROLE_IDS`, `CATEGORY_IDS`, `UNIT_CATEGORY_IDS`, `DOCUMENT_IDS` (fixed UUIDs,
 seeded on boot). Reference these by name — never magic numbers/strings. **Keep

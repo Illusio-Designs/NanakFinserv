@@ -1,6 +1,9 @@
 /**
  * Input validators for the vehicle module's mutating endpoints.
+ * Built on the universal validator service (src/modules/shared/validators.js).
  */
+const { checks: C, field, runChecks } = require("../shared/validators");
+
 const isPresent = (v) => v !== undefined && v !== null && String(v).trim() !== "";
 
 function fail(res, errors) {
@@ -22,4 +25,26 @@ const validateRemark = (req, res, next) => {
   return errors.length ? fail(res, errors) : next();
 };
 
-module.exports = { validateRemark, MAX_REMARK };
+// Field specs for a vehicle policy. The add endpoint is multipart with mixed
+// casing, so this is validated INSIDE the controller (after the payload is
+// normalized) via validateVehicleData(values) — required only for the genuine
+// identity fields; everything else is format-checked only when present.
+const vehicleFields = [
+  field("Name", { label: "Name", required: true, checks: [C.maxLen(100)] }),
+  field("MobileNumber", { label: "Mobile number", required: true, checks: [C.mobile10] }),
+  field("VehicleNumber", { label: "Vehicle number", required: true, checks: [C.maxLen(20)] }),
+  field("Email", { label: "Email", checks: [C.email] }),
+  field("ContactPersonNo", { label: "Contact person number", checks: [C.digits, C.maxLen(15)] }),
+  field("ManufacturingYear", { label: "Manufacturing year", checks: [C.year] }),
+  field("EngineNumber", { label: "Engine number", checks: [C.maxLen(50)] }),
+  field("ChassisNumber", { label: "Chassis number", checks: [C.maxLen(50)] }),
+  field("Make", { label: "Make", checks: [C.maxLen(50)] }),
+  field("Model", { label: "Model", checks: [C.maxLen(50)] }),
+];
+
+/** Validate the normalized vehicle values; returns an array of messages. */
+function validateVehicleData(values) {
+  return runChecks(vehicleFields, values || {});
+}
+
+module.exports = { validateRemark, MAX_REMARK, validateVehicleData };
