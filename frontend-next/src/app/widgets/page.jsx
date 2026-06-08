@@ -9,6 +9,7 @@ import PhoneInput from "@/components/ui/PhoneInput";
 import OtpInput from "@/components/ui/OtpInput";
 import DatePicker from "@/components/ui/DatePicker";
 import DateRange from "@/components/ui/DateRange";
+import Calendar from "@/components/ui/Calendar";
 import Textarea from "@/components/ui/Textarea";
 import Checkbox from "@/components/ui/Checkbox";
 import Switch from "@/components/ui/Switch";
@@ -86,10 +87,16 @@ export default function WidgetsPage() {
         </div>
       </Section>
 
-      <Section title="Date pickers & filters">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DatePicker label="Date selector" value={date} onChange={setDate} />
-          <DateRange label="Date range filter" value={range} onChange={setRange} />
+      <Section title="Date pickers & filters (custom calendar)">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="space-y-4">
+            <DatePicker label="Date selector" value={date} onChange={setDate} />
+            <DateRange label="Date range filter" value={range} onChange={setRange} />
+          </div>
+          <div>
+            <label className="ui-label">Inline calendar</label>
+            <Calendar value={date} onSelect={setDate} />
+          </div>
         </div>
       </Section>
 

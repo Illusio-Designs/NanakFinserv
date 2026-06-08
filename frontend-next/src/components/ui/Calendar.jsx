@@ -1,0 +1,78 @@
+"use client";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/cn";
+
+const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const pad = (n) => String(n).padStart(2, "0");
+const toStr = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+
+/** Custom calendar. value/onSelect = "YYYY-MM-DD". */
+export default function Calendar({ value, onSelect, min, max }) {
+  const today = new Date();
+  const todayStr = toStr(today.getFullYear(), today.getMonth(), today.getDate());
+  const init = value ? new Date(value + "T00:00:00") : today;
+  const [view, setView] = useState({ y: init.getFullYear(), m: init.getMonth() });
+
+  const firstDay = new Date(view.y, view.m, 1).getDay();
+  const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
+  const cells = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  const move = (delta) => {
+    let m = view.m + delta, y = view.y;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    setView({ y, m });
+  };
+
+  const disabled = (dStr) => (min && dStr < min) || (max && dStr > max);
+
+  return (
+    <div className="w-64 rounded-lg border border-line bg-surface p-3 shadow-pop">
+      <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={() => move(-1)} className="press rounded-md p-1.5 text-muted hover:bg-subtle hover:text-ink">
+          <ChevronLeft size={16} />
+        </button>
+        <div className="text-[13px] font-semibold text-ink">{MONTHS[view.m]} {view.y}</div>
+        <button type="button" onClick={() => move(1)} className="press rounded-md p-1.5 text-muted hover:bg-subtle hover:text-ink">
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-muted">
+        {WEEKDAYS.map((w) => <div key={w} className="py-1">{w}</div>)}
+      </div>
+
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const dStr = toStr(view.y, view.m, d);
+          const selected = value === dStr;
+          const isToday = todayStr === dStr;
+          const dis = disabled(dStr);
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={dis}
+              onClick={() => onSelect?.(dStr)}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-md text-[13px] transition-colors",
+                selected ? "bg-brand-600 font-semibold text-white" : "text-ink hover:bg-brand-50",
+                !selected && isToday && "ring-1 ring-brand-500 text-brand-700",
+                dis && "cursor-not-allowed text-muted/40 hover:bg-transparent"
+              )}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
