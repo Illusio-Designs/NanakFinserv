@@ -24,7 +24,6 @@ const NAV = [
     section: "Admin",
     items: [
       { label: "Users & Roles", href: "/users", icon: UserCog },
-      { label: "Blog", href: "/blog", icon: FileText },
       { label: "Settings", href: "/settings", icon: Settings },
     ],
   },

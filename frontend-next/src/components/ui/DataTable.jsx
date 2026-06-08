@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { Search, Pencil, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
-import Select from "./Select";
+import Dropdown from "./Dropdown";
 import EmptyState from "./EmptyState";
 import { cn } from "@/lib/cn";
 
@@ -69,12 +69,12 @@ export default function DataTable({
           )}
           {filters.map((f) => (
             <div key={f.key} className="sm:w-48">
-              <Select
+              <Dropdown
                 placeholder={f.label}
                 options={f.options}
                 value={activeFilters[f.key] || ""}
-                onChange={(e) => {
-                  setActiveFilters((s) => ({ ...s, [f.key]: e.target.value }));
+                onChange={(v) => {
+                  setActiveFilters((s) => ({ ...s, [f.key]: v }));
                   setPage(1);
                 }}
               />

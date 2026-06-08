@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 // Public (no auth): marketing site + login. Everything else (the dashboard app)
 // requires the `token` cookie.
-const PUBLIC_PREFIXES = ["/login", "/services", "/about", "/contact", "/Assets"];
+const PUBLIC_PREFIXES = ["/login", "/services", "/about", "/contact", "/blog", "/Assets"];
 
 function isPublic(pathname) {
   if (pathname === "/") return true;
