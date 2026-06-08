@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { Menu, Search, Bell, LogOut, ChevronDown } from "lucide-react";
@@ -7,12 +7,16 @@ import { Menu, Search, Bell, LogOut, ChevronDown } from "lucide-react";
 export default function Header({ onMenu }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  let user = {};
-  try {
-    user = JSON.parse(Cookies.get("user") || "{}");
-  } catch {
-    user = {};
-  }
+  // Read the user only after mount — cookies aren't available during SSR, so
+  // reading them in render causes a hydration mismatch.
+  const [user, setUser] = useState({});
+  useEffect(() => {
+    try {
+      setUser(JSON.parse(Cookies.get("user") || "{}"));
+    } catch {
+      setUser({});
+    }
+  }, []);
 
   const logout = () => {
     Cookies.remove("token");
