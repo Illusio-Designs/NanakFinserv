@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Eye, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Eye, Trash2, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import Dropdown from "./Dropdown";
 import DateRange from "./DateRange";
@@ -27,6 +27,7 @@ export default function DataTable({
   rowActions = [],
   pageSize = 10,
   rowKey = "id",
+  exportName = "export",
 }) {
   const { query: q } = useSearch(); // global header search drives all pages
   const [activeFilters, setActiveFilters] = useState({});
@@ -81,10 +82,23 @@ export default function DataTable({
   const safePage = Math.min(page, totalPages);
   const pageRows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
+  const exportCsv = () => {
+    const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const lines = [columns.map((c) => esc(c.title)).join(",")];
+    for (const r of filtered) lines.push(columns.map((c) => esc(r[c.key])).join(","));
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${exportName}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="ui-card overflow-hidden">
-      {/* Toolbar: filters + count (search is the global header search) */}
-      {filters.length > 0 && (
+      {/* Toolbar: filters + count + export (search is the global header search) */}
+      {(filters.length > 0 || filtered.length > 0) && (
         <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
           {resolvedFilters.map((f) =>
             f.type === "dateRange" ? (
@@ -111,11 +125,18 @@ export default function DataTable({
               </div>
             )
           )}
-          {!loading && (
-            <span className="shrink-0 rounded-full bg-subtle px-3 py-1 text-[12px] font-medium text-muted sm:ml-auto">
-              {filtered.length} record{filtered.length === 1 ? "" : "s"}
-            </span>
-          )}
+          <div className="flex items-center gap-2 sm:ml-auto">
+            {!loading && (
+              <span className="shrink-0 rounded-full bg-subtle px-3 py-1 text-[12px] font-medium text-muted">
+                {filtered.length} record{filtered.length === 1 ? "" : "s"}
+              </span>
+            )}
+            {!loading && filtered.length > 0 && (
+              <button onClick={exportCsv} className="press flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-2 text-[13px] font-medium text-ink hover:bg-subtle">
+                <Download size={15} /> Export
+              </button>
+            )}
+          </div>
         </div>
       )}
 
