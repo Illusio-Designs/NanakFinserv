@@ -15,14 +15,15 @@ Legend: ✅ done · 🟡 partial · ⬜ pending
 | Component library (`/widgets`) | ✅ | Button, Input, Select, **Dropdown (searchable+creatable)**, **PhoneInput (flag)**, **OtpInput**, **Calendar (range)**, DatePicker/DateRange, Tabs, Switch, Checkbox, Textarea, Avatar, **FileUpload**, **Tooltip**, Modal, **StepperModal**, **DataTable (filters+rowActions)**, EmptyState, Spinner |
 | Public site | ✅ | Home/Services/About/Contact/Blog + promo popup, real content/logo/colors |
 | Auth (login OTP) | ✅ | MSG91 widget; OTP boxes |
-| Dashboard | 🟡 | admin counts/pipeline/amounts + **pending-tasks panel** + **NotificationCenter** live; consumer/building-manager role variants ⬜ |
+| Dashboard | ✅ | admin (counts/pipeline/amounts + pending-tasks) **and consumer** variant; building-manager variant ⬜ |
 | Notifications | 🟡 | **role-filtered feed**, bell + count + mark-read; fires on add/**assign**/**renew**; renewal-due generator ⬜ |
+| Exports | ✅ | CSV export on every table |
 | Consumers | ✅ | list, add (standalone **or join existing**), services+**assignee**, family, KYC docs, edit, view, upload |
 | Vehicle | ✅ | full add/edit, nature, TP/Full plan, **TP+OD timelines**, nominee, previous policy, docs, renewals, add-next, auto timeline reconcile |
 | Settings | ✅ | vertical toggles + data wipe |
 | Users & Roles | ✅ | list + **add/edit** with **vertical-manager roles** (Loan/Mediclaim/Vehicle/Life Manager) replacing Staff |
 | Inquiries | ✅ | list (`/user/data/inquiery`) |
-| Mediclaim | 🟡 | **Policies + Companies CRUD + Products CRUD** (tabs); policy create + all-policies + renewals ⬜ |
+| Mediclaim | ✅ | Policies (+ **policy create**) + Companies CRUD + Products CRUD (tabs); all-policies/renewal sheet ⬜ |
 | Loan | ✅ | pipeline tabs + **status update** action + view; loan config (PDF) ⬜ |
 | Life | ✅ | **add/edit** (proposer/life-assured/nominee/policy) + view; renewal sheet ⬜ |
 | Builder | ✅ | list + **add/edit**; Unit/Building ⬜ |
