@@ -1,13 +1,18 @@
 "use client";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import { UserCog } from "lucide-react";
+import EntityListPage from "@/components/EntityListPage";
 
 export default function UsersPage() {
   return (
-    <div>
-      <PageHeader title="Users & Roles" subtitle="Staff and role management" />
-      <EmptyState icon={UserCog} title="Users module" subtitle="Port onto the shared components (see PLAN.md)." />
-    </div>
+    <EntityListPage
+      title="Users & Roles"
+      subtitle="Admin and staff accounts"
+      endpoint="/user/list/roleWise"
+      searchKeys={["name", "email", "mobile"]}
+      columns={[
+        { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
+        { key: "email", title: "Email" },
+        { key: "mobile", title: "Mobile" },
+      ]}
+    />
   );
 }

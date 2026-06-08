@@ -1,13 +1,18 @@
 "use client";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import { HeartPulse } from "lucide-react";
+import EntityListPage from "@/components/EntityListPage";
 
 export default function MediclaimPage() {
   return (
-    <div>
-      <PageHeader title="Mediclaim" subtitle="Mediclaim policies & companies" />
-      <EmptyState icon={HeartPulse} title="Mediclaim module" subtitle="Port onto the shared components (see PLAN.md)." />
-    </div>
+    <EntityListPage
+      title="Mediclaim"
+      subtitle="Mediclaim policy holders"
+      endpoint="/user/mediclaim/user/list"
+      searchKeys={["name", "mobile", "email"]}
+      columns={[
+        { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
+        { key: "mobile", title: "Mobile" },
+        { key: "email", title: "Email" },
+      ]}
+    />
   );
 }

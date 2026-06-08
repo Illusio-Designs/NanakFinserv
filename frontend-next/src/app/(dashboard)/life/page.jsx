@@ -1,13 +1,19 @@
 "use client";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import { ShieldCheck } from "lucide-react";
+import EntityListPage from "@/components/EntityListPage";
+import Badge from "@/components/ui/Badge";
 
 export default function LifePage() {
   return (
-    <div>
-      <PageHeader title="Life Insurance" subtitle="Life policies & renewals" />
-      <EmptyState icon={ShieldCheck} title="Life Insurance module" subtitle="Port onto the shared components (see PLAN.md)." />
-    </div>
+    <EntityListPage
+      title="Life Insurance"
+      subtitle="Life insurance policies"
+      endpoint="/user/life-insurance/list"
+      searchKeys={["name", "mobile", "status"]}
+      columns={[
+        { key: "name", title: "Proposer", render: (r) => <span className="font-medium">{r.name}</span> },
+        { key: "mobile", title: "Mobile" },
+        { key: "status", title: "Status", render: (r) => <Badge tone="brand">{r.status}</Badge> },
+      ]}
+    />
   );
 }

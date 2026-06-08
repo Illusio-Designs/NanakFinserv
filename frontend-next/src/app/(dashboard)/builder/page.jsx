@@ -1,13 +1,18 @@
 "use client";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import { Building2 } from "lucide-react";
+import EntityListPage from "@/components/EntityListPage";
 
 export default function BuilderPage() {
   return (
-    <div>
-      <PageHeader title="Builder" subtitle="Builders, units & buildings" />
-      <EmptyState icon={Building2} title="Builder module" subtitle="Port onto the shared components (see PLAN.md)." />
-    </div>
+    <EntityListPage
+      title="Builder"
+      subtitle="Builder accounts"
+      endpoint="/user/list/builder"
+      searchKeys={["name", "email", "mobile"]}
+      columns={[
+        { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
+        { key: "email", title: "Email" },
+        { key: "mobile", title: "Mobile" },
+      ]}
+    />
   );
 }
