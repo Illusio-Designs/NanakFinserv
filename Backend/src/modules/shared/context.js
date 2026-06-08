@@ -166,6 +166,27 @@ async function ensureCategoryMapping(user_consumer_id, category_id, user_role_id
   return row;
 }
 
+/**
+ * Universal file-upload helper. Saves one express-fileupload file object to the
+ * shared uploads dir and returns the stored filename. Use this EVERYWHERE a file
+ * is uploaded (consumer docs, vehicle RC, life docs, blog images…) instead of
+ * re-implementing mv()/writeFile per controller.
+ */
+async function saveUpload(fileObj) {
+  if (!fileObj) return null;
+  const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+  const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
+  const uploadPath = path.join(uploadsDir, uniqueName);
+  if (fileObj.mv) {
+    await fileObj.mv(uploadPath);
+  } else if (fileObj.data) {
+    await fsExtra.writeFile(uploadPath, fileObj.data);
+  } else {
+    throw new Error("saveUpload: no valid file handling method (mv/data) on file object");
+  }
+  return uniqueName;
+}
+
 const ConsumerDocument = db.consumerDocument;
 
 /**
@@ -185,4 +206,4 @@ async function upsertConsumerDocument(user_id, categoryId, file) {
   return ConsumerDocument.create({ user_id, categoryId, file });
 }
 
-module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
+module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, saveUpload, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };

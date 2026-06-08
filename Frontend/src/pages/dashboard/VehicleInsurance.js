@@ -14,6 +14,7 @@ import {
   getVehicleUserRenewalData,
   updateVehicleUserData,
   addVehicleUserData,
+  getConsumerDocumentsByMobile,
   getAllPolicyPlans,
   getAllReferences,
   getAllVehicles,
@@ -2625,8 +2626,47 @@ const VehicleInsurance = () => {
     }
   },[policyPlans, policyTypes]);
 
+  // When a 10-digit mobile is entered on a NEW policy, load the consumer's
+  // already-stored KYC (Aadhar/PAN/GST) so we don't re-ask for it — only RC Book
+  // and anything missing needs uploading.
+  const loadConsumerForMobile = async (mobile) => {
+    try {
+      const res = await getConsumerDocumentsByMobile(mobile);
+      const docs = (res && res.data) || [];
+      if (!docs.length) return;
+      const byCat = {};
+      docs.forEach((d) => { byCat[d.categoryId] = d.file; });
+      setFormData((prev) => ({
+        ...prev,
+        head_user_id: res.user_id || prev.head_user_id,
+        AadharFileName: byCat[DOCUMENT_IDS.AADHAR] || prev.AadharFileName,
+        PanFileName: byCat[DOCUMENT_IDS.PAN] || prev.PanFileName,
+        GstFileName: byCat[DOCUMENT_IDS.GST] || prev.GstFileName,
+      }));
+      const found = [
+        byCat[DOCUMENT_IDS.AADHAR] && "Aadhar",
+        byCat[DOCUMENT_IDS.PAN] && "PAN",
+        byCat[DOCUMENT_IDS.GST] && "GST",
+      ].filter(Boolean);
+      if (found.length) {
+        toast.success(`Loaded existing KYC for this consumer: ${found.join(", ")}`);
+      }
+    } catch (e) {
+      console.error("loadConsumerForMobile failed", e);
+    }
+  };
+
   const handleInputChange = (field, value) => {
     console.log(`Setting ${field} to:`, value);
+
+    // Load existing consumer KYC when a full mobile is entered (new policy only).
+    if (field === "MobileNumber") {
+      setFormData((prev) => ({ ...prev, MobileNumber: value }));
+      if (!editData && /^\d{10}$/.test(value)) {
+        loadConsumerForMobile(value);
+      }
+      return;
+    }
 
     // Handle hasNominee toggle - clear nominee fields if "no" is selected
     if (field === "hasNominee") {

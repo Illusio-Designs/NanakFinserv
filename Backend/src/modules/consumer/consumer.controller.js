@@ -69,7 +69,8 @@ const {
   vehicle_document,
   vehicles,
   ConsumerDocument,
-  upsertConsumerDocument
+  upsertConsumerDocument,
+  saveUpload
 } = require("../shared/context");
 const consumerService = require("./consumer.service");
 const logger = require("../../config/logger");
@@ -1430,6 +1431,28 @@ exports.getConsumerDocuments = async (req, res) => {
 };
 
 /**
+ * GET /user/consumer/documents/by-mobile/:mobile
+ * Same as getConsumerDocuments but resolves the consumer by mobile (policy forms
+ * have the mobile, not the user_id). Returns [] if no such consumer yet.
+ */
+exports.getConsumerDocumentsByMobile = async (req, res) => {
+  try {
+    const user = await User.findOne({ where: { mobileNumber: req.params.mobile }, raw: true });
+    if (!user) return res.status(200).send({ message: "no consumer", data: [], status: true });
+    const docs = await ConsumerDocument.findAll({
+      where: { user_id: user.user_id },
+      include: [{ model: documents, attributes: ["doc_name"] }],
+      raw: true,
+      nest: true,
+    });
+    return res.status(200).send({ message: "consumer documents", data: docs, user_id: user.user_id, status: true });
+  } catch (e) {
+    logger.error({ err: e }, "getConsumerDocumentsByMobile failed");
+    return res.status(400).send({ message: "error fetching documents", status: false });
+  }
+};
+
+/**
  * POST /user/consumer/documents/upload  (multipart: file, user_id, categoryId)
  * Store/replace a single consumer-level KYC document.
  */
@@ -1442,15 +1465,7 @@ exports.uploadConsumerDocument = async (req, res) => {
     if (!req.files || !req.files.file) {
       return res.status(400).send({ message: "file is required", status: false });
     }
-    const fileObj = req.files.file;
-    const uploadsDir = path.join(CTRL_DIR, "../../uploads");
-    const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
-    const uploadPath = path.join(uploadsDir, uniqueName);
-    if (fileObj.mv) {
-      await fileObj.mv(uploadPath);
-    } else {
-      await fsExtra.writeFile(uploadPath, fileObj.data);
-    }
+    const uniqueName = await saveUpload(req.files.file); // universal upload helper
     const doc = await upsertConsumerDocument(user_id, categoryId, uniqueName);
     return res.status(200).send({ message: "Document saved", data: doc, status: true });
   } catch (e) {

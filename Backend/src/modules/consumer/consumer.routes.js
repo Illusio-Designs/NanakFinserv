@@ -22,6 +22,7 @@ router.post("/user/data/consumer/family/add", verifyToken, builderOps, controlle
 router.get("/user/household/:mobile", verifyToken, builderOps, controller.getHousehold);
 
 // Consumer-level KYC documents (stored once on the consumer, reused everywhere).
+router.get("/user/consumer/documents/by-mobile/:mobile", verifyToken, builderOps, controller.getConsumerDocumentsByMobile);
 router.get("/user/consumer/documents/:userId", verifyToken, builderOps, controller.getConsumerDocuments);
 router.post("/user/consumer/documents/upload", verifyToken, builderOps, controller.uploadConsumerDocument);
 

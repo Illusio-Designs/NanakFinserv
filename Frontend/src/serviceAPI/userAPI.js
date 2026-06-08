@@ -3042,3 +3042,14 @@ export const uploadConsumerDocument = async ({ file, user_id, categoryId }) => {
     return { status: false };
   }
 };
+
+/** Get a consumer's stored KYC documents resolved by mobile (policy forms). */
+export const getConsumerDocumentsByMobile = async (mobile) => {
+  try {
+    const response = await axios.get(`${API_URL}/user/consumer/documents/by-mobile/${mobile}`, authHeaders());
+    return response.data; // { data:[{categoryId,file,...}], user_id, status }
+  } catch (error) {
+    errorHandel(error);
+    return { data: [], status: false };
+  }
+};
