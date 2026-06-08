@@ -9,12 +9,13 @@
 :root {
   --font-sans: "Poppins", "Inter", system-ui, sans-serif;
 
-  /* RGB channels (space-separated) so Tailwind /opacity modifiers work. */
-  --brand-50: 238 242 255;
-  --brand-100: 224 231 255;
-  --brand-500: 99 102 241;
-  --brand-600: 79 70 229;
-  --brand-700: 67 56 202;
+  /* RGB channels (space-separated) so Tailwind /opacity modifiers work.
+     Blue palette taken from the older app (primary #007cc3). */
+  --brand-50: 230 244 251;
+  --brand-100: 199 230 247;
+  --brand-500: 31 147 216;
+  --brand-600: 0 124 195;   /* #007cc3 — primary */
+  --brand-700: 0 94 151;    /* darker blue */
 
   --ink: 17 24 39;
   --muted: 107 114 128;
@@ -26,10 +27,11 @@
   --warning: 180 83 9;
   --danger: 239 68 68;
 
-  /* Dark sidebar (deep indigo — same brand family) */
-  --sidebar: 27 24 66;        /* indigo-950-ish */
-  --sidebar-hover: 49 46 129; /* indigo-900 */
-  --sidebar-text: 199 210 254;/* indigo-200 */
+  /* Dark sidebar (deep blue — same brand family as #007cc3) */
+  --sidebar: 8 47 73;          /* #082f49 deep navy-blue */
+  --sidebar-hover: 12 74 110;  /* #0c4a6e */
+  --sidebar-text: 186 224 245; /* light blue */
+  --accent: 248 195 0;         /* #f8c300 gold (from old app) */
 
   --control-h: 40px;
   --sidebar-w: 256px;

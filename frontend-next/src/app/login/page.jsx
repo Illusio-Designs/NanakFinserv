@@ -87,8 +87,9 @@ export default function LoginPage() {
         <div className="pointer-events-none absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" />
 
         <div className="relative flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600 text-[18px] font-bold shadow-lg shadow-brand-600/40">
-            N
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Assets/cropped-logo.png" alt="NanakFinserv" className="h-full w-full object-contain" />
           </div>
           <div>
             <div className="text-[16px] font-semibold">NanakFinserv</div>
@@ -126,8 +127,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm animate-scale-in">
           {/* mobile brand */}
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 font-bold text-white">N</div>
-            <span className="text-[16px] font-semibold">NanakFinserv</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/Assets/logo.png" alt="NanakFinserv" className="h-10 object-contain" />
           </div>
 
           <h1 className="text-[24px] font-semibold tracking-tight">Sign in</h1>

@@ -46,8 +46,9 @@ export default function Sidebar({ open, onClose }) {
         {/* Brand */}
         <div className="flex h-[var(--header-h)] items-center justify-between px-5">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-[16px] font-bold text-white shadow-lg shadow-brand-600/30">
-              N
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white p-1 shadow-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/Assets/cropped-logo.png" alt="NanakFinserv" className="h-full w-full object-contain" />
             </div>
             <div className="leading-tight">
               <div className="text-[14px] font-semibold text-white">NanakFinserv</div>
