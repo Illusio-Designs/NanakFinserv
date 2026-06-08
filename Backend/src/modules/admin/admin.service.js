@@ -1,7 +1,9 @@
 /**
  * admin service — global settings (vertical toggles) and the data wipe.
  */
+const { Op } = require("sequelize");
 const db = require("../../../app/models");
+const { ROLE_IDS } = require("../../config/ids");
 
 const AppSetting = db.appSetting;
 const VERTICAL_KEY = "verticals";
@@ -46,7 +48,17 @@ async function setVerticals(partial) {
 }
 
 // Tables that must NOT be wiped: accounts + roles/categories + settings.
-const KEEP = new Set(["user", "role", "category", "userCategory", "appSetting"]);
+// Tables never truncated: back-office users (handled separately below) + seeded
+// reference data the app needs to keep working after a wipe.
+const KEEP = new Set([
+  "user",            // handled below — only consumer accounts are deleted
+  "role",            // seeded roles
+  "category",        // seeded verticals
+  "userCategory",    // back-office user → vertical mappings
+  "appSetting",      // settings / vertical toggles
+  "documents",       // seeded KYC document types
+  "unit_category_list", // seeded unit categories
+]);
 
 /**
  * Wipe business + master data (keeps user accounts, roles, categories, settings).
@@ -67,11 +79,17 @@ async function wipeData() {
     for (const [, model] of targets) {
       await model.destroy({ where: {}, truncate: true, force: true });
     }
+    // Delete consumer accounts (keep back-office users: super admin, vertical
+    // managers, builder, building manager).
+    await db.user.destroy({
+      where: { role_id: { [Op.in]: [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER] } },
+      force: true,
+    });
   } finally {
     await db.sequelize.query("SET FOREIGN_KEY_CHECKS = 1");
   }
 
-  return targets.map(([name]) => name);
+  return [...targets.map(([name]) => name), "user (consumers only)"];
 }
 
 function _resetCache() {

@@ -106,8 +106,10 @@ export default function SettingsPage() {
             <AlertTriangle size={17} /> Danger zone — Data wipe-out
           </h3>
           <p className="mb-4 mt-1 text-[13px] text-muted">
-            Permanently deletes all business &amp; master data (loans, policies, consumers, companies,
-            products, etc.). User accounts and roles are kept. This cannot be undone.
+            Permanently deletes <strong>all business data and all consumers</strong> — loans, policies,
+            companies, products, documents, and every consumer account. <strong>Back-office users are kept</strong>
+            (Super Admin, vertical managers, builder, building manager), along with seeded reference data
+            (roles, categories, KYC document types). This cannot be undone.
           </p>
           <Button variant="danger" onClick={() => setWipeOpen(true)}>Wipe all data</Button>
         </Card>
@@ -117,7 +119,7 @@ export default function SettingsPage() {
         open={wipeOpen}
         onClose={() => setWipeOpen(false)}
         title="Confirm data wipe"
-        subtitle="This permanently deletes all business & master data."
+        subtitle="Deletes all business data + all consumers. Back-office users are kept."
         size="sm"
         footer={
           <div className="flex justify-end gap-2">
