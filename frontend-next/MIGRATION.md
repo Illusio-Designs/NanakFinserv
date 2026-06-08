@@ -15,16 +15,18 @@ Legend: ✅ done · 🟡 partial · ⬜ pending
 | Component library (`/widgets`) | ✅ | Button, Input, Select, **Dropdown (searchable+creatable)**, **PhoneInput (flag)**, **OtpInput**, **Calendar (range)**, DatePicker/DateRange, Tabs, Switch, Checkbox, Textarea, Avatar, **FileUpload**, **Tooltip**, Modal, **StepperModal**, **DataTable (filters+rowActions)**, EmptyState, Spinner |
 | Public site | ✅ | Home/Services/About/Contact/Blog + promo popup, real content/logo/colors |
 | Auth (login OTP) | ✅ | MSG91 widget; OTP boxes |
-| Dashboard | 🟡 | admin counts/pipeline/amounts live; role variants + pending-tasks panel ⬜ |
+| Dashboard | 🟡 | admin counts/pipeline/amounts + **pending-tasks panel** + **NotificationCenter** live; consumer/building-manager role variants ⬜ |
+| Notifications | 🟡 | **role-filtered feed**, bell + count + mark-read; fires on add/**assign**/**renew**; renewal-due generator ⬜ |
 | Consumers | ✅ | list, add (standalone **or join existing**), services+**assignee**, family, KYC docs, edit, view, upload |
 | Vehicle | ✅ | full add/edit, nature, TP/Full plan, **TP+OD timelines**, nominee, previous policy, docs, renewals, add-next, auto timeline reconcile |
 | Settings | ✅ | vertical toggles + data wipe |
+| Users & Roles | ✅ | list + **add/edit role-user** (role dropdown) |
+| Inquiries | ✅ | list (`/user/data/inquiery`) |
+| Mediclaim | 🟡 | **Policies + Companies CRUD + Products CRUD** (tabs); policy create + all-policies + renewals ⬜ |
 | Loan | 🟡 | pipeline-as-tabs + view; **create + status actions + config** ⬜ |
-| Mediclaim | 🟡 | list only; **company/product CRUD → policy → all-policies → renewals** ⬜ |
 | Life | 🟡 | list only; **create/edit + renewal** ⬜ |
-| Users & Roles | 🟡 | list only; **add/edit role-user + verticals** ⬜ |
 | Builder / Unit / Building | ⬜ | list (builder) only |
-| Inquiries / Blog admin / Support | ⬜ | public inquiry + public blog exist |
+| Blog admin / Support | ⬜ | public inquiry + public blog exist |
 
 ---
 

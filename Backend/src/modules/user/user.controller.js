@@ -441,33 +441,31 @@ exports.addRoleWiseUser = (req, res) => {
                     username: req.body.username,
                     email: req.body.email,
                     mobileNumber: req.body.phone_number,
-                    role_id: req.body.role == 1 ? 1 : 4,
+                    role_id: req.body.role || ROLE_IDS.STAFF, // UUID role id
                     referenceName: req.body.referenceName,
                     otp: "",
                     token: "",
                 })
                     .then(async (articles) => {
 
-                        // req.body.roleId contains category IDs (not role IDs)
-                        let roles = req.body.roleId
-                            .toString() // Ensure it's a string
-                            .split(',') // Split by comma
-                            .map(Number); // Convert each to a number
-                        
-                        // For super admin (role_id = 1), assign ALL categories automatically
-                        if (req.body.role == 1) {
-                            // Super admin gets access to all categories: 2, 4, 5, 6 (Loan, Mediclaim, Life Insurance, Vehicle)
-                            roles = [2, 4, 5, 6];
-                            logger.debug('🔍 [SUPER ADMIN] Assigning all categories to super admin:', roles);
+                        // req.body.roleId = the category (vertical) UUIDs to assign (optional).
+                        let roles = [];
+                        if (Array.isArray(req.body.roleId)) roles = req.body.roleId;
+                        else if (req.body.roleId) roles = String(req.body.roleId).split(',').map((s) => s.trim());
+
+                        // Super admin gets all verticals automatically.
+                        if (req.body.role === ROLE_IDS.SUPER_ADMIN) {
+                            roles = [CATEGORY_IDS.LOAN, CATEGORY_IDS.MEDICLAIM, CATEGORY_IDS.LIFE_INSURANCE, CATEGORY_IDS.VEHICLE];
                         }
-                        
-                        let categoryData = roles.map((roleId) => ({
+                        roles = roles.filter(Boolean);
+
+                        let categoryData = roles.map((category_id) => ({
                             user_id: articles.user_id,
-                            category_id: roleId,
+                            category_id,
                         }));
 
                         // Bulk insert into userCategory table
-                        await userCatergory.bulkCreate(categoryData);
+                        if (categoryData.length) await userCatergory.bulkCreate(categoryData);
                         logger.debug('🔍 [ROLE ASSIGNMENT] Categories assigned:', categoryData);
                         // Create notification for admin
                         await createNotification({

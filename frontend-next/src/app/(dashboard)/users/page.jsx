@@ -79,7 +79,7 @@ export default function UsersPage() {
     if (!validate()) return;
     setSaving(true);
     try {
-      await api.post("/user/data/role/add", { ...form, roleId: form.role });
+      await api.post("/user/data/role/add", { ...form });
       toast.success("User added");
       setAddOpen(false);
       load();
@@ -91,7 +91,7 @@ export default function UsersPage() {
     if (!validate()) return;
     setSaving(true);
     try {
-      await api.put("/user/data/role/update", { user_id: editRow.user_id, ...form, roleId: form.role });
+      await api.put("/user/data/role/update", { user_id: editRow.user_id, ...form });
       toast.success("User updated");
       setEditRow(null);
       load();

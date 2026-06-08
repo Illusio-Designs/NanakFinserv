@@ -10,10 +10,11 @@ const db = require("../../../app/models");
 
 const Category = db.category;
 const UserCategory = db.userCategory;
+const Role = db.role;
 
-/** All categories/roles. */
+/** All seeded roles (Super Admin, Staff, Consumer, …). */
 function getRoles() {
-  return Category.findAll({ raw: true });
+  return Role.findAll({ raw: true });
 }
 
 /** Categories assigned to a given user. */
