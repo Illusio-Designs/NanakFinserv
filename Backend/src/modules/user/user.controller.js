@@ -364,6 +364,7 @@ exports.getAllRolesUsers = async (req, res) => {
             "username",
             "email",
             "mobileNumber",
+            "role_id",
             [
                 Sequelize.fn(
                     "GROUP_CONCAT",
@@ -525,7 +526,7 @@ exports.updateRoleWiseUser = async (req, res) => {
             username: req.body.username,
             email: req.body.email,
             mobileNumber: req.body.phone_number,
-            role_id: req.body.role == 1 ? 1 : 4,
+            role_id: req.body.role || ROLE_IDS.STAFF, // UUID role id
             referenceName: req.body.referenceName,
         },
         {
