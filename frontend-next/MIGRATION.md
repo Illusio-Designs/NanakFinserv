@@ -23,10 +23,10 @@ Legend: ✅ done · 🟡 partial · ⬜ pending
 | Settings | ✅ | vertical toggles + data wipe |
 | Users & Roles | ✅ | list + **add/edit** with **vertical-manager roles** (Loan/Mediclaim/Vehicle/Life Manager) replacing Staff |
 | Inquiries | ✅ | list (`/user/data/inquiery`) |
-| Mediclaim | ✅ | Policies (+ **policy create**) + Companies CRUD + Products CRUD (tabs); all-policies/renewal sheet ⬜ |
+| Mediclaim | ✅ | Policies (+ create) + **Renewals** + Companies CRUD + Products CRUD (tabs) |
 | Loan | ✅ | pipeline tabs + **status update** action + view; loan config (PDF) ⬜ |
-| Life | ✅ | **add/edit** (proposer/life-assured/nominee/policy) + view; renewal sheet ⬜ |
-| Builder | ✅ | list + **add/edit**; Unit/Building ⬜ |
+| Life | ✅ | add/edit + view + **Renewals** tab |
+| Builder | ✅ | list + add/edit; **Units** (add); unit-categories ⬜ |
 | Blog admin | ✅ | **CRUD** (`/blog-admin`) with image upload |
 | Support | ✅ | help + contact page |
 | Data wipe | ✅ | wipes business data + consumers, keeps back-office users |
@@ -136,6 +136,12 @@ record_id, is_read }.
 - Frontend: NotificationCenter bell (filtered feed + count), dashboard
   Pending-tasks panel (derive from counts/renewal/consumer endpoints), and the
   consumer / building-manager dashboard variants.
+
+## 3b) Remaining (minor)
+- Building-manager **dashboard variant** (consumer + admin done).
+- **Renewal-due notification** generator (needs a scheduler/cron).
+- Loan **configuration** (PDF templates); Mediclaim **members/employees** on the
+  policy form; **unit categories** under Units.
 
 ## 4) Pending work (build order)
 1. **Dashboard**: role variants (consumer / building-manager) + **Pending-tasks
