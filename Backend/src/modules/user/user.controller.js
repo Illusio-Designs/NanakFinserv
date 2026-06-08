@@ -1,4 +1,4 @@
-const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
+const { ROLE_IDS, CATEGORY_IDS, MANAGER_ROLE_IDS, MANAGER_CATEGORY } = require("../../config/ids");
 /**
  * user controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -389,7 +389,7 @@ exports.getAllRolesUsers = async (req, res) => {
         raw: true,
         where: {
             role_id: {
-                [Op.or]: [ROLE_IDS.SUPER_ADMIN, ROLE_IDS.STAFF], // Show admin and user roles (exclude builder, consumer and mediclaim users)
+                [Op.or]: [ROLE_IDS.SUPER_ADMIN, ROLE_IDS.STAFF, ...MANAGER_ROLE_IDS], // super admin + back-office managers
             },
         },
         group: ["user_id"],
@@ -453,9 +453,11 @@ exports.addRoleWiseUser = (req, res) => {
                         if (Array.isArray(req.body.roleId)) roles = req.body.roleId;
                         else if (req.body.roleId) roles = String(req.body.roleId).split(',').map((s) => s.trim());
 
-                        // Super admin gets all verticals automatically.
+                        // Super admin gets all verticals; a vertical manager gets their own.
                         if (req.body.role === ROLE_IDS.SUPER_ADMIN) {
                             roles = [CATEGORY_IDS.LOAN, CATEGORY_IDS.MEDICLAIM, CATEGORY_IDS.LIFE_INSURANCE, CATEGORY_IDS.VEHICLE];
+                        } else if (MANAGER_CATEGORY[req.body.role]) {
+                            roles = [MANAGER_CATEGORY[req.body.role]];
                         }
                         roles = roles.filter(Boolean);
 

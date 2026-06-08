@@ -16,17 +16,22 @@ import { firstError, field, checks } from "@/utils/validators";
 // Seeded roles (no backend dependency) — labels for display + the Add/Edit dropdown.
 const ROLE_LABELS = {
   [ROLE_IDS.SUPER_ADMIN]: "Super Admin",
-  [ROLE_IDS.STAFF]: "Staff",
+  [ROLE_IDS.LOAN_MANAGER]: "Loan Manager",
+  [ROLE_IDS.MEDICLAIM_MANAGER]: "Mediclaim Manager",
+  [ROLE_IDS.VEHICLE_MANAGER]: "Vehicle Manager",
+  [ROLE_IDS.LIFE_MANAGER]: "Life Insurance Manager",
   [ROLE_IDS.BUILDER]: "Builder",
+  [ROLE_IDS.BUILDING_MANAGER]: "Building Manager",
   [ROLE_IDS.CONSUMER]: "Consumer",
   [ROLE_IDS.BUILDER_CONSUMER]: "Builder Consumer",
-  [ROLE_IDS.BUILDING_MANAGER]: "Building Manager",
+  [ROLE_IDS.STAFF]: "Staff", // legacy
 };
 const ROLE_OPTIONS = [
   { value: ROLE_IDS.SUPER_ADMIN, label: "Super Admin" },
-  { value: ROLE_IDS.STAFF, label: "Staff" },
-  { value: ROLE_IDS.BUILDER, label: "Builder" },
-  { value: ROLE_IDS.BUILDING_MANAGER, label: "Building Manager" },
+  { value: ROLE_IDS.LOAN_MANAGER, label: "Loan Manager" },
+  { value: ROLE_IDS.MEDICLAIM_MANAGER, label: "Mediclaim Manager" },
+  { value: ROLE_IDS.VEHICLE_MANAGER, label: "Vehicle Manager" },
+  { value: ROLE_IDS.LIFE_MANAGER, label: "Life Insurance Manager" },
 ];
 
 const norm = (r) => ({

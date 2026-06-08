@@ -9,7 +9,7 @@
  * Roles/categories are identified by the stable seeded UUIDs in
  * src/config/ids.js (see ROLE_IDS / CATEGORY_IDS).
  */
-const { ROLE_IDS, CATEGORY_IDS } = require("../config/ids");
+const { ROLE_IDS, CATEGORY_IDS, MANAGER_ROLE_IDS } = require("../config/ids");
 
 // Kept under the historical names so existing imports keep working; values are
 // now UUID strings instead of numbers.
@@ -22,20 +22,24 @@ const ROLES = {
   BUILDING_MANAGER: ROLE_IDS.BUILDING_MANAGER,
 };
 
+// Vertical managers (Loan/Mediclaim/Vehicle/Life) — back-office staff that
+// replace the generic Staff role. STAFF kept in the groups for back-compat.
+const MANAGERS = [...MANAGER_ROLE_IDS, ROLES.STAFF];
+
 // ── Role groups ───────────────────────────────────────────────────────────
 // Inclusive by design: each group lists every role that legitimately uses the
 // endpoints, so we block the clearly-wrong roles without locking out real
 // users. Adjust per product sign-off.
 //
 // HQ back-office config / master data.
-const ADMIN = [ROLES.SUPER_ADMIN, ROLES.STAFF];
+const ADMIN = [ROLES.SUPER_ADMIN, ...MANAGERS];
 // Internal + builders (builder data, units, consumer onboarding).
-const BUILDER_OPS = [ROLES.SUPER_ADMIN, ROLES.STAFF, ROLES.BUILDER];
+const BUILDER_OPS = [ROLES.SUPER_ADMIN, ...MANAGERS, ROLES.BUILDER];
 // Everyone who uses the management dashboard.
-const PORTAL = [ROLES.SUPER_ADMIN, ROLES.STAFF, ROLES.BUILDER, ROLES.BUILDING_MANAGER];
+const PORTAL = [ROLES.SUPER_ADMIN, ...MANAGERS, ROLES.BUILDER, ROLES.BUILDING_MANAGER];
 // Consumer-facing views.
 const CONSUMER_VIEW = [
-  ROLES.SUPER_ADMIN, ROLES.STAFF, ROLES.CONSUMER,
+  ROLES.SUPER_ADMIN, ...MANAGERS, ROLES.CONSUMER,
   ROLES.BUILDER_CONSUMER, ROLES.BUILDING_MANAGER,
 ];
 
