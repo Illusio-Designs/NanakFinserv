@@ -19,7 +19,8 @@ const empty = {
   AgentName: "", AgentCode: "", AgentContactNumber: "",
 };
 
-export default function VehicleFormModal({ open, onClose, onSaved }) {
+export default function VehicleFormModal({ open, onClose, onSaved, editRow }) {
+  const isEdit = !!editRow;
   const [form, setForm] = useState(empty);
   const [headUserId, setHeadUserId] = useState(null);
   const [found, setFound] = useState(null); // null = not searched, true/false after
@@ -30,10 +31,31 @@ export default function VehicleFormModal({ open, onClose, onSaved }) {
   const [submitting, setSubmitting] = useState(false);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
-  // Load master lists once when opened.
+  // Load master lists + prefill (edit) when opened.
   useEffect(() => {
     if (!open) return;
-    setForm(empty); setFound(null); setKyc(null); setHeadUserId(null);
+    if (isEdit) {
+      const r = editRow;
+      setForm({
+        ...empty,
+        Name: r.name || r.Name || "",
+        MobileNumber: r.mobile || r.MobileNumber || "",
+        Email: r.email || r.Email || "",
+        VehicleNumber: r.vehicle_number || r.VehicleNumber || "",
+        Make: r.make || r.Make || "",
+        Model: r.model || r.Model || "",
+        ManufacturingYear: r.manufacturing_year || r.ManufacturingYear || "",
+        EngineNumber: r.engine_number || r.EngineNumber || "",
+        ChassisNumber: r.chassis_number || r.ChassisNumber || "",
+      });
+      setFound(true);
+      setHeadUserId(r.user_id || r.head_user_id || null);
+      if (/^\d{10}$/.test(r.mobile || r.MobileNumber || "")) {
+        api.get(`/user/consumer/documents/by-mobile/${r.mobile || r.MobileNumber}`).then((d) => setKyc(d.data?.data || [])).catch(() => setKyc(null));
+      }
+    } else {
+      setForm(empty); setFound(null); setKyc(null); setHeadUserId(null);
+    }
     Promise.all([
       api.get("/user/data/company-type").catch(() => null),
       api.get("/user/data/policytype").catch(() => null),
@@ -41,7 +63,7 @@ export default function VehicleFormModal({ open, onClose, onSaved }) {
       setCompanies((c?.data?.data || []).map((r) => ({ value: r.company_id, label: r.company_name })));
       setPolicyTypes((p?.data?.data || []).map((r) => ({ value: r.policy_type_id, label: r.policy_type_name })));
     });
-  }, [open]);
+  }, [open, isEdit, editRow]);
 
   const findConsumer = async () => {
     const mobile = form.MobileNumber;
@@ -90,8 +112,13 @@ export default function VehicleFormModal({ open, onClose, onSaved }) {
         previousPolicy: {},
         documentsData: [],
       };
-      await api.post("/user/vehicle/user/add", { data, head_user_id: headUserId });
-      toast.success("Vehicle policy added");
+      if (isEdit) {
+        await api.put(`/user/vehicle/user/update/${editRow.vehicle_user_id}`, { data });
+        toast.success("Vehicle policy updated");
+      } else {
+        await api.post("/user/vehicle/user/add", { data, head_user_id: headUserId });
+        toast.success("Vehicle policy added");
+      }
       onClose();
       onSaved?.();
     } catch (e) {
@@ -118,14 +145,16 @@ export default function VehicleFormModal({ open, onClose, onSaved }) {
       },
       render: () => (
         <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <PhoneInput label="Consumer Mobile" value={form.MobileNumber} onChange={(v) => { set("MobileNumber")(v); setFound(null); setKyc(null); }} />
-            <Button icon={searching ? undefined : Search} onClick={findConsumer} disabled={searching}>
-              {searching ? <Spinner size={16} /> : "Find"}
-            </Button>
-          </div>
+          {!isEdit && (
+            <div className="flex items-end gap-2">
+              <PhoneInput label="Consumer Mobile" value={form.MobileNumber} onChange={(v) => { set("MobileNumber")(v); setFound(null); setKyc(null); }} />
+              <Button icon={searching ? undefined : Search} onClick={findConsumer} disabled={searching}>
+                {searching ? <Spinner size={16} /> : "Find"}
+              </Button>
+            </div>
+          )}
 
-          {found === true && (
+          {!isEdit && found === true && (
             <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[13px] text-green-700">
               <UserCheck size={15} /> Existing consumer found — details prefilled. You can edit if needed.
             </div>
@@ -217,7 +246,7 @@ export default function VehicleFormModal({ open, onClose, onSaved }) {
     },
   ];
 
-  return <StepperModal open={open} onClose={onClose} title="Add Vehicle Policy" steps={steps} onSubmit={submit} submitting={submitting} />;
+  return <StepperModal open={open} onClose={onClose} title={isEdit ? "Edit Vehicle Policy" : "Add Vehicle Policy"} steps={steps} onSubmit={submit} submitting={submitting} />;
 }
 
 function Row({ label, value }) {
