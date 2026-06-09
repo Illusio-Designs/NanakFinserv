@@ -36,8 +36,9 @@ const norm = (r) => {
     email: u.email || r.email || "—",
     company: co.mediclaim_company_name || r.company_name || "—",
     policy_number: rp.PolicyNumber || "—",
-    sum: r.SumInsured || rp.AdditionalSumInsured || "—",
-    mtype: r.mediclaim_type || "—",
+    sum: r.sumInsured || rp.SumInsured || rp.AdditionalSumInsured || "—",
+    premium: rp.PremiumAmount || "—",
+    mtype: r.medicliam_type || r.mediclaim_type || "—",
     expiry: rp.ExpiryDate || rp.PolicyTo || "",
     rp,
     prev: r.previousPolicies || [],
@@ -84,12 +85,16 @@ export default function MediclaimPage() {
     return [...due, ...assigned];
   }, [rows, consumers, in30]);
 
+  // Columns mirror the old app (Name · Mobile · Company · Sum Insured · Premium ·
+  // Expiry) plus Policy No., Type and a live Status/countdown.
   const columns = useMemo(() => [
-    { key: "name", title: "Member", render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "mobile", title: "Mobile" },
     { key: "company", title: "Company" },
     { key: "policy_number", title: "Policy No." },
     { key: "mtype", title: "Type" },
+    { key: "sum", title: "Sum Insured", render: (r) => r.sum && r.sum !== "—" ? `₹${r.sum}` : "—" },
+    { key: "premium", title: "Premium", render: (r) => r.premium && r.premium !== "—" ? `₹${r.premium}` : "—" },
     { key: "expiry", title: "Expiry", render: (r) => r.expiry ? (<div><div>{fmtDate(r.expiry)}</div><div className="text-[11px] text-muted">{expiryCountdown(r.expiry)}</div></div>) : "—" },
     { key: "status", title: "Status", render: (r) => { const s = currentStatus(r); return <Badge tone={s.tone}>{s.label}</Badge>; } },
   ], []);
@@ -162,7 +167,10 @@ function MediclaimDetail({ d }) {
         <Row label="Premium" value={rp.PremiumAmount ? `₹${rp.PremiumAmount}` : "—"} />
         <Row label="Period" value={period(rp)} />
         <Row label="Expiry" value={d.expiry ? `${fmtDate(d.expiry)} · ${expiryCountdown(d.expiry)}` : "—"} />
-        <Row label="Nominee" value={rp.NomineeName ? `${rp.NomineeName}${rp.NomineeRelation ? ` (${rp.NomineeRelation})` : ""}` : "—"} />
+        <Row label="Zone" value={rp.Zone || "—"} />
+        <Row label="Add-on cover" value={rp.AddOnCover || "—"} />
+        <Row label="Policy tenure" value={rp.PolicyTenure ? `${rp.PolicyTenure} yr` : "—"} />
+        <Row label="Nominee" value={rp.NomineeName ? `${rp.NomineeName}${rp.NomineeRelation ? ` (${rp.NomineeRelation})` : ""}${rp.NomineeAge ? ` · ${rp.NomineeAge}y` : ""}` : "—"} />
         <Row label="Status" value={<Badge tone={s.tone}>{s.label}</Badge>} />
         {fileUrl(rp.CurrentPolicyFile || rp.PdfFile) && (
           <Row label="Policy PDF" value={<span className="flex items-center gap-3"><FileTypeIcon file={rp.CurrentPolicyFile || rp.PdfFile} size={14} /><a className="text-ink hover:underline" href={fileUrl(rp.CurrentPolicyFile || rp.PdfFile)} target="_blank" rel="noopener noreferrer">View</a><a className="text-brand-600 hover:underline" href={fileUrl(rp.CurrentPolicyFile || rp.PdfFile)} download>Download</a></span>} />
@@ -177,8 +185,8 @@ function MediclaimDetail({ d }) {
               return (
                 <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-line p-3">
                   <div className="min-w-0">
-                    <div className="font-medium text-ink">{p.PolicyNumber || `Policy ${i + 1}`}</div>
-                    <div className="text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}</div>
+                    <div className="font-medium text-ink">{p.PolicyNumber || `Policy ${i + 1}`}{p.CompanyName ? ` · ${p.CompanyName}` : ""}</div>
+                    <div className="text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}{p.SumInsured ? ` · SI ₹${p.SumInsured}` : ""}</div>
                   </div>
                   {url ? (
                     <a href={url} download className="press flex items-center gap-1 rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle"><FileTypeIcon file={p.CurrentPolicyFile || p.PdfFile} size={12} />Download</a>
