@@ -10,10 +10,23 @@ import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import Spinner from "@/components/ui/Spinner";
 import api, { showError, fileUrl } from "@/lib/api";
+import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
 import { CATEGORY_IDS } from "@/config/ids";
 import VehicleFormModal from "./VehicleFormModal";
 
-const period = (p) => [p.PolicyFrom, p.PolicyTo || p.ExpiryDate].filter(Boolean).join(" → ") || "—";
+// A vehicle's CURRENT policy: Running while active, Overdue once its cover lapses.
+const currentStatus = (r) => {
+  const n = daysUntil(r.expiry_date);
+  if (n !== null && n < 0) return { label: "Overdue", tone: "danger" };
+  if (n !== null) return { label: "Running", tone: "success" };
+  return { label: statusLabel(r.status), tone: statusTone(r.status) };
+};
+
+const period = (p) => {
+  const f = p.PolicyFrom, to = p.PolicyTo || p.ExpiryDate;
+  if (!f && !to) return "—";
+  return `${f ? fmtDate(f) : "—"} → ${to ? fmtDate(to) : "—"}`;
+};
 const policyYear = (p) => { const d = p.PolicyFrom || p.PolicyTo || p.ExpiryDate || ""; return d ? String(d).slice(0, 4) : "—"; };
 // Friendly status: Running while active, else Closed.
 const statusLabel = (s) => {
@@ -118,9 +131,17 @@ export default function VehiclePage() {
     { key: "makeModel", title: "Make / Model" },
     { key: "company", title: "Company" },
     { key: "policy_number", title: "Policy No." },
-    { key: "expiry_date", title: "Expiry", render: (r) => r.expiry_date || "—" },
+    {
+      key: "expiry_date", title: "Expiry",
+      render: (r) => r.expiry_date ? (
+        <div>
+          <div>{fmtDate(r.expiry_date)}</div>
+          <div className="text-[11px] text-muted">{expiryCountdown(r.expiry_date)}</div>
+        </div>
+      ) : "—",
+    },
     { key: "ptype", title: "Type", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
-    { key: "status", title: "Status", render: (r) => <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge> },
+    { key: "status", title: "Status", render: (r) => { const s = currentStatus(r); return <Badge tone={s.tone}>{s.label}</Badge>; } },
   ], []);
 
   const pendingColumns = useMemo(() => [
@@ -128,7 +149,12 @@ export default function VehiclePage() {
     { key: "mobile", title: "Mobile" },
     { key: "vehicle_number", title: "Vehicle No." },
     { key: "reason", title: "Reason", render: (r) => <Badge tone={String(r.reason).includes("Renewal") ? "warning" : "success"}>{r.reason}</Badge> },
-    { key: "when", title: "Date" },
+    {
+      key: "when", title: "When",
+      render: (r) => String(r.reason).includes("Renewal")
+        ? <span className={daysUntil(r.expiry_date) < 0 ? "font-medium text-red-600" : "text-ink"}>{expiryCountdown(r.expiry_date)}</span>
+        : fmtDate(r.when),
+    },
     {
       key: "act", title: "",
       render: (r) =>
@@ -144,7 +170,15 @@ export default function VehiclePage() {
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "mobile", title: "Mobile" },
     { key: "vehicle_number", title: "Vehicle No." },
-    { key: "expiry_date", title: "Expiry", render: (r) => r.expiry_date || "—" },
+    {
+      key: "expiry_date", title: "Expiry",
+      render: (r) => r.expiry_date ? (
+        <div>
+          <div>{fmtDate(r.expiry_date)}</div>
+          <div className={`text-[11px] ${daysUntil(r.expiry_date) < 0 ? "font-medium text-red-600" : "text-muted"}`}>{expiryCountdown(r.expiry_date)}</div>
+        </div>
+      ) : "—",
+    },
     {
       key: "renew", title: "",
       render: (r) => (
@@ -248,9 +282,9 @@ function VehicleDetail({ d }) {
         <Row label="Policy No." value={rp.PolicyNumber || "—"} />
         <Row label="Premium" value={rp.PremiumAmount || "—"} />
         <Row label="Period" value={period(rp)} />
-        <Row label="OD / Full expiry" value={rp.od_expiry_date || rp.ExpiryDate || "—"} />
-        <Row label="TP expiry" value={rp.tp_expiry_date || "—"} />
-        <Row label="Status" value={<Badge tone={statusTone(rp.status)}>{statusLabel(rp.status)}</Badge>} />
+        <Row label="OD / Full expiry" value={(rp.od_expiry_date || rp.ExpiryDate) ? `${fmtDate(rp.od_expiry_date || rp.ExpiryDate)} · ${expiryCountdown(rp.od_expiry_date || rp.ExpiryDate)}` : "—"} />
+        <Row label="TP expiry" value={rp.tp_expiry_date ? fmtDate(rp.tp_expiry_date) : "—"} />
+        <Row label="Status" value={(() => { const s = currentStatus({ expiry_date: rp.od_expiry_date || rp.ExpiryDate, status: rp.status }); return <Badge tone={s.tone}>{s.label}</Badge>; })()} />
         {fileUrl(rp.CurrentPolicyFile) && (
           <Row label="Policy PDF" value={
             <span className="flex gap-3">
