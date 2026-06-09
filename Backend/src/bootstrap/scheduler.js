@@ -31,25 +31,31 @@ async function runRenewalReminders() {
   const running = await db.vehcileRunningPolicy.findAll({ raw: true });
   let sent = 0;
   for (const rp of running) {
-    const exp = rp.od_expiry_date || rp.ExpiryDate || rp.PolicyTo;
-    const dleft = daysTo(exp);
-    if (dleft === null) continue;
-    // Remind only at these offsets to avoid daily spam.
-    if (![7, 3, 1, 0].includes(dleft)) continue;
-    try {
-      const veh = await db.vehicleUser.findOne({ where: { vehicle_user_id: rp.vehicle_user_id }, raw: true });
-      if (!veh) continue;
-      await db.notification.create({
-        title: dleft <= 0 ? "Vehicle policy expires today" : `Vehicle policy due in ${dleft} day(s)`,
-        message: `${veh.vehicle_number || "Vehicle"} — renew before ${exp}`,
-        type: "vehicle",
-        category: "renewal_due",
-        user_id: null,
-        target_user_id: veh.user_id || null,
-        is_read: false,
-      });
-      sent++;
-    } catch (e) { logger.error({ err: e }, "renewal reminder failed"); }
+    // OD/Full (the yearly renewal) and TP (long-term) expire on different dates —
+    // remind on each independently so a valid long-term TP doesn't hide a due OD.
+    const parts = [
+      { kind: "OD/Full cover", exp: rp.od_expiry_date || rp.ExpiryDate || rp.PolicyTo },
+      { kind: "TP cover", exp: rp.tp_expiry_date },
+    ];
+    let veh = null;
+    for (const part of parts) {
+      const dleft = daysTo(part.exp);
+      if (dleft === null || ![7, 3, 1, 0].includes(dleft)) continue;
+      try {
+        if (!veh) veh = await db.vehicleUser.findOne({ where: { vehicle_user_id: rp.vehicle_user_id }, raw: true });
+        if (!veh) break;
+        await db.notification.create({
+          title: dleft <= 0 ? `Vehicle ${part.kind} expires today` : `Vehicle ${part.kind} due in ${dleft} day(s)`,
+          message: `${veh.vehicle_number || "Vehicle"} — renew before ${part.exp}`,
+          type: "vehicle",
+          category: "renewal_due",
+          user_id: null,
+          target_user_id: veh.user_id || null,
+          is_read: false,
+        });
+        sent++;
+      } catch (e) { logger.error({ err: e }, "renewal reminder failed"); }
+    }
   }
   return sent;
 }
