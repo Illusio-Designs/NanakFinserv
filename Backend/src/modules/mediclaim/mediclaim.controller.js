@@ -799,10 +799,12 @@ exports.updateMediclaimUserData = async (req, res) => {
         "insuredPersonPreExistingIllness": InsuredPersonPreExistingIllness || null
     };
 
+    let t = null;
     try {
+        t = await db.medicliamuser.sequelize.transaction(); // atomic update (rolls back on any error)
         // Update mediclaim data
-        await db.medicliamuser.update(obj, { where: { id: id } });
-        
+        await db.medicliamuser.update(obj, { where: { id: id }, transaction: t });
+
         // Update user table with basic information (Name, Email, MobileNumber, ReferenceName)
         if (user_id) {
             logger.debug('🔍 [UPDATE MEDICLAIM] Updating User table with:', {
@@ -818,8 +820,8 @@ exports.updateMediclaimUserData = async (req, res) => {
                     email: Email || null,             // Update email
                     mobileNumber: MobileNumber || null, // Update mobile number
                     referenceName: ReferenceName || null // Update reference name
-                }, 
-                { where: { user_id: user_id } }
+                },
+                { where: { user_id: user_id }, transaction: t }
             );
             
             logger.debug('🔍 [UPDATE MEDICLAIM] User table update result:', userUpdateResult);
@@ -968,14 +970,14 @@ exports.updateMediclaimUserData = async (req, res) => {
         
         // Update mediclaim with document filenames
         if (Object.keys(documentFiles).length > 0) {
-            await db.medicliamuser.update(documentFiles, { where: { id: id } });
+            await db.medicliamuser.update(documentFiles, { where: { id: id }, transaction: t });
         }
-        
+
         // Store custom documents metadata if needed
         if (customDocuments.length > 0) {
             await db.medicliamuser.update(
                 { customDocuments: JSON.stringify(customDocuments) },
-                { where: { id: id } }
+                { where: { id: id }, transaction: t }
             );
         }
 
@@ -1003,7 +1005,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                             PdfFileName: existingRunningPolicy.CurrentPolicyFile || existingRunningPolicy.PdfFileName || null,
                             PreviousPolicyNumber: existingRunningPolicy.PolicyNumber || null,
                         },
-                        { where: { id: existingRunningPolicy.id } }
+                        { where: { id: existingRunningPolicy.id }, transaction: t }
                     );
                     logger.debug('🔄 [RENEWAL] Archived current policy as history (is_current=false)');
                 }
@@ -1021,7 +1023,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                     mediclaim_id: id,
                     is_current: true,
                     status: "running",
-                });
+                }, { transaction: t });
                 logger.debug('🔄 [RENEWAL] Created new current policy');
             } catch (renewalError) {
                 logger.error('❌ [RENEWAL] Error processing renewal:', renewalError);
@@ -1053,7 +1055,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                 if (existingRunningPolicy) {
                     // Update existing current policy
                     await db.runningPolicyMediclaim.update(runningPolicy, {
-                        where: { mediclaim_id: id, is_current: true }
+                        where: { mediclaim_id: id, is_current: true }, transaction: t
                     });
                 } else {
                     // Create new current policy
@@ -1062,7 +1064,7 @@ exports.updateMediclaimUserData = async (req, res) => {
                         mediclaim_id: id,
                         is_current: true,
                         status: "running",
-                    });
+                    }, { transaction: t });
                 }
             } catch (runningPolicyError) {
                 logger.error('Error updating running policy:', runningPolicyError);
@@ -1171,11 +1173,11 @@ exports.updateMediclaimUserData = async (req, res) => {
                 if (existingPreviousPolicy) {
                     // Update the existing history policy row
                     await db.runningPolicyMediclaim.update(cleanedPreviousPolicy, {
-                        where: { id: existingPreviousPolicy.id }
+                        where: { id: existingPreviousPolicy.id }, transaction: t
                     });
                 } else {
                     // Create a new history policy row
-                    await db.runningPolicyMediclaim.create(cleanedPreviousPolicy);
+                    await db.runningPolicyMediclaim.create(cleanedPreviousPolicy, { transaction: t });
                 }
             } catch (previousPolicyError) {
                 logger.error('Error updating previous policy:', previousPolicyError);
@@ -1186,31 +1188,35 @@ exports.updateMediclaimUserData = async (req, res) => {
         }
 
         // Delete existing family members and employees
-        await db.familyMember.destroy({ where: { mediclaim_id: id } });
-        await db.employeeMediclaim.destroy({ where: { mediclaim_id: id } });
+        await db.familyMember.destroy({ where: { mediclaim_id: id }, transaction: t });
+        await db.employeeMediclaim.destroy({ where: { mediclaim_id: id }, transaction: t });
 
         // Save new family members if any
         if (familyMembers && familyMembers.length > 0) {
-            const familyMemberPromises = familyMembers.map(member => 
+            const familyMemberPromises = familyMembers.map(member =>
                 db.familyMember.create({
                     ...member,
                     mediclaim_id: id
-                })
+                }, { transaction: t })
             );
             await Promise.all(familyMemberPromises);
         }
 
         // Save new employees if any
         if (employees && employees.length > 0) {
-            const employeePromises = employees.map(employee => 
+            const employeePromises = employees.map(employee =>
                 db.employeeMediclaim.create({
                     ...employee,
                     mediclaim_id: id
-                })
+                }, { transaction: t })
             );
             await Promise.all(employeePromises);
         }
 
+        await t.commit(); // all writes succeeded — persist atomically
+        t = null;
+
+        // Reconcile on committed data (its own writes, outside the txn).
         try { await mediclaimService.reconcileMediclaimPolicies(id); } catch (e) { logger.error({ err: e }, "mediclaim reconcile after update failed"); }
 
         res.status(200).json({
@@ -1219,6 +1225,7 @@ exports.updateMediclaimUserData = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error in updateMediclaimUserData:', error);
+        try { if (t && !t.finished) await t.rollback(); } catch (rbErr) { logger.error({ err: rbErr }, "mediclaim update rollback failed"); }
         res.status(500).json({
             message: 'Error updating mediclaim data',
             error: error.message
