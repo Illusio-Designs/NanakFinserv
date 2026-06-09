@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
-import { Menu, Search, LogOut, ChevronDown } from "lucide-react";
+import { Menu, Search, LogOut, ChevronDown, Moon, Sun } from "lucide-react";
 import { useSearch } from "@/lib/search";
 import NotificationCenter from "./NotificationCenter";
 
@@ -12,6 +12,14 @@ export default function Header({ onMenu }) {
   const { query, setQuery } = useSearch();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [dark, setDark] = useState(false);
+  useEffect(() => { setDark(typeof document !== "undefined" && document.documentElement.classList.contains("dark")); }, []);
+  const toggleTheme = () => {
+    const next = !document.documentElement.classList.contains("dark");
+    document.documentElement.classList.toggle("dark", next);
+    try { localStorage.setItem("theme", next ? "dark" : "light"); } catch {}
+    setDark(next);
+  };
 
   // Close the user menu on outside click / Escape.
   useEffect(() => {
@@ -61,6 +69,9 @@ export default function Header({ onMenu }) {
       </div>
 
       <div className="ml-auto flex items-center gap-1">
+        <button onClick={toggleTheme} title={dark ? "Switch to light mode" : "Switch to dark mode"} className="press rounded-md p-2 text-muted hover:bg-subtle hover:text-ink">
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
         <NotificationCenter />
 
         <div className="relative">

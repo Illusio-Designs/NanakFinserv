@@ -38,6 +38,21 @@
   --header-h: 60px;
 }
 
+/* Dark theme — flips the core tokens (Tailwind maps bg-surface/text-ink/… to these,
+   so the whole app follows). Toggled by adding `.dark` on <html>. */
+html.dark {
+  --brand-50: 30 58 80;     /* dark blue tint for brand-50 backgrounds */
+  --brand-100: 30 64 95;
+
+  --ink: 226 232 240;        /* slate-200 — primary text */
+  --muted: 148 163 184;      /* slate-400 */
+  --line: 51 65 85;          /* slate-700 — borders */
+  --surface: 30 41 59;       /* slate-800 — cards/inputs */
+  --subtle: 15 23 42;        /* slate-900 — page background */
+}
+html.dark body { background: rgb(var(--subtle)); }
+html.dark .skeleton { background: #1e293b; }
+
 @layer base {
   html,
   body {
