@@ -1495,7 +1495,7 @@ exports.uploadConsumerDocument = async (req, res) => {
     if (!req.files || !req.files.file) {
       return res.status(400).send({ message: "file is required", status: false });
     }
-    const uniqueName = await saveUpload(req.files.file); // universal upload helper
+    const uniqueName = await saveUpload(req.files.file, "consumer-kyc"); // organised per-area
     const doc = await upsertConsumerDocument(user_id, categoryId, uniqueName);
     return res.status(200).send({ message: "Document saved", data: doc, status: true });
   } catch (e) {

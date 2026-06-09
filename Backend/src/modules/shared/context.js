@@ -174,11 +174,19 @@ async function ensureCategoryMapping(user_consumer_id, category_id, user_role_id
  * is uploaded (consumer docs, vehicle RC, life docs, blog images…) instead of
  * re-implementing mv()/writeFile per controller.
  */
-async function saveUpload(fileObj) {
+/**
+ * Save an uploaded file into a per-module subfolder under /uploads and return
+ * the stored path RELATIVE to /uploads (e.g. "vehicle/<uuid>-rc.pdf"), so files
+ * are organised by area (consumer-kyc, vehicle, …). The download URL is
+ * BASE_URL/uploads/<that path>.
+ */
+async function saveUpload(fileObj, subdir = "misc") {
   if (!fileObj) return null;
-  const uploadsDir = path.join(CTRL_DIR, "../../uploads");
+  const safeSub = String(subdir).replace(/[^a-z0-9/_-]/gi, "") || "misc";
+  const dir = path.join(CTRL_DIR, "../../uploads", safeSub);
+  await fsExtra.ensureDir(dir);
   const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
-  const uploadPath = path.join(uploadsDir, uniqueName);
+  const uploadPath = path.join(dir, uniqueName);
   if (fileObj.mv) {
     await fileObj.mv(uploadPath);
   } else if (fileObj.data) {
@@ -186,7 +194,7 @@ async function saveUpload(fileObj) {
   } else {
     throw new Error("saveUpload: no valid file handling method (mv/data) on file object");
   }
-  return uniqueName;
+  return `${safeSub}/${uniqueName}`;
 }
 
 const ConsumerDocument = db.consumerDocument;

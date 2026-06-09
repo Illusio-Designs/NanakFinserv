@@ -25,6 +25,7 @@ export default function LogsPage() {
         list.map((n) => ({
           ...n,
           when: (n.created_at || n.createdAt || "").replace("T", " ").slice(0, 16),
+          who: n.actor_name || "System",
           action: n.title || "—",
           detail: n.message || "—",
           kind: n.type || "system",
@@ -39,6 +40,7 @@ export default function LogsPage() {
 
   const columns = useMemo(() => [
     { key: "when", title: "When" },
+    { key: "who", title: "Who", render: (r) => <span className="font-medium">{r.who}</span> },
     { key: "kind", title: "Module", render: (r) => <Badge tone={TYPE_TONE[r.kind] || "muted"}>{r.kind}</Badge> },
     { key: "event", title: "Event", render: (r) => <Badge tone="brand">{r.event}</Badge> },
     { key: "action", title: "Action", render: (r) => <span className="font-medium">{r.action}</span> },
@@ -53,7 +55,7 @@ export default function LogsPage() {
         data={rows}
         loading={loading}
         rowKey="id"
-        searchKeys={["action", "detail", "kind", "event"]}
+        searchKeys={["who", "action", "detail", "kind", "event"]}
         filters={[
           { key: "kind", label: "Module" },
           { key: "event", label: "Event" },

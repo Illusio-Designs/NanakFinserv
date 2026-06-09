@@ -60,6 +60,7 @@ const {
   policyType,
   property,
   references,
+  saveUpload,
   unit_category_list,
   userCatergory,
   uuidv4,
@@ -482,23 +483,10 @@ AgentContactNumber: _AgentContactNumber
             for (const doc of standardDocuments) {
                 if (req.files && req.files[doc.fieldName]) {
                     const fileObj = req.files[doc.fieldName];
-                    const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
+                    const isKyc = KYC_DOC_IDS.includes(doc.categoryId);
+                    const uniqueName = await saveUpload(fileObj, isKyc ? "consumer-kyc" : "vehicle");
 
-                    // Handle file movement - now using in-memory files
-                    if (fileObj.mv) {
-                        // When useTempFiles: false, use mv method (in-memory files)
-                        logger.debug(`📁 [CREATE] Using file.mv() for ${doc.fieldName}`);
-                        await fileObj.mv(uploadPath);
-                    } else if (fileObj.data) {
-                        // Fallback: write file data directly
-                        logger.debug(`📁 [CREATE] Using file.data for ${doc.fieldName}`);
-                        await fs.writeFile(uploadPath, fileObj.data);
-                    } else {
-                        throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
-                    }
-
-                    if (KYC_DOC_IDS.includes(doc.categoryId)) {
+                    if (isKyc) {
                         // Consumer-level KYC: store/replace once on the consumer.
                         await upsertConsumerDocument(userData.user_id, doc.categoryId, uniqueName);
                         logger.debug(`[VehicleUserCreate] ${doc.fieldName} saved as CONSUMER document for user_id: ${userData.user_id}`);
@@ -522,9 +510,7 @@ AgentContactNumber: _AgentContactNumber
                     const fieldName = doc.fileFieldName; // e.g., "custom_0", "custom_1"
                     if (req.files && req.files[fieldName]) {
                         const fileObj = req.files[fieldName];
-                        const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
-                        const uploadPath = path.join(uploadsDir, uniqueName);
-                        await fileObj.mv(uploadPath);
+                        const uniqueName = await saveUpload(fileObj, "vehicle");
 
                         // Save document record to database
                         await vehicle_document.create({
@@ -541,25 +527,8 @@ AgentContactNumber: _AgentContactNumber
             logger.debug('🔍 [CREATE] req.files keys:', Object.keys(req.files || {}));
             logger.debug('🔍 [CREATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
             if (req.files && req.files.CurrentPolicyFile) {
-                let CurrentPolicyFile = req.files.CurrentPolicyFile;
-                const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
-                const uploadPath = path.join(uploadsDir, uniqueName);
-
-                // Handle file movement - now using in-memory files
-                if (CurrentPolicyFile.mv) {
-                    // When useTempFiles: false, use mv method (in-memory files)
-                    logger.debug(`📁 [CREATE] Using file.mv() for CurrentPolicyFile`);
-                    await CurrentPolicyFile.mv(uploadPath);
-                } else if (CurrentPolicyFile.data) {
-                    // Fallback: write file data directly
-                    logger.debug(`📁 [CREATE] Using file.data for CurrentPolicyFile`);
-                    await fs.writeFile(uploadPath, CurrentPolicyFile.data);
-                } else {
-                    throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
-                }
-
-                runningPolicy.CurrentPolicyFile = uniqueName;
-                logger.debug(`📁 [CREATE] CurrentPolicyFile saved: ${uniqueName}`);
+                runningPolicy.CurrentPolicyFile = await saveUpload(req.files.CurrentPolicyFile, "vehicle");
+                logger.debug(`📁 [CREATE] CurrentPolicyFile saved: ${runningPolicy.CurrentPolicyFile}`);
             }
 
             // Resolve company name to company_id for running policy
@@ -607,11 +576,7 @@ AgentContactNumber: _AgentContactNumber
             await vehcileRunningPolicy.create(runningPolicyData);
 
             if (req.files && req.files.PreviousCurrentPolicyFile) {
-                let PdfFile = req.files.PreviousCurrentPolicyFile;
-                const uniqueName = `${uuidv4()}-${path.basename(PdfFile.name)}`;
-                const uploadPath = path.join(uploadsDir, uniqueName);
-                await PdfFile.mv(uploadPath);
-                previousPolicy.CurrentPolicyFile = uniqueName;
+                previousPolicy.CurrentPolicyFile = await saveUpload(req.files.PreviousCurrentPolicyFile, "vehicle");
             }
 
             // --------- SAFEGUARDED insertion of previous policy (single insert only) ----------
@@ -1225,10 +1190,6 @@ exports.updateVehicleUserData = async (req, res) => {
             logger.debug('🔍 [UPDATE] req.files keys:', Object.keys(req.files || {}));
             logger.debug('🔍 [UPDATE] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
             if (req.files && req.files.CurrentPolicyFile) {
-                let CurrentPolicyFile = req.files.CurrentPolicyFile;
-                const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
-                const uploadPath = path.join(uploadsDir, uniqueName);
-                
                 // Delete old file if it exists
                 if (findPolicy?.CurrentPolicyFile) {
                     const oldFilePath = path.join(uploadsDir, findPolicy.CurrentPolicyFile);
@@ -1237,22 +1198,8 @@ exports.updateVehicleUserData = async (req, res) => {
                         logger.debug(`📁 [UPDATE] Deleted old CurrentPolicyFile: ${findPolicy.CurrentPolicyFile}`);
                     }
                 }
-                
-                // Handle file movement - now using in-memory files
-                if (CurrentPolicyFile.mv) {
-                    // When useTempFiles: false, use mv method (in-memory files)
-                    logger.debug(`📁 [UPDATE] Using file.mv() for CurrentPolicyFile`);
-                await CurrentPolicyFile.mv(uploadPath);
-                } else if (CurrentPolicyFile.data) {
-                    // Fallback: write file data directly
-                    logger.debug(`📁 [UPDATE] Using file.data for CurrentPolicyFile`);
-                    await fs.writeFile(uploadPath, CurrentPolicyFile.data);
-                } else {
-                    throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
-                }
-                
-                runningPolicy.CurrentPolicyFile = uniqueName;
-                logger.debug(`📁 [UPDATE] CurrentPolicyFile saved: ${uniqueName}`);
+                runningPolicy.CurrentPolicyFile = await saveUpload(req.files.CurrentPolicyFile, "vehicle");
+                logger.debug(`📁 [UPDATE] CurrentPolicyFile saved: ${runningPolicy.CurrentPolicyFile}`);
             }
             const runningPolicyData = {
                 policy_type_id: runningPolicy.policy_type_id || runningPolicy.PolicyTypeId || Data.policy_type_id || null,
@@ -1304,13 +1251,8 @@ exports.updateVehicleUserData = async (req, res) => {
                     where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false }
                 });
                 
-                const uploadsDir = path.join(CTRL_DIR, "../../uploads");
                 if (req.files && req.files.PreviousCurrentPolicyFile) {
-                    let PdfFile = req.files.PreviousCurrentPolicyFile;
-                    const uniqueName = `${uuidv4()}-${path.basename(PdfFile.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
-                    await PdfFile.mv(uploadPath);
-                    previousPolicy.CurrentPolicyFile = uniqueName;
+                    previousPolicy.CurrentPolicyFile = await saveUpload(req.files.PreviousCurrentPolicyFile, "vehicle");
                 }
                 
                 const historyData = {
@@ -1350,22 +1292,9 @@ exports.updateVehicleUserData = async (req, res) => {
         for (const doc of standardDocuments) {
             if (req.files && req.files[doc.fieldName]) {
                 const fileObj = req.files[doc.fieldName];
-                const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
-                const uploadPath = path.join(uploadsDir, uniqueName);
-                
-                // Handle file movement - now using in-memory files
-                if (fileObj.mv) {
-                    // When useTempFiles: false, use mv method (in-memory files)
-                    logger.debug(`📁 [UPDATE] Using file.mv() for ${doc.fieldName}`);
-                await fileObj.mv(uploadPath);
-                } else if (fileObj.data) {
-                    // Fallback: write file data directly
-                    logger.debug(`📁 [UPDATE] Using file.data for ${doc.fieldName}`);
-                    await fs.writeFile(uploadPath, fileObj.data);
-                } else {
-                    throw new Error(`Unable to process ${doc.fieldName} file - no valid file handling method found`);
-                }
-                
+                const isKyc = [DOCUMENT_IDS.AADHAR, DOCUMENT_IDS.PAN, DOCUMENT_IDS.GST].includes(doc.categoryId);
+                const uniqueName = await saveUpload(fileObj, isKyc ? "consumer-kyc" : "vehicle");
+
                 // Delete old document for this categoryId/vehicle_user_id
                 await vehicle_document.destroy({
                     where: {
@@ -1405,10 +1334,8 @@ exports.updateVehicleUserData = async (req, res) => {
                 const fieldName = doc.fileFieldName; // e.g., "custom_0", "custom_1"
                 if (req.files && req.files[fieldName]) {
                     const fileObj = req.files[fieldName];
-                    const uniqueName = `${uuidv4()}-${path.basename(fileObj.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
-                    await fileObj.mv(uploadPath);
-                    
+                    const uniqueName = await saveUpload(fileObj, "vehicle");
+
                     // Create custom document record
                     await vehicle_document.create({
                         user_id: resolvedUserId,
@@ -1439,6 +1366,18 @@ exports.updateVehicleUserData = async (req, res) => {
             ]
         });
         try { await vehicleService.reconcileVehiclePolicies(req.params.vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after update failed"); }
+        // Activity log: record the policy update/renewal.
+        try {
+          const isRenew = (policy_type === "Renewal" || policy_type === "Portability");
+          await createNotification({
+            title: isRenew ? "Vehicle policy renewed" : "Vehicle policy updated",
+            message: `${updatedVehicleUser?.vehicle_number || "Vehicle"} ${isRenew ? "renewed" : "updated"}`,
+            type: "vehicle",
+            category: isRenew ? "renewal" : "status_update",
+            user_id: req.user && req.user.id,
+            target_user_id: (updatedVehicleUser && updatedVehicleUser.user_id) || null,
+          });
+        } catch (e) { logger.error({ err: e }, "vehicle update log failed"); }
         const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: req.params.vehicle_user_id } });
         return res.status(200).send({
             message: "Vehicle successfully updated!",

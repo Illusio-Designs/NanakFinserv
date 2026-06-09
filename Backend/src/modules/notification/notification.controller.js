@@ -104,7 +104,14 @@ exports.getNotifications = async (req, res) => {
         limit: parseInt(limit),
         offset: parseInt(offset),
       });
-  
+
+      // Resolve the actor (who performed the action) so the activity log can show it.
+      const actorIds = [...new Set(notifications.rows.map((n) => n.user_id).filter(Boolean))];
+      const actors = actorIds.length
+        ? await User.findAll({ where: { user_id: actorIds }, attributes: ["user_id", "username", "role_id"], raw: true })
+        : [];
+      const actorMap = Object.fromEntries(actors.map((u) => [u.user_id, u]));
+
       // Map your category IDs to proper names
       const categoryMap = {
         2: "Loan",
@@ -128,9 +135,12 @@ exports.getNotifications = async (req, res) => {
           logger.debug("Metadata parse error:", err);
         }
   
+        const actor = actorMap[n.user_id];
         return {
           ...n.dataValues,
           category_name: categoryName,
+          actor_name: actor ? actor.username : null,
+          actor_role_id: actor ? actor.role_id : null,
         };
       });
   
