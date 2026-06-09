@@ -8,7 +8,12 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import api, { showError } from "@/lib/api";
+import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
 import LifeFormModal from "./LifeFormModal";
+
+const dueCol = { key: "due", title: "Due Date", render: (r) => r.due && r.due !== "—" ? (
+  <div><div>{fmtDate(r.due)}</div><div className={`text-[11px] ${daysUntil(r.due) < 0 ? "font-medium text-red-600" : "text-muted"}`}>{expiryCountdown(r.due)}</div></div>
+) : "—" };
 
 const norm = (r) => ({
   ...r,
@@ -89,7 +94,7 @@ export default function LifePage() {
 
       {tab === "pending" && (
         <DataTable
-          columns={[...columns.slice(0, 3), { key: "due", title: "Due Date" }]}
+          columns={[...columns.slice(0, 3), dueCol]}
           data={pendingRows}
           loading={renLoading}
           rowKey="id"
@@ -101,7 +106,7 @@ export default function LifePage() {
 
       {tab === "renewals" && (
         <DataTable
-          columns={[...columns.slice(0, 3), { key: "due", title: "Due Date" }]}
+          columns={[...columns.slice(0, 3), dueCol]}
           data={renewals}
           loading={renLoading}
           rowKey="id"

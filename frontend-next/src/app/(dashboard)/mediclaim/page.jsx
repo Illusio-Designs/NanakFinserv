@@ -11,6 +11,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import Tabs from "@/components/ui/Tabs";
 import { Plus as PlusIcon } from "lucide-react";
 import api, { showError } from "@/lib/api";
+import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
 import MediclaimPolicyModal from "./MediclaimPolicyModal";
 
 export default function MediclaimPage() {
@@ -108,7 +109,9 @@ function Renewals({ dueWithinDays, title } = {}) {
       columns={[
         { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
         { key: "mobile", title: "Mobile" },
-        { key: "expiry", title: "Expiry" },
+        { key: "expiry", title: "Expiry", render: (r) => r.expiry && r.expiry !== "—" ? (
+          <div><div>{fmtDate(r.expiry)}</div><div className={`text-[11px] ${daysUntil(r.expiry) < 0 ? "font-medium text-red-600" : "text-muted"}`}>{expiryCountdown(r.expiry)}</div></div>
+        ) : "—" },
       ]}
       data={rows}
       loading={loading}

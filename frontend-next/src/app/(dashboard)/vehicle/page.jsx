@@ -100,8 +100,9 @@ export default function VehiclePage() {
       .map((c) => ({ vehicle_user_id: c.user_id, user_id: c.user_id, name: c.username || "—", mobile: c.mobileNumber || "—", vehicle_number: "—", reason: "Assigned — add policy", when: (c.createdAt || "").slice(0, 10) }));
     const due = rows
       .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) <= in30)
-      .map((r) => ({ ...r, reason: "Renewal due", when: r.expiry_date }));
-    return [...assigned, ...due];
+      .map((r) => ({ ...r, reason: "Renewal due", when: r.expiry_date }))
+      .sort((a, b) => String(a.expiry_date).localeCompare(String(b.expiry_date))); // most overdue first
+    return [...due, ...assigned]; // urgent renewals on top
   }, [rows, consumers, in30]);
 
   // Load full detail (running + previous policies) for the view modal.
