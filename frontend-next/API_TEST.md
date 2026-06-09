@@ -11,6 +11,25 @@
 
 **Conclusion:** API is up, validation works, and protected routes are correctly gated.
 
+## Authenticated end-to-end (logged in via MSG91 OTP as the seeded admin)
+| Flow | Result |
+|---|---|
+| Add standalone consumer (+loan service) | ✅ created |
+| Re-add same mobile (dedup) | ✅ **same user_id returned** (no duplicate) |
+| Join existing consumer (family member) | ✅ created with `family_head_id` = head |
+| `GET /user/household/:mobile` | ✅ head + members + their policies |
+| Add vehicle (Fresh) with TP/OD expiry | ✅ created; `status=running`, od/tp expiry saved |
+| Add duplicate vehicle number | ✅ **400 "vehicle number already exists"** |
+| Add-next policy (renewal, update path) | ✅ new running = POLCURL3; **old policy archived to previous** (after fix) |
+
+**Bug found & fixed during testing:** the update path only archived the old
+running policy to history when `policy_type === 'Renewal'`; sending only
+`policyRadio` (as in some flows) overwrote it. Fixed to accept either field.
+Also added the "assigned" notification on the consumer **add** path (was edit-only).
+
+> Test records created (production): consumers `9000000011`, `9000000012`,
+> vehicle owner `9000000013` / `GJ01CURL1`. Remove via Settings → data wipe if needed.
+
 ## Why the add flows can't be curl-tested directly
 `POST /user/login` requires a **real MSG91 OTP access-token** (server verifies it
 against MSG91) — there is **no dev bypass**. So a token can't be minted from the
