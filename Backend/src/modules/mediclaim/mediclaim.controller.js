@@ -444,6 +444,7 @@ exports.addMediclaimUserData = async (req, res) => {
     logger.debug('🔍 [ADD MEDICLAIM] Received runningPolicy:', runningPolicy);
     logger.debug('🔍 [ADD MEDICLAIM] Received previousPolicy:', previousPolicy);
 
+    let createdMediclaimId = null; // for compensation cleanup if a later step fails
     try {
         // Check if user with this mobile number already exists
         let user = await User.findOne({
@@ -523,6 +524,7 @@ exports.addMediclaimUserData = async (req, res) => {
 
         const mediclaim = await Mediclaim.create(obj);
         const mediclaimId = mediclaim.id;
+        createdMediclaimId = mediclaimId; // track for rollback on later failure
 
         // ConsumerRoleMapping already created above in user check/creation logic
 
@@ -720,6 +722,19 @@ exports.addMediclaimUserData = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error in addMediclaimUserData:', error);
+        // Compensation: if a later step failed, remove the orphan mediclaim + its
+        // policies/members/employees so we never leave a half-written record.
+        if (createdMediclaimId) {
+            try {
+                await Promise.all([
+                    db.runningPolicyMediclaim.destroy({ where: { mediclaim_id: createdMediclaimId } }),
+                    db.familyMember.destroy({ where: { mediclaim_id: createdMediclaimId } }),
+                    db.employeeMediclaim.destroy({ where: { mediclaim_id: createdMediclaimId } }),
+                ]);
+                await Mediclaim.destroy({ where: { id: createdMediclaimId } });
+                logger.warn({ mediclaimId: createdMediclaimId }, "Rolled back partial mediclaim add");
+            } catch (cleanupErr) { logger.error({ err: cleanupErr }, "mediclaim add rollback failed"); }
+        }
         res.status(500).json({
             message: 'Error saving mediclaim data',
             error: error.message

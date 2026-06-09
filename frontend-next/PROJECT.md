@@ -111,8 +111,11 @@ counts (consumers + their vertical) show ONLY consumers assigned to them.
   (merged the old `previous_policies`); reconcile + scoped queries; old table dropped.
 - Phase 3 — **rich form** from the old app: Nominee, Members (floater), Employees
   (group), Previous policy (portability), Zone/Add-on/Tenure/From-To.
-- ⬜ Remaining: policy-PDF/claim **file upload via the modal** (needs multipart submit);
-  DB **transactions** on mediclaim add/update (merge logic done, txn wrap pending).
+- Phase 4 — **uploads + safety**: all mediclaim files (Aadhar/PAN/GST/custom + policy
+  PDF) now save to **uploads/mediclaim/** via saveUpload; modal uploads the policy PDF
+  (multipart); **add has compensation rollback** (orphan mediclaim cleaned on failure).
+- ⬜ Remaining: DB **transaction wrap on mediclaim UPDATE** (add rollback done; update
+  is mostly idempotent so lower risk) + claim/portability doc uploads in the modal.
 
 ⬜ **Optional (post-launch, infra/config — not blocking):**
 1. **PDF versioning / backups** — move uploads to cloud object storage (S3/GCS) with
