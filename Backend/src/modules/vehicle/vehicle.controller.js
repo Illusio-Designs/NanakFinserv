@@ -145,6 +145,9 @@ exports.getAllVehicleInsUser = async (req, res) => {
 exports.addVehicleUserData = async (req, res) => {
     logger.debug('--- [addVehicleUserData] ---');
     logger.debug('req.user:', req.user);
+    // Tracks a vehicle created mid-request so we can roll it back (delete the
+    // orphan + its policies/docs) if a later step fails — keeps the add atomic.
+    let createdVehicleId = null;
     logger.debug('req.headers:', req.headers);
     logger.debug('req.body:', req.body);
     logger.debug('req.files:', req.files);
@@ -465,6 +468,7 @@ AgentContactNumber: _AgentContactNumber
             if (!vehicle.vehicle_user_id) {
                 return res.status(400).json({ message: "Vehicle creation failed", status: false });
             }
+            createdVehicleId = vehicle.vehicle_user_id; // for rollback on later failure
 
             const uploadsDir = path.join(CTRL_DIR, "../../uploads");
 
@@ -771,6 +775,17 @@ AgentContactNumber: _AgentContactNumber
         }
     } catch (error) {
         logger.error('❌ [addVehicleUserData] Error:', error);
+
+        // Roll back a partially-created vehicle so a failure never leaves an orphan
+        // vehicle without its policies/documents.
+        if (createdVehicleId) {
+            try {
+                await vehcileRunningPolicy.destroy({ where: { vehicle_user_id: createdVehicleId } });
+                await vehicle_document.destroy({ where: { vehicle_user_id: createdVehicleId } });
+                await vehicleUser.destroy({ where: { vehicle_user_id: createdVehicleId } });
+                logger.warn(`[addVehicleUserData] Rolled back partial vehicle ${createdVehicleId}`);
+            } catch (cleanupErr) { logger.error({ err: cleanupErr }, "vehicle rollback cleanup failed"); }
+        }
 
         if (error.name === 'SequelizeValidationError') {
             const errors = error.errors.map(err => err.message);
