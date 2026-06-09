@@ -178,6 +178,9 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
               <Input label="Email" value={form.email} onChange={(e) => set("email")(e.target.value)} />
               <DatePicker label="Date of Birth" value={form.DateOfBirth} onChange={set("DateOfBirth")} />
               <Dropdown label="Gender" placeholder="Select" options={GENDERS} value={form.Gender} onChange={set("Gender")} />
+              {/* Type drives which later steps appear (Members for Family Floater,
+                  Employees for Group) — chosen up-front like the old form. */}
+              <Dropdown label="Policy Type" options={TYPES} value={form.mediclaim_type} onChange={set("mediclaim_type")} />
             </div>
           )}
         </div>
@@ -193,7 +196,7 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
       },
       render: () => (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Dropdown label="Type" options={TYPES} value={form.mediclaim_type} onChange={set("mediclaim_type")} />
+          <div className="sm:col-span-2 rounded-md bg-subtle px-3 py-2 text-[12px] text-muted">Type: <span className="font-medium text-ink">{form.mediclaim_type}</span> {isFamily ? "— add family members next" : isGroup ? "— add employees next" : "— individual cover"}</div>
           <Input label="Sum Insured" value={form.SumInsured} onChange={(e) => set("SumInsured")(e.target.value.replace(/[^\d.]/g, ""))} />
           <Dropdown label="Company" placeholder="Select company" options={companies} value={companyId} onChange={onCompany} searchable />
           <Dropdown label="Product" placeholder={companyId ? "Select product" : "Select company first"} options={products} value={form.mediclaim_product_id} onChange={set("mediclaim_product_id")} searchable />
@@ -265,7 +268,9 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
         </div>
       ),
     }] : []),
-    {
+    // Previous-policy step only for new/edit (portability). On renew the current
+    // policy is auto-archived into the journey, so manual entry isn't needed.
+    ...(renewMode ? [] : [{
       title: "Previous policy",
       render: () => (
         <div className="space-y-4">
@@ -286,7 +291,7 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
           )}
         </div>
       ),
-    },
+    }]),
     {
       title: "Documents",
       render: () => (
