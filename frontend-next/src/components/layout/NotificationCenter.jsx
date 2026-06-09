@@ -91,7 +91,9 @@ export default function NotificationCenter() {
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-medium text-ink">{n.title}</div>
                     {n.message && <div className="truncate text-[12px] text-muted">{n.message}</div>}
-                    <div className="mt-0.5 text-[11px] text-muted/70">{(n.created_at || "").slice(0, 16).replace("T", " ")}</div>
+                    <div className="mt-0.5 text-[11px] text-muted/70">
+                      {n.actor_name ? `${n.actor_name} · ` : ""}{(n.created_at || "").slice(0, 16).replace("T", " ")}
+                    </div>
                   </div>
                   {!n.is_read && (
                     <button onClick={() => markRead(n.id)} title="Mark read" className="press rounded p-1 text-muted hover:text-brand-600">
