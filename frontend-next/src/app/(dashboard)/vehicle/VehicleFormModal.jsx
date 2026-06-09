@@ -323,6 +323,8 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
         const p = form.rp || {};
         if (!(p.CompanyId || p.company_id || p.CompanyName)) { toast.error("Select the policy company"); return "company"; }
         if (!(p.PolicyFrom && (p.PolicyTo || p.ExpiryDate || p.od_expiry_date))) { toast.error("Enter the policy period (from → to / expiry)"); return "period"; }
+        const to = p.PolicyTo || p.ExpiryDate || p.od_expiry_date;
+        if (p.PolicyFrom && to && String(p.PolicyFrom).slice(0, 10) > String(to).slice(0, 10)) { toast.error("Policy 'from' date must be before the 'to' / expiry date"); return "dates"; }
         return true;
       },
       render: () => (
