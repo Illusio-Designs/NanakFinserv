@@ -78,11 +78,19 @@ export default function ConsumersPage() {
     setLoading(true);
     try {
       const res = await api.get("/user/list/consumer");
-      const data = (res.data?.data || []).map((u) => ({
-        ...u,
-        services: (u.category || []).length,
-        family: u.family_member_count || 0,
-      }));
+      const idToLabel = Object.fromEntries(VERTICALS.map((v) => [v.id, v.label]));
+      const data = (res.data?.data || [])
+        // Hide family members from the top-level list — they appear under their
+        // head's "Family" (Manage → Family). Show heads + standalone consumers.
+        .filter((u) => !u.family_head_id)
+        .map((u) => ({
+          ...u,
+          serviceNames: (u.category || [])
+            .map((c) => idToLabel[c.category_id] || c["category.category_name"] || (c.category && c.category.category_name))
+            .filter(Boolean),
+          services: (u.category || []).length,
+          family: u.family_member_count || 0,
+        }));
       setRows(data);
     } catch (e) {
       showError(e, "Could not load consumers");
@@ -107,9 +115,16 @@ export default function ConsumersPage() {
       { key: "email", title: "Email" },
       { key: "mobileNumber", title: "Mobile" },
       {
-        key: "services",
+        key: "serviceNames",
         title: "Services",
-        render: (r) => (r.services ? <Badge tone="brand">{r.services}</Badge> : "—"),
+        render: (r) =>
+          r.serviceNames && r.serviceNames.length ? (
+            <div className="flex flex-wrap gap-1">
+              {r.serviceNames.map((n) => <Badge key={n} tone="brand">{n}</Badge>)}
+            </div>
+          ) : (
+            "—"
+          ),
       },
       {
         key: "family",
@@ -347,12 +362,6 @@ export default function ConsumersPage() {
         loading={loading}
         rowKey="user_id"
         searchKeys={["username", "email", "mobileNumber"]}
-        filters={[
-          { key: "services", label: "Services", options: [
-            { value: "0", label: "None" }, { value: "1", label: "1" }, { value: "2", label: "2" },
-            { value: "3", label: "3" }, { value: "4", label: "4" },
-          ] },
-        ]}
         onEdit={openEdit}
         onView={(r) => setViewRow(r)}
         rowActions={[
