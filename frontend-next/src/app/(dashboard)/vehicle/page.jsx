@@ -46,8 +46,7 @@ const norm = (r) => {
 export default function VehiclePage() {
   const [tab, setTab] = useState("policies");
   const [rows, setRows] = useState([]);
-  const [renewals, setRenewals] = useState([]);
-  const [pending, setPending] = useState([]);
+  const [consumers, setConsumers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
@@ -57,64 +56,41 @@ export default function VehiclePage() {
   const [viewData, setViewData] = useState(null);
   const [renewingId, setRenewingId] = useState(null);
 
-  const loadPolicies = async () => {
+  // Load policies + consumers once; every tab + its count derives from this.
+  const loadAll = async () => {
     setLoading(true);
     try {
-      const res = await api.post("/user/vehicle/user/list", {});
-      const data = res.data?.data || res.data || [];
+      const [pRes, cRes] = await Promise.all([
+        api.post("/user/vehicle/user/list", {}),
+        api.get("/user/list/consumer").catch(() => null),
+      ]);
+      const data = pRes.data?.data || pRes.data || [];
       setRows((Array.isArray(data) ? data : []).map(norm));
+      setConsumers(cRes?.data?.data || []);
     } catch (e) { showError(e, "Could not load vehicle policies"); setRows([]); }
     finally { setLoading(false); }
   };
+  useEffect(() => { loadAll(); }, []);
 
-  // Renewals = actual policies (with vehicle no + expiry), soonest expiry first.
-  // (The renewal endpoint is consumer-centric and lists people without policies.)
-  const loadRenewals = async () => {
-    setLoading(true);
-    try {
-      const res = await api.post("/user/vehicle/user/list", {});
-      const all = (res?.data?.data || []).map(norm).filter((r) => r.vehicle_number && r.vehicle_number !== "—");
-      all.sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999")));
-      setRenewals(all);
-    } catch (e) { showError(e, "Could not load renewals"); setRenewals([]); }
-    finally { setLoading(false); }
-  };
-
-  // Pending = (a) consumers assigned to Vehicle who have NO policy yet → Add record,
-  //           (b) policies due for renewal (within 30d / expired) → Renew.
-  const loadPending = async () => {
-    setLoading(true);
-    const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
-    try {
-      const [cRes, pRes] = await Promise.all([
-        api.get("/user/list/consumer").catch(() => null),
-        api.post("/user/vehicle/user/list", {}).catch(() => null),
-      ]);
-      const policies = (pRes?.data?.data || []).map(norm);
-      const policyUserIds = new Set(policies.map((p) => p.user_id).filter(Boolean));
-      const assigned = (cRes?.data?.data || [])
-        .filter((c) => (c.category || []).some((m) => m.category_id === CATEGORY_IDS.VEHICLE) && !policyUserIds.has(c.user_id))
-        .map((c) => ({
-          vehicle_user_id: c.user_id, user_id: c.user_id,
-          name: c.username || "—", mobile: c.mobileNumber || "—", vehicle_number: "—",
-          reason: "Assigned — add policy", when: (c.createdAt || "").slice(0, 10),
-        }));
-      const due = policies
-        .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) <= in30)
-        .map((r) => ({ ...r, reason: "Renewal due", when: r.expiry_date }));
-      setPending([...assigned, ...due]);
-    } catch (e) { showError(e, "Could not load pending"); setPending([]); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => {
-    if (tab === "policies" || tab === "closed") loadPolicies();
-    else if (tab === "renewals") loadRenewals();
-    else if (tab === "pending") loadPending();
-  }, [tab]);
-
-  // Closed = policies whose current cover has expired.
+  const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+  // Closed = expired cover.
   const closedRows = useMemo(() => rows.filter((r) => statusLabel(r.status) === "Closed"), [rows]);
+  // Renewals = real policies, soonest expiry first.
+  const renewals = useMemo(
+    () => [...rows].filter((r) => r.vehicle_number && r.vehicle_number !== "—").sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999"))),
+    [rows]
+  );
+  // Pending = assigned-but-no-policy consumers (Add record) + due renewals (Renew).
+  const pending = useMemo(() => {
+    const policyUserIds = new Set(rows.map((r) => r.user_id).filter(Boolean));
+    const assigned = consumers
+      .filter((c) => (c.category || []).some((m) => m.category_id === CATEGORY_IDS.VEHICLE) && !policyUserIds.has(c.user_id))
+      .map((c) => ({ vehicle_user_id: c.user_id, user_id: c.user_id, name: c.username || "—", mobile: c.mobileNumber || "—", vehicle_number: "—", reason: "Assigned — add policy", when: (c.createdAt || "").slice(0, 10) }));
+    const due = rows
+      .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) <= in30)
+      .map((r) => ({ ...r, reason: "Renewal due", when: r.expiry_date }));
+    return [...assigned, ...due];
+  }, [rows, consumers, in30]);
 
   // Load full detail (running + previous policies) for the view modal.
   const openView = async (r) => {
@@ -131,7 +107,7 @@ export default function VehiclePage() {
     try {
       await api.post("/user/renewVehiclePolicy", { vehicle_user_id: row.vehicle_user_id });
       toast.success("Policy renewed");
-      loadRenewals();
+      loadAll();
     } catch (e) { showError(e, "Could not renew policy"); }
     finally { setRenewingId(null); }
   };
@@ -185,7 +161,7 @@ export default function VehiclePage() {
       <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[
         { value: "policies", label: "Policies" },
         { value: "pending", label: `Pending${pending.length ? ` (${pending.length})` : ""}` },
-        { value: "renewals", label: "Renewals" },
+        { value: "renewals", label: `Renewals${renewals.length ? ` (${renewals.length})` : ""}` },
         { value: "closed", label: `Closed${closedRows.length ? ` (${closedRows.length})` : ""}` },
       ]} />
 
@@ -243,10 +219,10 @@ export default function VehiclePage() {
         />
       )}
 
-      <VehicleFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={loadPolicies} />
-      <VehicleFormModal open={!!addPrefill} prefillMobile={addPrefill} onClose={() => setAddPrefill(null)} onSaved={() => { setAddPrefill(null); loadPending(); }} />
-      <VehicleFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={loadPolicies} />
-      <VehicleFormModal open={!!renewRow} editRow={renewRow} renewMode onClose={() => setRenewRow(null)} onSaved={() => { loadPolicies(); if (tab === "renewals") loadRenewals(); }} />
+      <VehicleFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={loadAll} />
+      <VehicleFormModal open={!!addPrefill} prefillMobile={addPrefill} onClose={() => setAddPrefill(null)} onSaved={() => { setAddPrefill(null); loadAll(); }} />
+      <VehicleFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={loadAll} />
+      <VehicleFormModal open={!!renewRow} editRow={renewRow} renewMode onClose={() => setRenewRow(null)} onSaved={loadAll} />
 
       <Modal open={!!viewId} onClose={() => { setViewId(null); setViewData(null); }} title="Vehicle policy" subtitle={viewData?.vehicle_number} size="lg">
         {!viewData ? (

@@ -12,8 +12,17 @@
 How vehicle insurance is managed in the CRM (consumer-linked, TP/OD timelines,
 year-by-year history). Page: **Dashboard → Vehicle** (`/vehicle`).
 
+## Tabs
+- **Policies** — all current policies (Owner · Mobile · Vehicle No · Make/Model ·
+  Company · Policy No · Expiry · Type · Status), with Status/Type filters + export.
+- **Pending** — a manager's action list: (a) consumers **assigned to Vehicle with
+  no policy yet** → **Add record** (opens Add prefilled with their mobile);
+  (b) policies **due for renewal** (≤30 days / expired) → **Renew**.
+- **Renewals** — policies with real vehicle no + expiry (soonest first), each with **Renew**.
+- **Closed** — policies whose cover has expired (status Closed).
+
 ## Screen layout
-- **Tabs:** **Policies** (all running policies) and **Renewals** (policies due / renew).
+- **Tabs:** Policies · Pending · Renewals · Closed.
 - **Add Vehicle Policy** button → multi-step form.
 - Each row actions: **View** (read-only details), **Edit** (full form prefilled),
   and **Add next policy / renew** (file-plus). Renewals rows also have a **Renew**
