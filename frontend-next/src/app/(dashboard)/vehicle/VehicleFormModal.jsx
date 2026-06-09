@@ -319,6 +319,12 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
     },
     {
       title: "Policy",
+      validate: () => {
+        const p = form.rp || {};
+        if (!(p.CompanyId || p.company_id || p.CompanyName)) { toast.error("Select the policy company"); return "company"; }
+        if (!(p.PolicyFrom && (p.PolicyTo || p.ExpiryDate || p.od_expiry_date))) { toast.error("Enter the policy period (from → to / expiry)"); return "period"; }
+        return true;
+      },
       render: () => (
         <div className="space-y-4">
           {renewMode && (
