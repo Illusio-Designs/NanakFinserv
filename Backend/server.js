@@ -257,6 +257,14 @@ initializeDatabase()
       logger.info({ port: PORT }, "Server is running");
     });
 
+    // Daily status refresh + renewal-due reminders (in-process scheduler).
+    try {
+      const { startScheduler } = require("./src/bootstrap/scheduler");
+      startScheduler();
+    } catch (e) {
+      logger.error({ err: e }, "Failed to start scheduler");
+    }
+
     // Graceful shutdown.
     const shutdown = (signal) => {
       logger.info({ signal }, "Shutting down");
