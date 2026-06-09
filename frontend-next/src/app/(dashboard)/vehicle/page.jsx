@@ -9,11 +9,10 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import Spinner from "@/components/ui/Spinner";
-import api, { showError, BASE_URL } from "@/lib/api";
+import api, { showError, fileUrl } from "@/lib/api";
 import { CATEGORY_IDS } from "@/config/ids";
 import VehicleFormModal from "./VehicleFormModal";
 
-const fileUrl = (f) => (f ? (String(f).startsWith("http") ? f : `${BASE_URL}/${f}`) : null);
 const period = (p) => [p.PolicyFrom, p.PolicyTo || p.ExpiryDate].filter(Boolean).join(" → ") || "—";
 const policyYear = (p) => { const d = p.PolicyFrom || p.PolicyTo || p.ExpiryDate || ""; return d ? String(d).slice(0, 4) : "—"; };
 // Friendly status: Running while active, else Closed.
@@ -261,39 +260,43 @@ function VehicleDetail({ d }) {
           } />
         )}
       </Section>
-      <Section title={`Past journey (${prev.length})`}>
+      <div>
+        <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">Past journey ({prev.length})</div>
         {prev.length ? (
-          <div className="relative space-y-3 pl-4 before:absolute before:left-1 before:top-1 before:bottom-1 before:w-px before:bg-line">
-            {[...prev]
-              .sort((a, b) => String(b.PolicyTo || b.ExpiryDate || "").localeCompare(String(a.PolicyTo || a.ExpiryDate || "")))
-              .map((p, i) => <JourneyItem key={i} p={p} index={i} />)}
-          </div>
-        ) : <p className="py-1 text-[13px] text-muted">No previous policies.</p>}
-      </Section>
+          (() => {
+            const sorted = [...prev].sort((a, b) => String(b.PolicyTo || b.ExpiryDate || "").localeCompare(String(a.PolicyTo || a.ExpiryDate || "")));
+            return <div>{sorted.map((p, i) => <JourneyItem key={i} p={p} index={i} isLast={i === sorted.length - 1} />)}</div>;
+          })()
+        ) : <p className="rounded-lg border border-line p-3 text-[13px] text-muted">No previous policies.</p>}
+      </div>
     </div>
   );
 }
 
-function JourneyItem({ p, index }) {
+function JourneyItem({ p, index, isLast }) {
   const [open, setOpen] = useState(false);
   const url = fileUrl(p.CurrentPolicyFile);
   return (
-    <div className="relative">
-      <span className="absolute -left-[13px] top-3 h-2.5 w-2.5 rounded-full border-2 border-surface bg-brand-600" />
-      <div className="rounded-lg border border-line">
+    <div className="flex gap-3">
+      {/* timeline rail: dot + connecting line */}
+      <div className="flex flex-col items-center pt-3.5">
+        <span className="h-3 w-3 shrink-0 rounded-full border-2 border-surface bg-brand-600 ring-2 ring-brand-100" />
+        {!isLast && <span className="mt-1 w-px flex-1 bg-line" />}
+      </div>
+      <div className={`mb-3 min-w-0 flex-1 rounded-lg border border-line ${open ? "bg-subtle/40" : "bg-surface"}`}>
         <div className="flex items-center justify-between gap-3 p-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-[14px] font-medium text-ink">
-              <span className="rounded bg-subtle px-1.5 py-0.5 text-[12px] font-semibold text-muted">{policyYear(p)}</span>
-              {p.PolicyNumber || `Policy ${index + 1}`}
+              <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[12px] font-semibold text-brand-700">{policyYear(p)}</span>
+              <span className="truncate">{p.PolicyNumber || `Policy ${index + 1}`}</span>
               <Badge tone={statusTone(p.status)}>{statusLabel(p.status)}</Badge>
             </div>
             <div className="mt-0.5 text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}</div>
           </div>
-          <div className="flex shrink-0 gap-1">
-            <button onClick={() => setOpen((o) => !o)} className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-ink hover:bg-subtle">{open ? "Hide" : "View"}</button>
+          <div className="flex shrink-0 gap-1.5">
+            <button onClick={() => setOpen((o) => !o)} className="press rounded-md border border-line px-2.5 py-1 text-[12px] font-medium text-ink hover:bg-subtle">{open ? "Hide" : "View"}</button>
             {url ? (
-              <a href={url} download className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle">Download</a>
+              <a href={url} download className="press rounded-md border border-line px-2.5 py-1 text-[12px] font-medium text-brand-600 hover:bg-subtle">Download</a>
             ) : (
               <span className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-muted/60">No PDF</span>
             )}

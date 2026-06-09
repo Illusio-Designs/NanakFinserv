@@ -28,6 +28,18 @@ api.interceptors.response.use(
   }
 );
 
+/**
+ * Build a downloadable URL for an uploaded file. Files are served under
+ * `/uploads/<name>` and that route is token-protected, so we add `?token=`.
+ */
+export function fileUrl(file) {
+  if (!file) return null;
+  if (String(file).startsWith("http")) return file;
+  const name = String(file).replace(/^\/?(public\/)?uploads\//, "");
+  const token = Cookies.get("token");
+  return `${BASE_URL}/uploads/${name}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+}
+
 /** Standard error toast. */
 export function showError(error, fallback = "Something went wrong") {
   const msg = error?.response?.data?.message || error?.response?.data?.error || fallback;

@@ -12,7 +12,7 @@ import PhoneInput from "@/components/ui/PhoneInput";
 import Checkbox from "@/components/ui/Checkbox";
 import Dropdown from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
-import api, { showError, BASE_URL } from "@/lib/api";
+import api, { showError, fileUrl } from "@/lib/api";
 import { CATEGORY_IDS } from "@/config/ids";
 import { firstError, field, checks } from "@/utils/validators";
 import ConsumerManageModal from "./ConsumerManageModal";
@@ -469,7 +469,7 @@ export default function ConsumersPage() {
                     {viewDocs.map((d) => (
                       <div key={d.id} className="flex items-center justify-between border-b border-line py-1.5 last:border-0">
                         <span className="text-ink">{d.documents?.doc_name || "Document"}</span>
-                        {d.file && <a href={`${BASE_URL}/${d.file}`} target="_blank" rel="noopener noreferrer" className="text-[13px] text-brand-600 hover:underline">View</a>}
+                        {d.file && <a href={fileUrl(d.file)} target="_blank" rel="noopener noreferrer" className="text-[13px] text-brand-600 hover:underline">View</a>}
                       </div>
                     ))}
                   </div>
