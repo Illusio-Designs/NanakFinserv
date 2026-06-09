@@ -19,7 +19,8 @@ const validateAddRoleWiseUser = (req, res, next) => {
   if (!isEmail(b.email)) errors.push("a valid email is required");
   if (!isMobile10(b.phone_number)) errors.push("phone_number must be 10 digits");
   if (!isPresent(b.role)) errors.push("role is required");
-  if (!isPresent(b.roleId)) errors.push("roleId is required");
+  // roleId (vertical categories) is optional — the controller derives it from the
+  // role for super admin / vertical managers.
   return errors.length ? fail(res, errors) : next();
 };
 
@@ -31,7 +32,6 @@ const validateUpdateRoleWiseUser = (req, res, next) => {
   if (!isEmail(b.email)) errors.push("a valid email is required");
   if (!isMobile10(b.phone_number)) errors.push("phone_number must be 10 digits");
   if (!isPresent(b.role)) errors.push("role is required");
-  if (!isPresent(b.roleId)) errors.push("roleId is required");
   return errors.length ? fail(res, errors) : next();
 };
 

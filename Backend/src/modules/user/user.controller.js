@@ -536,18 +536,17 @@ exports.updateRoleWiseUser = async (req, res) => {
         }
     )
         .then(async (articles) => {
-            // req.body.roleId contains category IDs (not role IDs)
-            let roles = req.body.roleId
-                .toString() // Convert to string
-                .split(',') // Split by comma if multiple
-                .map(Number); // Convert to an array of numbers
-
-            // For super admin (role_id = 1), assign ALL categories automatically
-            if (req.body.role == 1) {
-                // Super admin gets access to all categories: 2, 4, 5, 6 (Loan, Mediclaim, Life Insurance, Vehicle)
-                roles = [2, 4, 5, 6];
-                logger.debug('🔍 [SUPER ADMIN UPDATE] Assigning all categories to super admin:', roles);
+            // Categories (verticals): derive from the role — super admin → all,
+            // vertical manager → its category; else use the explicit roleId list.
+            let roles = [];
+            if (Array.isArray(req.body.roleId)) roles = req.body.roleId;
+            else if (req.body.roleId) roles = String(req.body.roleId).split(',').map((s) => s.trim());
+            if (req.body.role === ROLE_IDS.SUPER_ADMIN) {
+                roles = [CATEGORY_IDS.LOAN, CATEGORY_IDS.MEDICLAIM, CATEGORY_IDS.LIFE_INSURANCE, CATEGORY_IDS.VEHICLE];
+            } else if (MANAGER_CATEGORY[req.body.role]) {
+                roles = [MANAGER_CATEGORY[req.body.role]];
             }
+            roles = roles.filter(Boolean);
 
             // Clear existing categories for the user
             await userCatergory.destroy({
@@ -555,12 +554,12 @@ exports.updateRoleWiseUser = async (req, res) => {
             });
 
             // Add new categories
-            let categoryData = roles.map((roleId) => ({
+            let categoryData = roles.map((category_id) => ({
                 user_id: req.body.user_id,
-                category_id: roleId,
+                category_id,
             }));
 
-            await userCatergory.bulkCreate(categoryData);
+            if (categoryData.length) await userCatergory.bulkCreate(categoryData);
             logger.debug('🔍 [ROLE UPDATE] Categories assigned:', categoryData);
             return res.status(200).send({
                 message: "user successfully updated!.",
