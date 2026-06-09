@@ -22,10 +22,19 @@ export default function DashboardPage() {
   }, []);
   if (role === undefined) return <div className="space-y-4"><div className="skeleton h-24 rounded-lg" /></div>;
   if (role === ROLE_IDS.CONSUMER || role === ROLE_IDS.BUILDER_CONSUMER) return <ConsumerDashboard />;
-  return <AdminDashboard />;
+  return <AdminDashboard role={role} />;
 }
 
-function AdminDashboard() {
+// Vertical managers → the single vertical they manage (others see everything).
+const MANAGER_VERTICAL = {
+  [ROLE_IDS.LOAN_MANAGER]: "loan",
+  [ROLE_IDS.MEDICLAIM_MANAGER]: "mediclaim",
+  [ROLE_IDS.VEHICLE_MANAGER]: "vehicle",
+  [ROLE_IDS.LIFE_MANAGER]: "life",
+};
+
+function AdminDashboard({ role }) {
+  const mv = MANAGER_VERTICAL[role]; // set → this user manages one vertical
   const [counts, setCounts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState({ renewalsDue: 0, unassigned: 0, unread: 0 });
@@ -49,7 +58,9 @@ function AdminDashboard() {
       try {
         const r = await api.get("/user/vehicle/renewal/stats");
         const d = r.data?.data || r.data || {};
-        next.renewalsDue = d.dueSoon ?? d.due ?? d.total ?? Object.values(d).filter((v) => typeof v === "number").reduce((a, b) => a + b, 0);
+        // Renewals needing attention = overdue + due within a month (non-overlapping).
+        // (Do NOT sum week/month/year/total — those overlap and inflate the figure.)
+        next.renewalsDue = (d.expiredCount || 0) + (d.monthCount || 0);
       } catch {}
       try {
         const n = await api.get("/user/notifications/count");
@@ -64,14 +75,17 @@ function AdminDashboard() {
   }, []);
 
   const c = counts || {};
-  const stats = [
-    { title: "Consumers", value: c.consumerCount, icon: Users, tone: "brand" },
-    { title: "Loan", value: c.loanUserCount, icon: HandCoins, tone: "success" },
-    { title: "Vehicle", value: c.vehicleUserCount, icon: Car, tone: "warning" },
-    { title: "Mediclaim", value: c.mediclaimUserCount, icon: HeartPulse, tone: "danger" },
-    { title: "Life Insurance", value: c.lifeUserCount, icon: ShieldCheck, tone: "brand" },
-    { title: "Builder Consumers", value: c.builderUserCount, icon: Building2, tone: "success" },
+  const allStats = [
+    { key: "consumer", title: "Consumers", value: c.consumerCount, icon: Users, tone: "brand" },
+    { key: "loan", title: "Loan", value: c.loanUserCount, icon: HandCoins, tone: "success" },
+    { key: "vehicle", title: "Vehicle", value: c.vehicleUserCount, icon: Car, tone: "warning" },
+    { key: "mediclaim", title: "Mediclaim", value: c.mediclaimUserCount, icon: HeartPulse, tone: "danger" },
+    { key: "life", title: "Life Insurance", value: c.lifeUserCount, icon: ShieldCheck, tone: "brand" },
+    { key: "builder", title: "Builder Consumers", value: c.builderUserCount, icon: Building2, tone: "success" },
   ];
+  // A vertical manager sees only Consumers + their own vertical; admin sees all.
+  const stats = mv ? allStats.filter((s) => s.key === "consumer" || s.key === mv) : allStats;
+  const showLoanSections = !mv || mv === "loan"; // loan pipeline + amounts
 
   const loanPipeline = [
     ["Interested", c.loanInterstedUserCount],
@@ -114,6 +128,7 @@ function AdminDashboard() {
         </div>
       </Card>
 
+      {showLoanSections && (
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Loan pipeline */}
         <Card className="lg:col-span-2">
@@ -157,6 +172,7 @@ function AdminDashboard() {
           )}
         </Card>
       </div>
+      )}
     </div>
   );
 }

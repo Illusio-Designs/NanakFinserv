@@ -21,30 +21,40 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const inited = useRef(false);
+  const sending = useRef(false);
 
+  // Initialise the MSG91 widget exactly ONCE (a second init re-registers the
+  // sender and causes a duplicate OTP). Poll until the script is ready.
   useEffect(() => {
-    if (inited.current || typeof window === "undefined" || !window.initSendOTP) return;
-    try {
-      window.initSendOTP({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, exposeMethods: true });
-      inited.current = true;
-    } catch (e) {
-      /* retried on send */
-    }
-  });
+    if (typeof window === "undefined") return;
+    let n = 0;
+    const id = setInterval(() => {
+      if (window.__msg91Inited) { clearInterval(id); return; }
+      if (window.initSendOTP) {
+        try {
+          window.initSendOTP({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, exposeMethods: true });
+          window.__msg91Inited = true;
+        } catch {}
+        clearInterval(id);
+      }
+      if (++n > 60) clearInterval(id);
+    }, 200);
+    return () => clearInterval(id);
+  }, []);
 
   const sendOtp = () => {
     const err = firstError([field("mobile", { label: "Mobile number", required: true, checks: [checks.mobile10] })], { mobile });
     if (err) return toast.error(err);
+    if (sending.current) return; // guard against double-send (one OTP per request)
+    sending.current = true;
+    setTimeout(() => { sending.current = false; }, 4000);
     const identifier = `91${mobile}`;
     // Open the OTP field immediately so it's always usable (the MSG91 widget can
     // be domain-restricted on localhost and its success callback may not fire).
     setOtpSent(true);
     const success = () => toast.success("OTP sent");
-    const failure = (e) => toast.error(`Could not send OTP: ${e?.message || "check MSG91 widget / domain"}`);
+    const failure = (e) => { sending.current = false; toast.error(`Could not send OTP: ${e?.message || "check MSG91 widget / domain"}`); };
     if (window.sendOtp) window.sendOtp(identifier, success, failure);
-    else if (window.initSendOTP)
-      window.initSendOTP({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, exposeMethods: true, identifier, success, failure });
     else toast("Enter the OTP you received.", { icon: "✉️" });
   };
 
