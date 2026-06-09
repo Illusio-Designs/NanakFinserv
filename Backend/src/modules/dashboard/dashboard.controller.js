@@ -1,4 +1,4 @@
-const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
+const { ROLE_IDS, CATEGORY_IDS, MANAGER_ROLE_IDS } = require("../../config/ids");
 /**
  * dashboard controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -158,6 +158,18 @@ exports.getUserCounts = async (req, res) => {
         consumerWhereObj.role_id = [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER]; // Consumer and builder consumer roles
         consumerWhereObj.family_head_id = null; // count households/heads only, not family members
 
+        // Vertical managers see ONLY their assigned consumers. The manager is the
+        // user_role_id on each consumerRoleMapping; scope the consumer + vertical
+        // counts to the consumers they're assigned to.
+        const isManager = MANAGER_ROLE_IDS.includes(req.user.Role);
+        let mgrScope = {}; // spread into the per-vertical mapping counts
+        if (isManager) {
+            mgrScope = { user_role_id: req.user.id };
+            const mine = await consumerRoleMapping.findAll({ where: { user_role_id: req.user.id }, attributes: ['user_consumer_id'], raw: true });
+            const ids = [...new Set(mine.map((m) => m.user_consumer_id).filter(Boolean))];
+            consumerWhereObj.user_id = ids.length ? { [Op.in]: ids } : { [Op.in]: ["00000000-0000-0000-0000-000000000000"] };
+        }
+
 
         // Calculate dates for expiry counts
         const nextWeek = new Date(today);
@@ -177,7 +189,9 @@ exports.getUserCounts = async (req, res) => {
         logger.debug('🔍 [USER COUNTS] User categoryIds:', req.user.categoryIds);
         logger.debug('🔍 [USER COUNTS] Is Super Admin:', isSuperAdmin);
         
-        if (isSuperAdmin) {
+        if (isSuperAdmin || isManager) {
+            // Managers reuse the full-counts shape, but consumerWhereObj + mgrScope
+            // above scope the consumer + vertical counts to their assigned consumers.
             const [
                 consumerCount, 
                 builderUserCount, 
@@ -211,13 +225,14 @@ exports.getUserCounts = async (req, res) => {
                 User.count({ where: consumerWhereObj }),
                 User.count({ where: builderWhereObj }),
                 // Count loan consumers from role mapping, excluding building managers
-                consumerRoleMapping.count({ 
-                    where: { 
+                consumerRoleMapping.count({
+                    where: {
                         category_id: CATEGORY_IDS.LOAN,
+                        ...mgrScope,
                         ...(buildingManagerUserIds.length > 0 && {
                             user_consumer_id: { [Op.notIn]: buildingManagerUserIds }
                         })
-                    } 
+                    }
                 }),
                 loanUser.count({ where: loanInterstedUserWhereObj }),
                 loanUser.count({ where: loanNotInterstedUserWhereObj }),
@@ -231,7 +246,7 @@ exports.getUserCounts = async (req, res) => {
                 loanUser.count({ where: loanPartUserWhereObj }),
                 loanUser.count({ where: loanCancelUserWhereObj }),
                 loanUser.count({ where: loanCompletedUserWhereObj }),
-                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.MEDICLAIM } }), // Count mediclaim consumers from role mapping
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.MEDICLAIM, ...mgrScope } }), // Count mediclaim consumers from role mapping
                 RunningPolicies.count({ 
                     where: { 
                         ExpiryDate: { 
@@ -260,8 +275,8 @@ exports.getUserCounts = async (req, res) => {
                 DisbursementLoan.sum('disbursementAmount', { where: allTimeDisbursedFilter }),
                 LoginLoan.sum('loanAmount', { where: allTimeLoanedFilter }),
                 PartPaymentLoan.sum('part_amount', { where: allTimePartPaymentFilter }),
-                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.VEHICLE } }), // <-- count all vehicle users (same as admin)
-                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.LIFE_INSURANCE } }) // <-- count all life insurance users
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.VEHICLE, ...mgrScope } }), // vehicle users (scoped to manager's assigned)
+                consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.LIFE_INSURANCE, ...mgrScope } }) // life insurance count (scoped)
             ]);
 
             logger.debug('🔍 [COUNTS DEBUG] ===== USER COUNTS RESULTS =====');

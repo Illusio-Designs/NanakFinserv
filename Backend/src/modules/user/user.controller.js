@@ -130,6 +130,21 @@ exports.getAllUsers = async (req, res) => {
             }
         }
 
+        // Vertical managers see ONLY the consumers assigned to them (the working
+        // person on a consumer's service = this manager).
+        if (MANAGER_ROLE_IDS.includes(req.user.Role)) {
+            const mine = await consumerRoleMapping.findAll({
+                where: { user_role_id: req.user.id },
+                attributes: ['user_consumer_id'],
+                raw: true,
+            });
+            const ids = [...new Set(mine.map((m) => m.user_consumer_id).filter(Boolean))];
+            if (ids.length === 0) {
+                return res.status(200).send({ message: "consumer get success", data: [], status: true });
+            }
+            whereObj.user_id = { [Op.in]: ids };
+        }
+
         whereObj.role_id = [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER]; // only consumer + builder consumer
 
         // ✨ Single Fetch for Admin + Builder (NO raw:true anywhere)
