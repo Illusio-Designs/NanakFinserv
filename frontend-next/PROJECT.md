@@ -93,8 +93,10 @@ sorted overdue-first; renewal reminders extended to **Mediclaim + Life**; shared
 user add-update, renew, wipe) + `/user/audit-logs` endpoint; Activity Log page now
 reads it (Who / Action / Module / Detail).
 
+✅ Also: **ISO date normalisation** on write (policy dates → YYYY-MM-DD).
+
 ⬜ **Pending (priority):**
-1. **Data integrity** — unique (vehicle_user_id, PolicyNumber); ISO-normalise dates on write. *(maintenance window — can fail if dupes exist)*
+1. **Unique DB constraints** (vehicle_number; vehicle_user_id+PolicyNumber) — **at go-live, right after the wipe** (adding them fails if dupes already exist).
 2. **PDF versioning / backups**.
 3. Optional **email/SMS** on renewal_due via MSG91.
 4. Per-manager **scoped counts** on the admin dashboard (org-wide today).
