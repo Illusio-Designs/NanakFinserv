@@ -35,10 +35,10 @@ function ServicePicker({ picked, setPicked, assignees, setAssignees, staff }) {
         const on = !!picked[v.key];
         return (
           <div key={v.key} className={`rounded-lg border p-3 transition-colors ${on ? "border-brand-600 bg-brand-50/50" : "border-line"}`}>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <Checkbox label={v.label} checked={on} onChange={(c) => setPicked({ ...picked, [v.key]: c })} />
               {on && (
-                <div className="w-56">
+                <div className="w-full sm:w-56">
                   <Dropdown
                     placeholder="Assign working person"
                     options={staff}

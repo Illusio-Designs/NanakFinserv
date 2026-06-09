@@ -188,8 +188,6 @@ export default function VehiclePage() {
           searchKeys={["name", "mobile", "vehicle_number", "reason"]}
           filters={[{ key: "reason", label: "Reason" }]}
           onView={openView}
-          onEdit={(r) => setEditRow(r)}
-          rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
         />
       )}
 
@@ -202,8 +200,6 @@ export default function VehiclePage() {
           searchKeys={["name", "mobile", "vehicle_number"]}
           filters={[{ key: "expiry_date", label: "Expiry", type: "dateRange" }]}
           onView={openView}
-          onEdit={(r) => setEditRow(r)}
-          rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
         />
       )}
 
