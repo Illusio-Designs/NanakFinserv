@@ -814,16 +814,17 @@ exports.updateMediclaimUserData = async (req, res) => {
                 referenceName: ReferenceName || null
             });
             
-            const userUpdateResult = await db.user.update(
-                { 
-                    username: Name || null,           // Update username (Name)
-                    email: Email || null,             // Update email
-                    mobileNumber: MobileNumber || null, // Update mobile number
-                    referenceName: ReferenceName || null // Update reference name
-                },
-                { where: { user_id: user_id }, transaction: t }
-            );
-            
+            // Only update fields actually provided — never overwrite existing
+            // username/email/mobile with null (email is NOT NULL on the user table).
+            const userUpdate = {};
+            if (Name != null && Name !== "") userUpdate.username = Name;
+            if (Email != null && Email !== "") userUpdate.email = Email;
+            if (MobileNumber != null && MobileNumber !== "") userUpdate.mobileNumber = MobileNumber;
+            if (ReferenceName != null && ReferenceName !== "") userUpdate.referenceName = ReferenceName;
+            let userUpdateResult = [0];
+            if (Object.keys(userUpdate).length) {
+                userUpdateResult = await db.user.update(userUpdate, { where: { user_id: user_id }, transaction: t });
+            }
             logger.debug('🔍 [UPDATE MEDICLAIM] User table update result:', userUpdateResult);
         }
 
