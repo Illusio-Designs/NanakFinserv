@@ -16,5 +16,6 @@ const superAdmin = requireRole(ROLES.SUPER_ADMIN);
 router.get("/admin/settings/verticals", verifyToken, controller.getVerticals);
 router.put("/admin/settings/verticals", verifyToken, superAdmin, v.validateVerticals, controller.updateVerticals);
 router.post("/admin/data/wipe", verifyToken, superAdmin, v.validateWipe, controller.wipeData);
+router.post("/admin/data/wipe-test", verifyToken, superAdmin, v.validateWipe, controller.wipeTestData);
 
 module.exports = router;

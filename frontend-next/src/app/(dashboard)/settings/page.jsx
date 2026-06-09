@@ -22,10 +22,35 @@ export default function SettingsPage() {
   const [v, setV] = useState(null);
   const [busy, setBusy] = useState("");
 
-  // Data-wipe
+  // Data-wipe (full)
   const [wipeOpen, setWipeOpen] = useState(false);
   const [confirm, setConfirm] = useState("");
   const [wiping, setWiping] = useState(false);
+
+  // Scoped test-data wipe (one admin's created consumers + their records)
+  const [testOpen, setTestOpen] = useState(false);
+  const [testMobile, setTestMobile] = useState("7600046416");
+  const [testConfirm, setTestConfirm] = useState("");
+  const [wipingTest, setWipingTest] = useState(false);
+
+  const doWipeTest = async () => {
+    if (testConfirm !== "WIPE") return;
+    setWipingTest(true);
+    try {
+      const res = await api.post("/admin/data/wipe-test", { confirm: "WIPE", mobile: testMobile.trim() });
+      if (res.data?.status) {
+        toast.success(res.data.message || "Test data wiped");
+        setTestOpen(false);
+        setTestConfirm("");
+      } else {
+        toast.error(res.data?.message || "Could not wipe test data");
+      }
+    } catch (e) {
+      showError(e, "Could not wipe test data");
+    } finally {
+      setWipingTest(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -113,6 +138,20 @@ export default function SettingsPage() {
           </p>
           <Button variant="danger" onClick={() => setWipeOpen(true)}>Wipe all data</Button>
         </Card>
+
+        {/* Scoped test-data wipe */}
+        <Card className="border-amber-400/50">
+          <h3 className="flex items-center gap-2 text-[15px] font-semibold text-amber-600">
+            <AlertTriangle size={17} /> Wipe test data (one admin)
+          </h3>
+          <p className="mb-4 mt-1 text-[13px] text-muted">
+            Deletes only the <strong>consumers created by a given admin</strong> (default
+            <strong> 7600046416</strong>) and all those consumers' records (vehicle, mediclaim,
+            loan, life, mappings, documents). The admin account itself, every other user, and
+            shared masters are <strong>kept</strong>. Use this to clear test data without a full wipe.
+          </p>
+          <Button variant="secondary" onClick={() => setTestOpen(true)}>Wipe test data</Button>
+        </Card>
       </div>
 
       <Modal
@@ -132,6 +171,28 @@ export default function SettingsPage() {
           Type <strong className="text-ink">WIPE</strong> to confirm.
         </p>
         <Input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Type WIPE" />
+      </Modal>
+
+      <Modal
+        open={testOpen}
+        onClose={() => setTestOpen(false)}
+        title="Wipe one admin's test data"
+        subtitle="Deletes that admin's created consumers + their records. The admin and others are kept."
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setTestOpen(false)}>Cancel</Button>
+            <Button variant="danger" disabled={testConfirm !== "WIPE"} loading={wipingTest} onClick={doWipeTest}>Wipe test data</Button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <Input label="Admin mobile" value={testMobile} onChange={(e) => setTestMobile(e.target.value)} placeholder="7600046416" />
+          <div>
+            <p className="mb-1 text-[14px] text-muted">Type <strong className="text-ink">WIPE</strong> to confirm.</p>
+            <Input value={testConfirm} onChange={(e) => setTestConfirm(e.target.value)} placeholder="Type WIPE" />
+          </div>
+        </div>
       </Modal>
     </div>
   );

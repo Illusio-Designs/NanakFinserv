@@ -92,8 +92,72 @@ async function wipeData() {
   return [...targets.map(([name]) => name), "user (consumers only)"];
 }
 
+/**
+ * Scoped wipe: delete only the test data CREATED BY one admin (by mobile) — i.e.
+ * the consumers that admin created and all their per-vertical records — while
+ * keeping the admin account itself, every other user, and all shared masters.
+ * @returns {Promise<{adminFound:boolean, adminId?:string, consumerCount:number, cleared:string[]}>}
+ */
+async function wipeByCreator(mobile) {
+  const admin = await db.user.findOne({ where: { mobileNumber: mobile }, raw: true });
+  if (!admin) return { adminFound: false, consumerCount: 0, cleared: [] };
+  const adminId = admin.user_id;
+
+  // Consumers this admin created (the test data).
+  const consumers = await db.user.findAll({
+    where: { created_by: adminId, role_id: { [Op.in]: [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER] } },
+    attributes: ["user_id"],
+    raw: true,
+  });
+  const ids = consumers.map((c) => c.user_id);
+  const cleared = [];
+  if (!ids.length) return { adminFound: true, adminId, consumerCount: 0, cleared };
+
+  await db.sequelize.query("SET FOREIGN_KEY_CHECKS = 0");
+  try {
+    // Vehicle: policies + docs, then the vehicle users.
+    const vehicles = await db.vehicleUser.findAll({ where: { user_id: ids }, attributes: ["vehicle_user_id"], raw: true });
+    const vIds = vehicles.map((v) => v.vehicle_user_id);
+    if (vIds.length) {
+      await db.vehcileRunningPolicy.destroy({ where: { vehicle_user_id: vIds }, force: true });
+      if (db.vehicle_document) await db.vehicle_document.destroy({ where: { vehicle_user_id: vIds }, force: true }).catch(() => {});
+    }
+    await db.vehicleUser.destroy({ where: { user_id: ids }, force: true });
+
+    // Mediclaim: policies (unified) + members + employees, then the mediclaim users.
+    const medi = await db.medicliamuser.findAll({ where: { user_id: ids }, attributes: ["id"], raw: true });
+    const mIds = medi.map((m) => m.id);
+    if (mIds.length) {
+      await db.runningPolicyMediclaim.destroy({ where: { mediclaim_id: mIds }, force: true });
+      await db.familyMember.destroy({ where: { mediclaim_id: mIds }, force: true });
+      await db.employeeMediclaim.destroy({ where: { mediclaim_id: mIds }, force: true });
+    }
+    await db.medicliamuser.destroy({ where: { user_id: ids }, force: true });
+
+    // Loan + Life.
+    await db.loanUser.destroy({ where: { user_id: ids }, force: true });
+    if (db.lifeInsurance) await db.lifeInsurance.destroy({ where: { user_id: ids }, force: true }).catch(() => {});
+
+    // Mappings, builder links, the consumers' KYC docs, and notifications.
+    await db.consumerRoleMapping.destroy({ where: { user_consumer_id: ids }, force: true });
+    if (db.builderConsumer) await db.builderConsumer.destroy({ where: { user_id: ids }, force: true }).catch(() => {});
+    if (db.documents && db.documents.rawAttributes && db.documents.rawAttributes.user_id) {
+      await db.documents.destroy({ where: { user_id: ids }, force: true }).catch(() => {});
+    }
+    if (db.notification) await db.notification.destroy({ where: { target_user_id: ids }, force: true }).catch(() => {});
+
+    // Finally the consumer accounts themselves (keep the admin + everyone else).
+    await db.user.destroy({ where: { user_id: ids }, force: true });
+    cleared.push(`${ids.length} consumers + their vehicle/mediclaim/loan/life records, mappings, docs`);
+  } finally {
+    await db.sequelize.query("SET FOREIGN_KEY_CHECKS = 1");
+  }
+
+  return { adminFound: true, adminId, consumerCount: ids.length, cleared };
+}
+
 function _resetCache() {
   cache = { value: null, ts: 0 };
 }
 
-module.exports = { getVerticals, setVerticals, wipeData, VERTICALS, _resetCache };
+module.exports = { getVerticals, setVerticals, wipeData, wipeByCreator, VERTICALS, _resetCache };
