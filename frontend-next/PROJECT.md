@@ -101,10 +101,12 @@ counts (consumers + their vertical) show ONLY consumers assigned to them.
 
 **Go-live prep done by owner:** unique DB constraints added + test data wiped. 🚀
 
+✅ Also: **dark mode** (header toggle, persisted, token-based, no flash).
+
 ⬜ **Optional (post-launch, not blocking):**
 1. **PDF versioning / backups**.
 2. **Email/SMS** on renewal_due via MSG91 (needs send creds/templates).
-3. Document thumbnails; dark mode (polish).
+3. Document thumbnails (file-type icons/previews).
 7. Replicate full Pending/Closed + journey patterns to other verticals as they get data.
 
 ---
