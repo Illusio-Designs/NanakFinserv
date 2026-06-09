@@ -76,22 +76,31 @@ export default function Calendar({ value, onSelect, min, max, mode = "single" })
         {WEEKDAYS.map((w) => <div key={w} className="py-1">{w}</div>)}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-0.5">
+      <div className="grid grid-cols-7 gap-y-1">
         {cells.map((d, i) => {
           if (!d) return <div key={i} />;
           const dStr = toStr(view.y, view.m, d);
           const state = rangeState(dStr);
+          const hasRange = mode === "range" && value && value.from && value.to;
           const isToday = todayStr === dStr;
           const dis = disabled(dStr);
           return (
-            <div key={i} className={cn("flex justify-center", state === "mid" && "bg-brand-50")}>
+            <div
+              key={i}
+              className={cn(
+                "flex h-9 items-center justify-center",
+                state === "mid" && "bg-brand-50",
+                hasRange && state === "end" && dStr === value.from && "rounded-l-full bg-brand-50",
+                hasRange && state === "end" && dStr === value.to && "rounded-r-full bg-brand-50"
+              )}
+            >
               <button
                 type="button"
                 disabled={dis}
                 onClick={() => handleClick(dStr)}
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-md text-[13px] transition-colors",
-                  state === "end" ? "bg-brand-600 font-semibold text-white" : state === "mid" ? "text-brand-700" : "text-ink hover:bg-brand-50",
+                  "flex h-9 w-9 items-center justify-center rounded-full text-[13px] transition-colors",
+                  state === "end" ? "bg-brand-600 font-semibold text-white shadow-sm" : state === "mid" ? "text-brand-700" : "text-ink hover:bg-brand-100",
                   !state && isToday && "ring-1 ring-brand-500 text-brand-700",
                   dis && "cursor-not-allowed text-muted/40 hover:bg-transparent"
                 )}

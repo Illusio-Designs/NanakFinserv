@@ -65,12 +65,15 @@ export default function VehiclePage() {
     finally { setLoading(false); }
   };
 
+  // Renewals = actual policies (with vehicle no + expiry), soonest expiry first.
+  // (The renewal endpoint is consumer-centric and lists people without policies.)
   const loadRenewals = async () => {
     setLoading(true);
     try {
-      const res = await api.post("/user/vehicle/user/renewal/list", { startDate: "2000-01-01", endDate: "2100-01-01" });
-      const data = res.data?.data || res.data || [];
-      setRenewals((Array.isArray(data) ? data : []).map(norm));
+      const res = await api.post("/user/vehicle/user/list", {});
+      const all = (res?.data?.data || []).map(norm).filter((r) => r.vehicle_number && r.vehicle_number !== "—");
+      all.sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999")));
+      setRenewals(all);
     } catch (e) { showError(e, "Could not load renewals"); setRenewals([]); }
     finally { setLoading(false); }
   };
@@ -100,10 +103,13 @@ export default function VehiclePage() {
   };
 
   useEffect(() => {
-    if (tab === "policies") loadPolicies();
+    if (tab === "policies" || tab === "closed") loadPolicies();
     else if (tab === "renewals") loadRenewals();
-    else loadPending();
+    else if (tab === "pending") loadPending();
   }, [tab]);
+
+  // Closed = policies whose current cover has expired.
+  const closedRows = useMemo(() => rows.filter((r) => statusLabel(r.status) === "Closed"), [rows]);
 
   // Load full detail (running + previous policies) for the view modal.
   const openView = async (r) => {
@@ -145,12 +151,12 @@ export default function VehiclePage() {
     { key: "when", title: "Date" },
     {
       key: "act", title: "",
-      render: (r) => (
-        <div className="flex items-center gap-2">
+      render: (r) =>
+        String(r.reason).includes("Renewal") ? (
           <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
+        ) : (
           <Button size="sm" icon={FilePlus} onClick={() => setRenewRow(r)}>Add record</Button>
-        </div>
-      ),
+        ),
     },
   ], [renewingId]);
 
@@ -171,7 +177,12 @@ export default function VehiclePage() {
     <div>
       <PageHeader title="Vehicle Insurance" subtitle="Vehicle policies & renewals" actions={<Button icon={Plus} onClick={() => setAddOpen(true)}>Add Vehicle Policy</Button>} />
 
-      <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[{ value: "policies", label: "Policies" }, { value: "pending", label: `Pending${pending.length ? ` (${pending.length})` : ""}` }, { value: "renewals", label: "Renewals" }]} />
+      <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[
+        { value: "policies", label: "Policies" },
+        { value: "pending", label: `Pending${pending.length ? ` (${pending.length})` : ""}` },
+        { value: "renewals", label: "Renewals" },
+        { value: "closed", label: `Closed${closedRows.length ? ` (${closedRows.length})` : ""}` },
+      ]} />
 
       {tab === "policies" && (
         <DataTable
@@ -212,6 +223,18 @@ export default function VehiclePage() {
           onView={openView}
           onEdit={(r) => setEditRow(r)}
           rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
+        />
+      )}
+
+      {tab === "closed" && (
+        <DataTable
+          columns={columns}
+          data={closedRows}
+          loading={loading}
+          rowKey="vehicle_user_id"
+          searchKeys={["name", "mobile", "vehicle_number", "company"]}
+          onView={openView}
+          rowActions={[{ icon: FilePlus, title: "Renew / add next policy", onClick: (r) => setRenewRow(r) }]}
         />
       )}
 
