@@ -89,9 +89,13 @@ sorted overdue-first; renewal reminders extended to **Mediclaim + Life**; shared
 
 ✅ Also: **OD vs TP separate reminders**; **per-step form validation** (vehicle Consumer/Vehicle/Policy + consumer Details).
 
+✅ Also: dedicated **audit-log table** (`audit_logs`) + write hooks (consumer/vehicle/
+user add-update, renew, wipe) + `/user/audit-logs` endpoint; Activity Log page now
+reads it (Who / Action / Module / Detail).
+
 ⬜ **Pending (priority):**
-1. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write. *(maintenance window — can fail if dupes exist)*
-2. **Audit-log table** + **PDF versioning/backups**.
+1. **Data integrity** — unique (vehicle_user_id, PolicyNumber); ISO-normalise dates on write. *(maintenance window — can fail if dupes exist)*
+2. **PDF versioning / backups**.
 3. Optional **email/SMS** on renewal_due via MSG91.
 4. Per-manager **scoped counts** on the admin dashboard (org-wide today).
 6. Consumer **KYC completeness** meter + "missing KYC" filter; document thumbnails; dark mode.
