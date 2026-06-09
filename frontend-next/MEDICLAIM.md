@@ -8,8 +8,8 @@
 > date-derived status, **past-journey timeline** (View/Download per policy),
 > renew / add-next, **policy-PDF upload** (`/uploads/mediclaim/`), **product
 > brochure PDFs**, and **atomic writes** (add = compensation rollback, update =
-> DB transaction). Pending: claim/portability **doc uploads** in the modal and a
-> KYC (Aadhar/PAN/GST) step. Requires the backend deployed.
+> DB transaction). Pending: claim/portability **doc uploads** in the modal. (KYC is
+> managed from the Consumer module — not asked here.) Requires the backend deployed.
 
 
 How mediclaim is managed in the CRM (consumer-linked, year-by-year history,
@@ -61,8 +61,8 @@ The flow is **type-driven**, matching the old form's conditions:
 6. **Previous policy** *(new/edit only — hidden on renew)* — a checkbox “this is a
    portability / has a previous insurer policy”; if on: previous policy no,
    company, sum insured, NCB, previous-agent name/code/contact.
-7. **Documents** — **Policy PDF** upload (multipart). *(KYC Aadhar/PAN/GST are
-   supported by the backend; a KYC step in the modal is a pending nicety.)*
+7. **Documents** — **Policy PDF** upload (multipart). *(KYC — Aadhar/PAN/GST — is
+   managed from the **Consumer** module and reused, so it's not asked here.)*
 8. **Review → Submit.**
 
 **Conditions (same intent as the old form):** type chosen first → Members shown
@@ -136,9 +136,11 @@ activity log + reminders; product brochure PDFs; renewals exclude overdue.
 Still to do:
 1. **Claim / portability document uploads** in the modal (policy PDF done;
    ClaimStatement/previous-policy PDFs are backend-supported but not yet in the UI).
-2. **KYC step** (Aadhar/PAN/GST) in the mediclaim modal to match the old 6-step layout.
-3. **Data integrity**: unique (mediclaim_id, PolicyNumber); validate dates on write.
-4. **Audit trail / PDF versioning** for full history.
+2. **Data integrity**: unique (mediclaim_id, PolicyNumber); validate dates on write.
+3. **Audit trail / PDF versioning** for full history.
+
+> KYC (Aadhar/PAN/GST) is **managed from the Consumer module** and reused across
+> policies — it is intentionally **not** a step in the mediclaim modal.
 
 ## Backend reference
 - Add: `POST /user/mediclaim/user/add` · Update/Renew: `PUT /user/mediclaim/user/update/:id`
