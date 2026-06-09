@@ -82,6 +82,9 @@ exports.addConsumerData = async (req, res) => {
     logger.debug('🔍 [ADD CONSUMER] Categories:', req.body?.category);
     
     try {
+    // Atomic: user + category mappings + per-vertical records commit together (or
+    // not at all). Notifications fire inside but aren't transactional (best-effort).
+    const created = await User.sequelize.transaction(async (t) => {
     let buildeUser;
     if (req.user.Role == ROLE_IDS.SUPER_ADMIN) {
         buildeUser = req.body.builderType;
@@ -100,6 +103,7 @@ exports.addConsumerData = async (req, res) => {
         },
         raw: true,
         nest: true,
+        transaction: t,
         });
 
         let userData;
@@ -123,7 +127,7 @@ exports.addConsumerData = async (req, res) => {
                 builder_user: buildeUser || null,
                 otp: "",
                 token: "",
-            });
+            }, { transaction: t });
 
             logger.debug('🔍 [ADD CONSUMER] User created successfully:', userData);
         }
@@ -144,6 +148,7 @@ exports.addConsumerData = async (req, res) => {
                         // page) never creates duplicate mappings or per-vertical records.
                         const existingMappings = await consumerRoleMapping.findAll({
                             where: { user_consumer_id: userData.user_id },
+                            transaction: t,
                         });
                         const existingCatIds = existingMappings.map((m) => String(m.category_id));
                         let array = req.body.category
@@ -155,7 +160,7 @@ exports.addConsumerData = async (req, res) => {
                             }));
 
                         if (array.length) {
-                            let Rs = await consumerRoleMapping.bulkCreate(array);
+                            let Rs = await consumerRoleMapping.bulkCreate(array, { transaction: t });
                             logger.debug('🔍 [ADD CONSUMER] New ConsumerRoleMapping created:', Rs);
 
                             // Notify each assigned working person.
@@ -186,7 +191,7 @@ exports.addConsumerData = async (req, res) => {
                                 sq_ft: req.body.sq_ft || null,
                                 deed_amount: req.body.deed_amount || null,
                                 address: req.body.address || null
-                            });
+                            }, { transaction: t });
 
                             // Create notification for admin
                             await createNotification({
@@ -212,7 +217,7 @@ exports.addConsumerData = async (req, res) => {
                             logger.debug('🔍 [ADD CONSUMER] Creating mediclaim for category 4');
                             await Mediclaim.create({
                                 user_id: findMediclaim.user_consumer_id,
-                            });
+                            }, { transaction: t });
                         }
             let findLifeInsurance = array.find((item) => item.category_id == CATEGORY_IDS.LIFE_INSURANCE);
             if (findLifeInsurance) {
@@ -266,7 +271,7 @@ exports.addConsumerData = async (req, res) => {
                     premium_payment_mode: 'Yearly',
                     // Status
                     status: 'Draft'
-                });
+                }, { transaction: t });
 
                 // Create notification for admin
                 await createNotification({
@@ -313,11 +318,14 @@ exports.addConsumerData = async (req, res) => {
                 }
             });
 
+                    return userData;
+        }); // end transaction
+
                     res.send(
                         JSON.stringify({
                             response: "user successfully added!",
                             status: true,
-                userData: userData,
+                userData: created,
             })
         );
     } catch (error) {
