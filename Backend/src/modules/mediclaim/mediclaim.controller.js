@@ -474,13 +474,15 @@ exports.addMediclaimUserData = async (req, res) => {
         } else {
             logger.debug('🔍 [ADD MEDICLAIM] User not found, creating new user');
             
-            // Create new user
+            // Create new user — record who created it so scoped/test-data wipes work.
             user = await User.create({
             username: Name,
             email: Email,
             mobileNumber: MobileNumber,
             referenceName: ReferenceName, // User model uses PascalCase
-            role_id: ROLE_IDS.CONSUMER // Use role_id 3 for consumers (consumer role)
+            role_id: ROLE_IDS.CONSUMER, // Use role_id 3 for consumers (consumer role)
+            created_by: req.user.id,
+            updated_by: req.user.id
         });
 
             if (!user) {
