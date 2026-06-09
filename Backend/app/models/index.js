@@ -54,6 +54,7 @@ db.policyType  = require("./policyType.model")(sequelize,Sequelize)
 db.companyType  = require("./companyType.model")(sequelize,Sequelize)
 db.previousPolicyMediclaim  = require("./previousPolicyMediclaim.model")(sequelize,Sequelize)
 db.blog = require("./blog.model")(sequelize, Sequelize);
+db.auditLog = require("./auditLog.model")(sequelize, Sequelize);
 db.vehicleUser  = require("./vehicle_details/vehicleUser.model")(sequelize,Sequelize)
 db.vehcileRunningPolicy  = require("./vehicle_details/vehcileRunningPolicy.model")(sequelize,Sequelize)
 // vehiclePreviousPolicy merged into vehcileRunningPolicy (is_current flag); table dropped at boot.

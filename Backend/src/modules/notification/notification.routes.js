@@ -14,5 +14,6 @@ router.get("/user/notifications", verifyToken, portal, controller.getNotificatio
 router.put("/user/notifications/:notificationId/read", verifyToken, portal, controller.markNotificationAsRead);
 router.put("/user/notifications/read-all", verifyToken, portal, controller.markAllNotificationsAsRead);
 router.get("/user/notifications/count", verifyToken, portal, controller.getNotificationCount);
+router.get("/user/audit-logs", verifyToken, portal, controller.getAuditLogs);
 
 module.exports = router;

@@ -88,6 +88,28 @@ const createNotification = async (notificationData) => {
         return null;
     }
 };
+
+/**
+ * Append an entry to the audit trail (who did what, when). Best-effort: never
+ * throws, so it can't break the request it's logging.
+ *   writeAudit(req, { action, entity, entity_id, summary, metadata })
+ */
+const writeAudit = async (req, { action, entity, entity_id, summary, metadata } = {}) => {
+    try {
+        await db.auditLog.create({
+            actor_id: (req && req.user && req.user.id) || null,
+            actor_name: (req && req.user && (req.user.name || req.user.username)) || null,
+            actor_role: (req && req.user && req.user.Role) || null,
+            action: action || null,
+            entity: entity || null,
+            entity_id: entity_id != null ? String(entity_id) : null,
+            summary: summary || null,
+            metadata: metadata ? JSON.stringify(metadata) : null,
+        });
+    } catch (error) {
+        console.error('❌ [AUDIT] Error writing audit log:', error.message);
+    }
+};
 const User = db.user;
 const Inqueryuser = db.inqueryuser;
 const loanConfiguration = db.loanConfiguration;
@@ -216,4 +238,4 @@ async function upsertConsumerDocument(user_id, categoryId, file) {
   return ConsumerDocument.create({ user_id, categoryId, file });
 }
 
-module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, saveUpload, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
+module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, saveUpload, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, writeAudit, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };

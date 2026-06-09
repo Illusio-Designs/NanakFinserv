@@ -2,6 +2,7 @@
  * admin controller — settings + data wipe. Thin HTTP layer.
  */
 const adminService = require("./admin.service");
+const { writeAudit } = require("../shared/context");
 const logger = require("../../config/logger");
 
 /** GET /api/admin/settings/verticals — readable by any signed-in user (UI needs it). */
@@ -24,6 +25,7 @@ exports.wipeData = async (req, res) => {
     { actor: req.user && req.user.id, count: cleared.length },
     "DATA WIPE executed"
   );
+  writeAudit(req, { action: "wiped", entity: "settings", summary: "Wiped all business data + consumers", metadata: { clearedTables: cleared } });
   res.send({
     status: true,
     message: "Data wiped successfully",

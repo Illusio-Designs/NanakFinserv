@@ -41,6 +41,7 @@ const {
   companyType,
   consumerRoleMapping,
   createNotification,
+  writeAudit,
   db,
   documents,
   dotenvParseVariables,
@@ -759,6 +760,8 @@ AgentContactNumber: _AgentContactNumber
             // running/completed by date) so records stay consistent year-by-year.
             try { await vehicleService.reconcileVehiclePolicies(vehicle.vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after add failed"); }
 
+            writeAudit(req, { action: "created", entity: "vehicle", entity_id: vehicle.vehicle_user_id, summary: `Added vehicle ${_VehicleNumber || ""} for ${_Name || ""}`, metadata: { nature: _policyRadio, vehicle_number: _VehicleNumber } });
+
             res.status(200).send({
                 message: "Vehicle user successfully added!",
                 status: true,
@@ -1410,6 +1413,7 @@ exports.updateVehicleUserData = async (req, res) => {
         } catch (e) { logger.error({ err: e }, "vehicle update log failed"); }
         const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: req.params.vehicle_user_id }, transaction: t });
         await t.commit(); // all writes succeeded — persist atomically
+        writeAudit(req, { action: (policy_type === "Renewal" || policy_type === "Portability") ? "renewed" : "updated", entity: "vehicle", entity_id: req.params.vehicle_user_id, summary: `${(policy_type === "Renewal" || policy_type === "Portability") ? "Renewed" : "Updated"} vehicle ${updatedVehicleUser?.vehicle_number || ""}` });
         return res.status(200).send({
             message: "Vehicle successfully updated!",
             status: true,

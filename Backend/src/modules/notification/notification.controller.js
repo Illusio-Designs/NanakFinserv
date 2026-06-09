@@ -414,3 +414,27 @@ exports.getNotificationCount = async (req, res) => {
 // };
 
 
+
+// ── Audit log ────────────────────────────────────────────────────────────────
+// GET /user/audit-logs — the dedicated audit trail (who did what, when).
+// Super admin sees everything; others see only what they did.
+exports.getAuditLogs = async (req, res) => {
+  try {
+    const { page = 1, limit = 200, entity, action } = req.query;
+    const where = {};
+    if (!(req.user && req.user.Role === ROLE_IDS.SUPER_ADMIN)) where.actor_id = req.user && req.user.id;
+    if (entity) where.entity = entity;
+    if (action) where.action = action;
+    const logs = await db.auditLog.findAndCountAll({
+      where,
+      order: [["createdAt", "DESC"]],
+      limit: parseInt(limit),
+      offset: (parseInt(page) - 1) * parseInt(limit),
+      raw: true,
+    });
+    res.status(200).json({ status: true, data: { logs: logs.rows, total: logs.count } });
+  } catch (error) {
+    logger.error("Error fetching audit logs:", error);
+    res.status(500).json({ status: false, error: error.message });
+  }
+};

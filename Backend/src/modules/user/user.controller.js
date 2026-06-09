@@ -41,6 +41,7 @@ const {
   companyType,
   consumerRoleMapping,
   createNotification,
+  writeAudit,
   db,
   documents,
   dotenvParseVariables,
@@ -490,6 +491,7 @@ exports.addRoleWiseUser = (req, res) => {
                             }
                         });
 
+                        writeAudit(req, { action: "created", entity: "user", entity_id: articles && articles.user_id, summary: `Added user "${req.body.username || ""}"`, metadata: { role: req.body.role } });
                         return res.status(200).send({
                             message: "user successfully added!.",
                             status: true,
@@ -561,6 +563,7 @@ exports.updateRoleWiseUser = async (req, res) => {
 
             if (categoryData.length) await userCatergory.bulkCreate(categoryData);
             logger.debug('🔍 [ROLE UPDATE] Categories assigned:', categoryData);
+            writeAudit(req, { action: "updated", entity: "user", entity_id: req.body.user_id, summary: `Updated user "${req.body.username || ""}"`, metadata: { role: req.body.role } });
             return res.status(200).send({
                 message: "user successfully updated!.",
                 status: true,

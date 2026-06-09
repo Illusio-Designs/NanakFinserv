@@ -41,6 +41,7 @@ const {
   companyType,
   consumerRoleMapping,
   createNotification,
+  writeAudit,
   db,
   documents,
   dotenvParseVariables,
@@ -320,6 +321,8 @@ exports.addConsumerData = async (req, res) => {
 
                     return userData;
         }); // end transaction
+
+        writeAudit(req, { action: "created", entity: "consumer", entity_id: created && created.user_id, summary: `Added consumer "${req.body.username || ""}"`, metadata: { mobile: req.body.phone_number, categories: req.body?.category } });
 
                     res.send(
                         JSON.stringify({
