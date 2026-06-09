@@ -38,4 +38,26 @@ async function updateCompany(id, name) {
   return { result };
 }
 
-module.exports = { getCompanies, addCompany, updateCompany };
+/**
+ * Keep a mediclaim's policy timeline consistent in the unified table: the policy
+ * with the latest end date is the current one (is_current=true, status running);
+ * all others are history (is_current=false, status completed). Mirrors the vehicle
+ * reconcile. Safe to call after any add/update/renew.
+ */
+async function reconcileMediclaimPolicies(mediclaimId, opts = {}) {
+  const { transaction } = opts;
+  const Policy = db.runningPolicyMediclaim;
+  const policies = await Policy.findAll({ where: { mediclaim_id: mediclaimId }, transaction });
+  if (!policies.length) return;
+  const endOf = (p) => String(p.PolicyTo || p.ExpiryDate || p.PolicyFrom || "");
+  const sorted = [...policies].sort((a, b) => endOf(b).localeCompare(endOf(a)));
+  const currentId = sorted[0].id;
+  await Promise.all(sorted.map((p) =>
+    Policy.update(
+      { is_current: p.id === currentId, status: p.id === currentId ? "running" : "completed" },
+      { where: { id: p.id }, transaction }
+    )
+  ));
+}
+
+module.exports = { getCompanies, addCompany, updateCompany, reconcileMediclaimPolicies };

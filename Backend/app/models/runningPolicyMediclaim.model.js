@@ -66,6 +66,26 @@ module.exports = (sequelize, Sequelize) => {
         ClaimExpireInPolicy: {
             type: DataTypes.STRING,
         },
+        // Unified policy table: true = current policy, false = history (merges in
+        // the old previous_policies table).
+        is_current: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,
+        },
+        status: { type: DataTypes.STRING }, // derived: running / completed
+        // History/claim fields carried over from previous_policies (kept nullable).
+        mediclaim_product_id: { type: DataTypes.UUID },
+        CompanyName: { type: DataTypes.STRING },
+        SumInsured: { type: DataTypes.STRING },
+        NoClaimBonus: { type: DataTypes.STRING },
+        RenewDate: { type: DataTypes.STRING },
+        PreviousPolicyNumber: { type: DataTypes.STRING },
+        PreviousAgentName: { type: DataTypes.STRING },
+        PreviousAgentCode: { type: DataTypes.STRING },
+        PreviousAgentContactNumber: { type: DataTypes.STRING },
+        ClaimStatementPDFfile: { type: DataTypes.STRING },
+        ClaimStatementPDFfileName: { type: DataTypes.STRING },
+        PdfFileName: { type: DataTypes.STRING },
     }, {
         tableName: 'running_policies',
     })

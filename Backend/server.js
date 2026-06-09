@@ -188,6 +188,13 @@ const initializeDatabase = async () => {
       await db.sequelize.getQueryInterface().dropTable("previouspolicies_vehicle");
       logger.info("Dropped legacy table previouspolicies_vehicle");
     } catch (e) { /* already gone — ignore */ }
+
+    // One-time: drop the legacy mediclaim previous_policies table — its rows were
+    // merged into running_policies (is_current flag). No-op once dropped.
+    try {
+      await db.sequelize.getQueryInterface().dropTable("previous_policies");
+      logger.info("Dropped legacy table previous_policies");
+    } catch (e) { /* already gone — ignore */ }
   }
 
   // Seed default data (lookup tables + default admin user). Best-effort.

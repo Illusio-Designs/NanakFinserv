@@ -247,23 +247,26 @@ exports.getUserCounts = async (req, res) => {
                 loanUser.count({ where: loanCancelUserWhereObj }),
                 loanUser.count({ where: loanCompletedUserWhereObj }),
                 consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.MEDICLAIM, ...mgrScope } }), // Count mediclaim consumers from role mapping
-                RunningPolicies.count({ 
-                    where: { 
-                        ExpiryDate: { 
+                RunningPolicies.count({
+                    where: {
+                        is_current: true,
+                        ExpiryDate: {
                             [Op.between]: [today.toISOString().split('T')[0], nextWeek.toISOString().split('T')[0]]
                         }
                     }
                 }),
-                RunningPolicies.count({ 
-                    where: { 
-                        ExpiryDate: { 
+                RunningPolicies.count({
+                    where: {
+                        is_current: true,
+                        ExpiryDate: {
                             [Op.between]: [today.toISOString().split('T')[0], nextMonth.toISOString().split('T')[0]]
                         }
                     }
                 }),
-                RunningPolicies.count({ 
-                    where: { 
-                        ExpiryDate: { 
+                RunningPolicies.count({
+                    where: {
+                        is_current: true,
+                        ExpiryDate: {
                             [Op.between]: [today.toISOString().split('T')[0], nextYear.toISOString().split('T')[0]]
                         }
                     }

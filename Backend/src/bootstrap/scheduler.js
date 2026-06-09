@@ -63,7 +63,7 @@ async function runRenewalReminders() {
 // Mediclaim policy renewal reminders (ExpiryDate on the running policy).
 async function runMediclaimReminders() {
   let sent = 0;
-  const running = await db.runningPolicyMediclaim.findAll({ raw: true });
+  const running = await db.runningPolicyMediclaim.findAll({ where: { is_current: true }, raw: true });
   for (const rp of running) {
     const dleft = daysTo(rp.ExpiryDate || rp.PolicyTo);
     if (dleft === null || ![7, 3, 1, 0].includes(dleft)) continue;

@@ -114,7 +114,9 @@ const User = db.user;
 const Inqueryuser = db.inqueryuser;
 const loanConfiguration = db.loanConfiguration;
 const RunningPolicies = db.runningPolicyMediclaim;
-const PreviousPolicies = db.previousPolicyMediclaim;
+// Mediclaim history now lives in the unified runningPolicyMediclaim table
+// (is_current=false); PreviousPolicies aliases it — callers pass is_current.
+const PreviousPolicies = db.runningPolicyMediclaim;
 const BuilderUser = db.builderUser;
 const BuildingManager = db.buildingManager;
 const DocumentSelectedLoan = db.documentSelectedLoan;

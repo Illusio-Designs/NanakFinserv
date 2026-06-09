@@ -628,6 +628,8 @@ exports.addMediclaimUserData = async (req, res) => {
                 ...runningPolicy,
                 mediclaim_id: mediclaimId,
                 user_id: user.user_id,
+                is_current: true,   // current policy in the unified table
+                status: "running",
                 // Ensure CurrentPolicyFile is a string or null, not an object
                 CurrentPolicyFile: runningPolicy.CurrentPolicyFile && typeof runningPolicy.CurrentPolicyFile === 'object' 
                     ? null 
@@ -650,6 +652,8 @@ exports.addMediclaimUserData = async (req, res) => {
                 ...previousPolicy,
                 mediclaim_id: mediclaimId,
                 user_id: user.user_id,
+                is_current: false,  // history row in the unified table
+                status: "completed",
                 // Ensure file fields are strings or null, not objects
                 PdfFile: previousPolicy.PdfFile && typeof previousPolicy.PdfFile === 'object' 
                     ? null 
@@ -744,6 +748,8 @@ exports.addMediclaimUserData = async (req, res) => {
                 added_by: req.user.username || 'System'
             }
         });
+
+        try { await mediclaimService.reconcileMediclaimPolicies(mediclaimId); } catch (e) { logger.error({ err: e }, "mediclaim reconcile after add failed"); }
 
         res.status(200).json({
             message: 'Mediclaim data saved successfully',
@@ -1002,49 +1008,26 @@ exports.updateMediclaimUserData = async (req, res) => {
             try {
                 logger.debug('🔄 [RENEWAL] Processing renewal - transferring running policy to previous policy');
                 
-                // Get existing running policy to transfer to previous
+                // Single-table merge: archive the current policy in place by flipping
+                // is_current=false (it becomes a history row) — no separate table.
                 const existingRunningPolicy = await db.runningPolicyMediclaim.findOne({
-                    where: { mediclaim_id: id },
+                    where: { mediclaim_id: id, is_current: true },
                     raw: true
                 });
 
                 if (existingRunningPolicy) {
-                    logger.debug('🔄 [RENEWAL] Found existing running policy, transferring to previous policy');
-                    
-                    // Mark all existing previous policies as inactive
-                    await db.previousPolicyMediclaim.update(
-                        { status: "notActive" },
-                        { where: { mediclaim_id: id } }
+                    await db.runningPolicyMediclaim.update(
+                        {
+                            is_current: false,
+                            status: "completed",
+                            RenewDate: existingRunningPolicy.PolicyTo || existingRunningPolicy.ExpiryDate || null,
+                            PdfFile: existingRunningPolicy.CurrentPolicyFile || existingRunningPolicy.PdfFile || null,
+                            PdfFileName: existingRunningPolicy.CurrentPolicyFile || existingRunningPolicy.PdfFileName || null,
+                            PreviousPolicyNumber: existingRunningPolicy.PolicyNumber || null,
+                        },
+                        { where: { id: existingRunningPolicy.id } }
                     );
-                    logger.debug('🔄 [RENEWAL] Marked existing previous policies as notActive');
-
-                    // Transfer existing running policy to previous policy
-                    const transferData = {
-                        mediclaim_id: id,
-                        Zone: existingRunningPolicy.Zone || null,
-                        PolicyNumber: existingRunningPolicy.PolicyNumber || null,
-                        PolicyTenure: existingRunningPolicy.PolicyTenure || null,
-                        PremiumAmount: existingRunningPolicy.PremiumAmount || null,
-                        NomineeName: existingRunningPolicy.NomineeName || null,
-                        NomineeRelation: existingRunningPolicy.NomineeRelation || null,
-                        NomineeAge: existingRunningPolicy.NomineeAge || null,
-                        NomineeDob: existingRunningPolicy.NomineeDob || null,
-                        PolicyTo: existingRunningPolicy.PolicyTo || null,
-                        PolicyFrom: existingRunningPolicy.PolicyFrom || null,
-                        SumInsured: SumInsured ? parseFloat(SumInsured) : (existingRunningPolicy.SumInsured || null),
-                        NoClaimBonus: NoClaimBonus || existingRunningPolicy.NoClaimBonus || null,
-                        PdfFile: existingRunningPolicy.CurrentPolicyFile || null, // Transfer CurrentPolicyFile to PdfFile
-                        PdfFileName: existingRunningPolicy.CurrentPolicyFile || null,
-                        RenewDate: existingRunningPolicy.PolicyTo || null,
-                        CompanyName: CompanyName || null,
-                        PreviousPolicyNumber: existingRunningPolicy.PolicyNumber || null,
-                        mediclaim_product_id: ProductName || null,
-                        status: "active" // New previous policy is active
-                    };
-
-                    // Create new previous policy record with transferred data
-                    await db.previousPolicyMediclaim.create(transferData);
-                    logger.debug('🔄 [RENEWAL] Successfully transferred running policy to previous policy');
+                    logger.debug('🔄 [RENEWAL] Archived current policy as history (is_current=false)');
                 }
 
                 // Now update running policy with new renewal data
@@ -1074,19 +1057,14 @@ exports.updateMediclaimUserData = async (req, res) => {
                     logger.debug(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
                 }
 
-                // Update running policy with new renewal data
-                if (existingRunningPolicy) {
-                    await db.runningPolicyMediclaim.update(runningPolicy, {
-                        where: { mediclaim_id: id }
-                    });
-                    logger.debug('🔄 [RENEWAL] Updated running policy with new renewal data');
-                } else {
-                    await db.runningPolicyMediclaim.create({
-                        ...runningPolicy,
-                        mediclaim_id: id
-                    });
-                    logger.debug('🔄 [RENEWAL] Created new running policy with renewal data');
-                }
+                // Create the new current policy (single-table merge).
+                await db.runningPolicyMediclaim.create({
+                    ...runningPolicy,
+                    mediclaim_id: id,
+                    is_current: true,
+                    status: "running",
+                });
+                logger.debug('🔄 [RENEWAL] Created new current policy');
             } catch (renewalError) {
                 logger.error('❌ [RENEWAL] Error processing renewal:', renewalError);
                 throw renewalError;
@@ -1095,9 +1073,9 @@ exports.updateMediclaimUserData = async (req, res) => {
         // Handle regular running policy update (Fresh or Portability)
         else if (runningPolicy && typeof runningPolicy === 'object') {
             try {
-                // Check if running policy exists for this mediclaim
+                // Check if a current running policy exists for this mediclaim
                 const existingRunningPolicy = await db.runningPolicyMediclaim.findOne({
-                    where: { mediclaim_id: id }
+                    where: { mediclaim_id: id, is_current: true }
                 });
 
                 // Handle CurrentPolicyFile upload if provided
@@ -1138,15 +1116,17 @@ exports.updateMediclaimUserData = async (req, res) => {
                 }
 
                 if (existingRunningPolicy) {
-                    // Update existing running policy
+                    // Update existing current policy
                     await db.runningPolicyMediclaim.update(runningPolicy, {
-                        where: { mediclaim_id: id }
+                        where: { mediclaim_id: id, is_current: true }
                     });
                 } else {
-                    // Create new running policy
+                    // Create new current policy
                     await db.runningPolicyMediclaim.create({
                         ...runningPolicy,
-                        mediclaim_id: id
+                        mediclaim_id: id,
+                        is_current: true,
+                        status: "running",
                     });
                 }
             } catch (runningPolicyError) {
@@ -1158,9 +1138,9 @@ exports.updateMediclaimUserData = async (req, res) => {
         // Update previous policy data if provided (for Portability or manual previous policy updates)
         if (policyRadio !== "Renew" && hasMeaningfulPreviousPolicyData(previousPolicy)) {
             try {
-                // Check if previous policy exists for this mediclaim
-                const existingPreviousPolicy = await db.previousPolicyMediclaim.findOne({
-                    where: { mediclaim_id: id }
+                // Check if a history (previous) policy exists for this mediclaim
+                const existingPreviousPolicy = await db.runningPolicyMediclaim.findOne({
+                    where: { mediclaim_id: id, is_current: false }
                 });
 
                 // Handle PdfFile upload if provided
@@ -1232,6 +1212,8 @@ exports.updateMediclaimUserData = async (req, res) => {
                 const cleanedPreviousPolicy = {
                     ...previousPolicy,
                     mediclaim_id: id,
+                    is_current: false, // history row in the unified table
+                    status: "completed",
                     CompanyName: CompanyName || null,
 
                     // Ensure SumInsured and NoClaimBonus are properly formatted
@@ -1252,13 +1234,13 @@ exports.updateMediclaimUserData = async (req, res) => {
                 });
 
                 if (existingPreviousPolicy) {
-                    // Update existing previous policy
-                    await db.previousPolicyMediclaim.update(cleanedPreviousPolicy, {
-                        where: { mediclaim_id: id }
+                    // Update the existing history policy row
+                    await db.runningPolicyMediclaim.update(cleanedPreviousPolicy, {
+                        where: { id: existingPreviousPolicy.id }
                     });
                 } else {
-                    // Create new previous policy
-                    await db.previousPolicyMediclaim.create(cleanedPreviousPolicy);
+                    // Create a new history policy row
+                    await db.runningPolicyMediclaim.create(cleanedPreviousPolicy);
                 }
             } catch (previousPolicyError) {
                 logger.error('Error updating previous policy:', previousPolicyError);
@@ -1293,6 +1275,8 @@ exports.updateMediclaimUserData = async (req, res) => {
             );
             await Promise.all(employeePromises);
         }
+
+        try { await mediclaimService.reconcileMediclaimPolicies(id); } catch (e) { logger.error({ err: e }, "mediclaim reconcile after update failed"); }
 
         res.status(200).json({
             message: 'Mediclaim data updated successfully',
@@ -1339,11 +1323,11 @@ exports.geteMediclaimUserData = async (req, res) => {
                     raw: true,
                 });
                 const runningPolicies = await RunningPolicies.findAll({
-                    where: { mediclaim_id: mediclaimIds },
+                    where: { mediclaim_id: mediclaimIds, is_current: true },
                     raw: true,
                 });
                 const previousPolicies = await PreviousPolicies.findAll({
-                    where: { mediclaim_id: mediclaimIds },
+                    where: { mediclaim_id: mediclaimIds, is_current: false },
                     raw: true,
                 });
                 logger.debug('🔍 [BACKEND] Admin/Mediclaim Category Role - Previous policies found:', previousPolicies.length);
@@ -1415,11 +1399,11 @@ exports.geteMediclaimUserData = async (req, res) => {
                     raw: true,
                 });
                 const runningPolicies = await RunningPolicies.findAll({
-                    where: { mediclaim_id: mediclaimIds },
+                    where: { mediclaim_id: mediclaimIds, is_current: true },
                     raw: true,
                 });
                 const previousPolicies = await PreviousPolicies.findAll({
-                    where: { mediclaim_id: mediclaimIds },
+                    where: { mediclaim_id: mediclaimIds, is_current: false },
                     raw: true,
                 });
                 logger.debug('🔍 [BACKEND] User Role - Previous policies found:', previousPolicies.length);
@@ -1496,11 +1480,11 @@ exports.geteMediclaimUserRenewalData = async (req, res) => {
         const [familyMembers, runningPolicies, previousPolicies] = await Promise.all([
             FamilyMember.findAll({ where: { mediclaim_id: mediclaimIds }, raw: true }),
             RunningPolicies.findAll({
-                where: { mediclaim_id: mediclaimIds },
+                where: { mediclaim_id: mediclaimIds, is_current: true },
                 raw: true
             }),
             PreviousPolicies.findAll({
-                where: { mediclaim_id: mediclaimIds },
+                where: { mediclaim_id: mediclaimIds, is_current: false },
                 order: [["id", "DESC"]],
                 raw: true
             })

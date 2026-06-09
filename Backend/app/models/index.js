@@ -52,7 +52,7 @@ db.references = require("./reference.model")(sequelize,Sequelize)
 db.policyPlan  = require("./policyPlan.model")(sequelize,Sequelize)
 db.policyType  = require("./policyType.model")(sequelize,Sequelize)
 db.companyType  = require("./companyType.model")(sequelize,Sequelize)
-db.previousPolicyMediclaim  = require("./previousPolicyMediclaim.model")(sequelize,Sequelize)
+// previousPolicyMediclaim merged into runningPolicyMediclaim (is_current flag).
 db.blog = require("./blog.model")(sequelize, Sequelize);
 db.auditLog = require("./auditLog.model")(sequelize, Sequelize);
 db.vehicleUser  = require("./vehicle_details/vehicleUser.model")(sequelize,Sequelize)
@@ -156,8 +156,8 @@ db.mediclaimProduct.belongsTo(db.mediclaimCompany, { foreignKey: 'mediclaim_comp
 db.mediclaimCompany.hasOne(db.medicliamuser, { foreignKey: 'mediclaim_company_id' });
 db.medicliamuser.belongsTo(db.mediclaimCompany, { foreignKey: 'mediclaim_company_id' });
 
-db.mediclaimProduct.hasOne(db.previousPolicyMediclaim, { foreignKey: 'mediclaim_product_id' });
-db.previousPolicyMediclaim.belongsTo(db.mediclaimProduct, { foreignKey: 'mediclaim_product_id' });
+db.mediclaimProduct.hasMany(db.runningPolicyMediclaim, { foreignKey: 'mediclaim_product_id' });
+db.runningPolicyMediclaim.belongsTo(db.mediclaimProduct, { foreignKey: 'mediclaim_product_id' });
 
 db.user.hasOne(db.medicliamuser, { foreignKey: 'user_id' });
 db.medicliamuser.belongsTo(db.user, { foreignKey: 'user_id' });
@@ -240,8 +240,9 @@ db.partPaymentLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
 db.medicliamuser.hasMany(db.runningPolicyMediclaim, { foreignKey: 'mediclaim_id' });
 db.runningPolicyMediclaim.belongsTo(db.medicliamuser, { foreignKey: 'mediclaim_id' });
 
-db.medicliamuser.hasMany(db.previousPolicyMediclaim, { foreignKey: 'mediclaim_id' });
-db.previousPolicyMediclaim.belongsTo(db.medicliamuser, { foreignKey: 'mediclaim_id' });
+// Unified policy table (merge): current policy = is_current true, history = false.
+db.medicliamuser.hasOne(db.runningPolicyMediclaim, { foreignKey: 'mediclaim_id', as: 'runningPolicy', scope: { is_current: true } });
+db.medicliamuser.hasMany(db.runningPolicyMediclaim, { foreignKey: 'mediclaim_id', as: 'previousPolicies', scope: { is_current: false } });
 
 db.user.hasOne(db.vehicleUser, { foreignKey: 'user_id',as: 'user_pk_vehicle_id' });
 db.vehicleUser.belongsTo(db.user, { foreignKey: 'user_id',as: 'user_pk_vehicle_id' });
