@@ -9,6 +9,7 @@ import Dropdown from "@/components/ui/Dropdown";
 import DatePicker from "@/components/ui/DatePicker";
 import Button from "@/components/ui/Button";
 import Spinner from "@/components/ui/Spinner";
+import FileUpload from "@/components/ui/FileUpload";
 import api, { showError } from "@/lib/api";
 import { firstError, field, checks } from "@/utils/validators";
 
@@ -39,13 +40,14 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
   const [companies, setCompanies] = useState([]);
   const [companyId, setCompanyId] = useState("");
   const [products, setProducts] = useState([]);
+  const [policyFile, setPolicyFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const setPrev = (k) => (v) => setForm((f) => ({ ...f, prev: { ...f.prev, [k]: v } }));
 
   useEffect(() => {
     if (!open) return;
-    setProducts([]);
+    setProducts([]); setPolicyFile(null);
     api.get("/user/mediclaim/company")
       .then((r) => {
         const list = (r.data?.data || []).map((c) => ({ value: c.mediclaim_company_id, label: c.mediclaim_company_name }));
@@ -129,12 +131,22 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
         employees: isGroup ? form.employees : [],
         previousPolicy: form.hasPrevious ? form.prev : {},
       };
+      if (editRow && (isEdit || renewMode)) { data.id = editRow.id; data.user_id = editRow.user_id; }
+      // Multipart when a policy PDF is attached; plain JSON otherwise.
+      let payload;
+      if (policyFile) {
+        const fd = new FormData();
+        fd.append("data", JSON.stringify(data));
+        fd.append("CurrentPolicyFile", policyFile);
+        payload = fd;
+      } else {
+        payload = { data };
+      }
       if (editRow && (isEdit || renewMode)) {
-        data.id = editRow.id; data.user_id = editRow.user_id;
-        await api.put(`/user/mediclaim/user/update/${editRow.id}`, { data });
+        await api.put(`/user/mediclaim/user/update/${editRow.id}`, payload);
         toast.success(renewMode ? "Policy renewed" : "Policy updated");
       } else {
-        await api.post("/user/mediclaim/user/add", { data });
+        await api.post("/user/mediclaim/user/add", payload);
         toast.success("Mediclaim policy added");
       }
       onClose();
@@ -271,6 +283,18 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
               <Input label="Previous Agent Code" value={form.prev.PreviousAgentCode} onChange={(e) => setPrev("PreviousAgentCode")(e.target.value)} />
               <Input label="Previous Agent Contact" value={form.prev.PreviousAgentContactNumber} onChange={(e) => setPrev("PreviousAgentContactNumber")(e.target.value)} />
             </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Documents",
+      render: () => (
+        <div className="space-y-4">
+          <FileUpload label="Policy PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setPolicyFile} />
+          {renewMode && <p className="text-[12px] text-muted">On renewal the previous policy + its PDF move to history automatically.</p>}
+          {(isEdit && (editRow?.rp?.CurrentPolicyFile || editRow?.rp?.PdfFile)) && !policyFile && (
+            <p className="text-[12px] text-muted">A policy PDF is already on file — upload a new one only to replace it.</p>
           )}
         </div>
       ),

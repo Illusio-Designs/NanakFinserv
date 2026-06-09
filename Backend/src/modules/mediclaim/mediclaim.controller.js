@@ -50,6 +50,7 @@ const {
   fsExtra,
   fsSync,
   hasMeaningfulPreviousPolicyData,
+  saveUpload,
   jwt,
   loanConfiguration,
   loanUser,
@@ -535,73 +536,35 @@ exports.addMediclaimUserData = async (req, res) => {
         
         logger.debug('🔍 [ADD MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
         
-        // Handle Aadhar
+        // Handle Aadhar / PAN / GST via the shared uploader → uploads/mediclaim/.
         if (req.files && req.files.aadhar) {
-            let aadhar = req.files.aadhar;
-            const uniqueName = `${uuidv4()}-${path.basename(aadhar.name)}`;
-            const uploadPath = path.join(uploadsDir, uniqueName);
-            
-            if (aadhar.mv) {
-                await aadhar.mv(uploadPath);
-            } else if (aadhar.data) {
-                await fs.writeFile(uploadPath, aadhar.data);
-            }
-            
-            documentFiles.AadharFileName = uniqueName;
-            logger.debug(`📁 [ADD MEDICLAIM] Aadhar saved: ${uniqueName}`);
+            documentFiles.AadharFileName = await saveUpload(req.files.aadhar, "mediclaim");
+            logger.debug(`📁 [ADD MEDICLAIM] Aadhar saved: ${documentFiles.AadharFileName}`);
         }
-        
-        // Handle PAN
         if (req.files && req.files.pan) {
-            let pan = req.files.pan;
-            const uniqueName = `${uuidv4()}-${path.basename(pan.name)}`;
-            const uploadPath = path.join(uploadsDir, uniqueName);
-            
-            if (pan.mv) {
-                await pan.mv(uploadPath);
-            } else if (pan.data) {
-                await fs.writeFile(uploadPath, pan.data);
-            }
-            
-            documentFiles.PanFileName = uniqueName;
-            logger.debug(`📁 [ADD MEDICLAIM] PAN saved: ${uniqueName}`);
+            documentFiles.PanFileName = await saveUpload(req.files.pan, "mediclaim");
+            logger.debug(`📁 [ADD MEDICLAIM] PAN saved: ${documentFiles.PanFileName}`);
         }
-        
-        // Handle GST
         if (req.files && req.files.gst) {
-            let gst = req.files.gst;
-            const uniqueName = `${uuidv4()}-${path.basename(gst.name)}`;
-            const uploadPath = path.join(uploadsDir, uniqueName);
-            
-            if (gst.mv) {
-                await gst.mv(uploadPath);
-            } else if (gst.data) {
-                await fs.writeFile(uploadPath, gst.data);
-            }
-            
-            documentFiles.GstFileName = uniqueName;
-            logger.debug(`📁 [ADD MEDICLAIM] GST saved: ${uniqueName}`);
+            documentFiles.GstFileName = await saveUpload(req.files.gst, "mediclaim");
+            logger.debug(`📁 [ADD MEDICLAIM] GST saved: ${documentFiles.GstFileName}`);
         }
-        
-        // Handle custom documents
+
+        // Handle custom documents (proper await — the old forEach(async) didn't wait).
         const customDocuments = Data.customDocuments || [];
-        customDocuments.forEach(async (doc, idx) => {
+        for (let idx = 0; idx < customDocuments.length; idx++) {
             const fileKey = `customDocument_${idx}`;
             if (req.files && req.files[fileKey]) {
-                let file = req.files[fileKey];
-                const uniqueName = `${uuidv4()}-${path.basename(file.name)}`;
-                const uploadPath = path.join(uploadsDir, uniqueName);
-                
-                if (file.mv) {
-                    await file.mv(uploadPath);
-                } else if (file.data) {
-                    await fs.writeFile(uploadPath, file.data);
-                }
-                
-                doc.file = uniqueName;
-                logger.debug(`📁 [ADD MEDICLAIM] Custom document ${doc.name} saved: ${uniqueName}`);
+                customDocuments[idx].file = await saveUpload(req.files[fileKey], "mediclaim");
+                logger.debug(`📁 [ADD MEDICLAIM] Custom document saved: ${customDocuments[idx].file}`);
             }
-        });
+        }
+
+        // Policy PDF on add (uploaded from the modal as CurrentPolicyFile).
+        if (req.files && req.files.CurrentPolicyFile) {
+            runningPolicy.CurrentPolicyFile = await saveUpload(req.files.CurrentPolicyFile, "mediclaim");
+            logger.debug(`📁 [ADD MEDICLAIM] Policy PDF saved: ${runningPolicy.CurrentPolicyFile}`);
+        }
         
         // Update mediclaim with document filenames
         await Mediclaim.update(documentFiles, { where: { id: mediclaimId } });
@@ -1030,31 +993,11 @@ exports.updateMediclaimUserData = async (req, res) => {
                     logger.debug('🔄 [RENEWAL] Archived current policy as history (is_current=false)');
                 }
 
-                // Now update running policy with new renewal data
-                const uploadsDir = path.join(CTRL_DIR, "../../uploads");
-                logger.debug('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
-                logger.debug('🔍 [UPDATE MEDICLAIM] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
-                
+                // New renewal policy PDF → uploads/mediclaim/. The old policy keeps
+                // its file (it's now a history row), so we don't delete it.
                 if (req.files && req.files.CurrentPolicyFile) {
-                    let CurrentPolicyFile = req.files.CurrentPolicyFile;
-                    const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
-                    
-                    // Note: We don't delete the old file as it's now transferred to previous policy
-                    
-                    // Handle file movement
-                    if (CurrentPolicyFile.mv) {
-                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.mv() for CurrentPolicyFile`);
-                        await CurrentPolicyFile.mv(uploadPath);
-                    } else if (CurrentPolicyFile.data) {
-                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.data for CurrentPolicyFile`);
-                        await fs.writeFile(uploadPath, CurrentPolicyFile.data);
-                    } else {
-                        throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
-                    }
-                    
-                    runningPolicy.CurrentPolicyFile = uniqueName;
-                    logger.debug(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
+                    runningPolicy.CurrentPolicyFile = await saveUpload(req.files.CurrentPolicyFile, "mediclaim");
+                    logger.debug(`📁 [UPDATE MEDICLAIM] Renewal policy PDF saved: ${runningPolicy.CurrentPolicyFile}`);
                 }
 
                 // Create the new current policy (single-table merge).
@@ -1078,38 +1021,15 @@ exports.updateMediclaimUserData = async (req, res) => {
                     where: { mediclaim_id: id, is_current: true }
                 });
 
-                // Handle CurrentPolicyFile upload if provided
+                // Updated policy PDF → uploads/mediclaim/ (delete the old one first).
                 const uploadsDir = path.join(CTRL_DIR, "../../uploads");
-                logger.debug('🔍 [UPDATE MEDICLAIM] req.files keys:', Object.keys(req.files || {}));
-                logger.debug('🔍 [UPDATE MEDICLAIM] CurrentPolicyFile exists:', !!(req.files && req.files.CurrentPolicyFile));
-                
                 if (req.files && req.files.CurrentPolicyFile) {
-                    let CurrentPolicyFile = req.files.CurrentPolicyFile;
-                    const uniqueName = `${uuidv4()}-${path.basename(CurrentPolicyFile.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
-                    
-                    // Delete old file if it exists
                     if (existingRunningPolicy?.CurrentPolicyFile) {
                         const oldFilePath = path.join(uploadsDir, existingRunningPolicy.CurrentPolicyFile);
-                        if (fsSync.existsSync(oldFilePath)) {
-                            fsSync.unlinkSync(oldFilePath);
-                            logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old CurrentPolicyFile: ${existingRunningPolicy.CurrentPolicyFile}`);
-                        }
+                        try { if (fsSync.existsSync(oldFilePath)) fsSync.unlinkSync(oldFilePath); } catch (e) { /* ignore */ }
                     }
-                    
-                    // Handle file movement
-                    if (CurrentPolicyFile.mv) {
-                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.mv() for CurrentPolicyFile`);
-                        await CurrentPolicyFile.mv(uploadPath);
-                    } else if (CurrentPolicyFile.data) {
-                        logger.debug(`📁 [UPDATE MEDICLAIM] Using file.data for CurrentPolicyFile`);
-                        await fs.writeFile(uploadPath, CurrentPolicyFile.data);
-                    } else {
-                        throw new Error(`Unable to process CurrentPolicyFile - no valid file handling method found`);
-                    }
-                    
-                    runningPolicy.CurrentPolicyFile = uniqueName;
-                    logger.debug(`📁 [UPDATE MEDICLAIM] CurrentPolicyFile saved: ${uniqueName}`);
+                    runningPolicy.CurrentPolicyFile = await saveUpload(req.files.CurrentPolicyFile, "mediclaim");
+                    logger.debug(`📁 [UPDATE MEDICLAIM] Policy PDF saved: ${runningPolicy.CurrentPolicyFile}`);
                 } else if (existingRunningPolicy && !runningPolicy.CurrentPolicyFile) {
                     // Keep existing file if no new file uploaded and no file in payload
                     runningPolicy.CurrentPolicyFile = existingRunningPolicy.CurrentPolicyFile;
