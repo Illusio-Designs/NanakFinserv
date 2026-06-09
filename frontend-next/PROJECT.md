@@ -101,12 +101,13 @@ counts (consumers + their vertical) show ONLY consumers assigned to them.
 
 **Go-live prep done by owner:** unique DB constraints added + test data wiped. 🚀
 
-✅ Also: **dark mode** (header toggle, persisted, token-based, no flash).
+✅ Also: **dark mode** (Auto = dark 6 PM–6 AM, + Light/Dark, persisted, no flash);
+**document file-type icons** (PDF/image) in consumer KYC + vehicle journey.
 
-⬜ **Optional (post-launch, not blocking):**
-1. **PDF versioning / backups**.
+⬜ **Optional (post-launch, infra/config — not blocking):**
+1. **PDF versioning / backups** — move uploads to cloud object storage (S3/GCS) with
+   versioning, or schedule an uploads-folder backup. Needs a storage choice + creds.
 2. **Email/SMS** on renewal_due via MSG91 (needs send creds/templates).
-3. Document thumbnails (file-type icons/previews).
 7. Replicate full Pending/Closed + journey patterns to other verticals as they get data.
 
 ---
