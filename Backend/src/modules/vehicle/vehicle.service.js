@@ -7,6 +7,26 @@ const db = require("../../../app/models");
 
 const VehicleUser = db.vehicleUser;
 
+// Policy date fields normalised to ISO (YYYY-MM-DD) on write, so status/sorting
+// comparisons are always reliable regardless of the input format.
+const POLICY_DATE_FIELDS = ["PolicyFrom", "PolicyTo", "PolicyIssuedDate", "ExpiryDate", "od_expiry_date", "tp_expiry_date"];
+function toISODate(v) {
+  if (v == null || typeof v !== "string") return v;
+  const s = v.trim();
+  if (!s) return v;
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);            // already ISO (maybe with time)
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);   // dd-mm-yyyy / dd/mm/yyyy
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const dt = new Date(s);
+  return isNaN(dt.getTime()) ? v : dt.toISOString().slice(0, 10); // fallback; leave unknown as-is
+}
+function normalizePolicyDates(obj) {
+  if (!obj || typeof obj !== "object") return obj;
+  for (const f of POLICY_DATE_FIELDS) if (obj[f] != null) obj[f] = toISODate(obj[f]);
+  return obj;
+}
+
 /**
  * Parse + normalize the add-vehicle request body (JSON under `data`, or
  * multipart FormData with JSON-string sub-objects), applying defensive defaults
@@ -51,6 +71,9 @@ function normalizePayload(body, contentType) {
     Data.previousPolicy = previousPolicy;
   }
 
+  normalizePolicyDates(runningPolicy);
+  normalizePolicyDates(previousPolicy);
+
   return { Data, documentsData, runningPolicy, previousPolicy };
 }
 
@@ -90,6 +113,8 @@ function parseUpdatePayload(body, contentType) {
   } else {
     return { error: "Data not found in request body" };
   }
+  if (Data && typeof Data.runningPolicy === "object") normalizePolicyDates(Data.runningPolicy);
+  if (Data && typeof Data.previousPolicy === "object") normalizePolicyDates(Data.previousPolicy);
   return { Data };
 }
 
