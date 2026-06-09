@@ -141,16 +141,16 @@ export default function DataTable({
       )}
 
       {/* Desktop table */}
-      <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[640px] text-left text-[14px]">
+      <div className="hidden md:block">
+        <table className="w-full text-left text-[14px]">
           <thead>
             <tr className="border-b border-line bg-subtle text-[11px] uppercase tracking-wider text-muted">
               {columns.map((c) => (
-                <th key={c.key} className={cn("px-4 py-3.5 font-semibold", c.className)}>
+                <th key={c.key} className={cn("px-3 py-3.5 font-semibold", c.className)}>
                   {c.title}
                 </th>
               ))}
-              {hasActions && <th className="px-4 py-3.5 text-right font-semibold">Actions</th>}
+              {hasActions && <th className="px-3 py-3.5 text-right font-semibold">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -181,12 +181,12 @@ export default function DataTable({
                   className="border-b border-line transition-colors even:bg-subtle/20 hover:bg-brand-50/50"
                 >
                   {columns.map((c) => (
-                    <td key={c.key} className={cn("px-4 py-3 text-ink", c.className)}>
+                    <td key={c.key} className={cn("px-3 py-3 text-ink", c.className)}>
                       {c.render ? c.render(row) : row[c.key] ?? "—"}
                     </td>
                   ))}
                   {hasActions && (
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {onView && <RowBtn icon={Eye} onClick={() => onView(row)} title="View" />}
                         {onEdit && <RowBtn icon={Pencil} onClick={() => onEdit(row)} title="Edit" />}

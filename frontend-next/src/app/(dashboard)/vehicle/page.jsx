@@ -112,44 +112,15 @@ export default function VehiclePage() {
     finally { setRenewingId(null); }
   };
 
-  // Stacked cells keep every field visible without a wide, clipping table.
   const columns = useMemo(() => [
-    {
-      key: "name", title: "Owner",
-      render: (r) => (
-        <div className="min-w-0">
-          <div className="truncate font-medium text-ink">{r.name}</div>
-          <div className="text-[12px] text-muted">{r.mobile}</div>
-        </div>
-      ),
-    },
-    {
-      key: "vehicle_number", title: "Vehicle",
-      render: (r) => (
-        <div className="min-w-0">
-          <div className="font-medium text-ink">{r.vehicle_number}</div>
-          <div className="truncate text-[12px] text-muted">{r.makeModel}</div>
-        </div>
-      ),
-    },
-    {
-      key: "company", title: "Policy",
-      render: (r) => (
-        <div className="min-w-0">
-          <div className="truncate text-ink">{r.company}</div>
-          <div className="truncate text-[12px] text-muted">{r.policy_number}</div>
-        </div>
-      ),
-    },
-    {
-      key: "expiry_date", title: "Expiry / Type",
-      render: (r) => (
-        <div>
-          <div className="whitespace-nowrap text-ink">{r.expiry_date || "—"}</div>
-          {r.ptype && r.ptype !== "—" && <Badge tone="brand">{r.ptype}</Badge>}
-        </div>
-      ),
-    },
+    { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: "mobile", title: "Mobile" },
+    { key: "vehicle_number", title: "Vehicle No." },
+    { key: "makeModel", title: "Make / Model" },
+    { key: "company", title: "Company" },
+    { key: "policy_number", title: "Policy No." },
+    { key: "expiry_date", title: "Expiry", render: (r) => r.expiry_date || "—" },
+    { key: "ptype", title: "Type", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
     { key: "status", title: "Status", render: (r) => <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge> },
   ], []);
 
