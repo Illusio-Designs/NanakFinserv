@@ -243,13 +243,13 @@ export default function DataTable({
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line px-4 py-3 text-[13px] text-muted sm:flex-row">
           <div className="flex items-center gap-2">
             <span>Show</span>
-            <select
-              value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="rounded-md border border-line bg-surface px-2 py-1 text-[13px] text-ink outline-none focus:border-brand-600"
-            >
-              {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <div className="w-[88px]">
+              <Dropdown
+                options={[10, 25, 50, 100].map((n) => ({ value: String(n), label: String(n) }))}
+                value={String(pageSize)}
+                onChange={(v) => { setPageSize(Number(v)); setPage(1); }}
+              />
+            </div>
             <span>per page</span>
           </div>
           <div className="flex items-center gap-3">
