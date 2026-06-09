@@ -11,9 +11,15 @@ How consumers (and their households, services and KYC) are managed.
 Page: **Dashboard → Consumers** (`/consumers`).
 
 ## Screen
-- Table: Name, Email, Mobile, **Services** count, **Family** count.
-- Global header search; **Services** count filter.
-- Row actions: **View** (read-only), **Edit**, **Family & documents**, **Upload document**.
+- Table: Name, Mobile, Email, **Services** (the service *names* as chips, not a
+  count), **Family** count (line icon). Serial-number column, **Show by** page-size
+  and pagination on every table.
+- **Family members are hidden from the top-level list** (they appear under their
+  head's Family); the dashboard **Consumer count** likewise counts heads only.
+- Global header search; **Services** filter.
+- Row actions: **View**, **Edit**, **Family & documents**, **Upload document**.
+- **View = one click shows everything**: profile + service names + **family roster**
+  + **KYC documents** (each with a View link), loaded inline — no extra clicks.
 - **Add Consumer** button → multi-step form.
 
 ## Add Consumer (stepper)
@@ -49,6 +55,17 @@ mappings (`PUT /user/data/update/consumer` with `category`).
   view stored docs and **upload** (type + file → `POST /user/consumer/documents/upload`).
   KYC is stored on the consumer and **reused across all policies** (e.g. the vehicle
   form shows "KYC on file").
+
+## Documents & storage
+- KYC files are stored per-area under **`/uploads/consumer-kyc/`** and served at
+  `BASE_URL/uploads/consumer-kyc/<file>`. That route is **token-protected**, so the
+  download URL carries `?token=<jwt>` (built by the `fileUrl()` helper).
+- KYC lives on the **consumer** (one row per type) and is **reused** across every
+  vertical/policy (e.g. the vehicle form shows "KYC on file").
+
+## Activity log
+- Every consumer add / assign is recorded and shown on the **Activity Log** page
+  (`/logs`) with **Who** (the acting user), Module, Event, Action and time.
 
 ## Notes
 - A consumer can be a **head** or a **member**; joining links a new user under a

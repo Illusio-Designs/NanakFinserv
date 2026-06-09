@@ -1,12 +1,13 @@
 # Vehicle Policy Management — user flow
 
-> **Completeness: ~95% (functionally complete).** Done: full add/edit, nature
+> **Completeness: ~98% (functionally complete).** Done: full add/edit, nature
 > (Fresh/Renewal/Portability), Policy Type + Plan (TP/Comprehensive/Full) +
 > Company as creatable dropdowns, **TP & OD/Full timelines**, nominee, previous
-> (past) policy, document uploads (RC + running/previous PDF), renewals tab +
-> renew + add-next, and **auto year-by-year reconcile** with date-derived status.
-> Pending: renewal-sheet bulk export, and richer history-timeline display in the
-> view modal. Requires the backend deployed (TP/OD columns + reconcile).
+> (past) policy, document uploads (RC + running/previous PDF), renewals + renew +
+> add-next, **single merged policy table** (`is_current` flag — running vs
+> history), **auto year-by-year reconcile** with date-derived status, and a
+> **past-journey timeline** (View/Download per policy). Pending: renewal-sheet bulk
+> export and **DB transactions** on add/update. Requires the backend deployed.
 
 
 How vehicle insurance is managed in the CRM (consumer-linked, TP/OD timelines,
@@ -61,11 +62,27 @@ year-by-year history). Page: **Dashboard → Vehicle** (`/vehicle`).
 ## What happens on submit (backend)
 - Consumer is created/linked by mobile and mapped to the Vehicle vertical.
 - Vehicle + running policy (+ previous policy, if any) + documents are saved.
-- **Auto timeline reconcile** (`reconcileVehiclePolicies`): the most recent policy
-  stays as **running**; any older running rows are **archived into history
-  (previous policies)**; every record's **status is recomputed from its expiry vs
-  today** (running / completed). Runs after **add, update, and renew** — so adding
-  data from anywhere keeps the year-by-year history consistent.
+- **Single policy table:** all policies live in `runningpolicies_vehicle` with an
+  **`is_current`** flag — `true` = the current policy, `false` = history. The API
+  still returns `runningPolicy` (object) + `previousPolicies` (array) via scoped
+  associations, so the frontend is unchanged. (The old `previouspolicies_vehicle`
+  table was merged in and dropped.)
+- **Auto timeline reconcile** (`reconcileVehiclePolicies`): flags the policy with
+  the **latest end date** as `is_current = true` (the running one) and the rest
+  `false`; recomputes every record's **status from its expiry vs today** (running /
+  completed). Runs after **add, update and renew**, regardless of entry order.
+
+## Documents & storage
+- Vehicle files (RC book + running/previous policy PDFs) are stored under
+  **`/uploads/vehicle/`**; consumer KYC uploaded from the vehicle form goes to
+  **`/uploads/consumer-kyc/`**. Both served at `BASE_URL/uploads/<path>` and
+  **token-protected** (`?token=<jwt>`, built by `fileUrl()`). Past-journey items
+  show **View** (open) + **Download** when a PDF exists.
+
+## Activity log
+- Vehicle **add / update / renewal** are recorded and shown on **Activity Log**
+  (`/logs`) with **Who** (acting user), Module, Event and time; renewal reminders
+  (cron, 7/3/1/0 days before expiry) appear as system events.
 
 ## TP vs OD/Full (timeline)
 A policy carries two expiry dates: `tp_expiry_date` (long-term TP) and
@@ -77,8 +94,9 @@ A policy carries two expiry dates: `tp_expiry_date` (long-term TP) and
 **Where:** Vehicle page → **Renewals** tab.
 
 **How upcoming renewals are displayed**
-- The tab loads `POST /user/vehicle/user/renewal/list` and shows each policy's
-  **owner, mobile, vehicle number, expiry date** and a **Renew** button.
+- The tab derives from the **policies list** (so it shows the real vehicle no +
+  expiry, soonest first, and excludes people without a policy) — each row has
+  owner, mobile, vehicle number, expiry and a **Renew** button.
 - Use the **Expiry** date-range filter (a single calendar, start→end) to narrow to
   policies expiring in a window (e.g. this month / next 30–60 days); type in the
   **header search** to find by name/mobile/vehicle number.
@@ -118,28 +136,23 @@ recomputed from its dates — keeping the year-by-year timeline correct.
   vehicle. The old one is archived to history and the new one becomes running.
 
 ## Reliability roadmap (to harden as an insurance system)
-Status today: policies auto-organize (latest = current/running, rest = history),
-status is date-derived (Running while active, **Closed** once expired), past PDFs
-are kept and downloadable. To make it production-reliable:
+✅ **Done:** single policy table + `is_current` (no cross-table row moves; ids
+stable); **idempotent reconcile** (latest = current, rest = history, status by
+date); **daily scheduler** — status refresh + `renewal_due` reminders at
+7/3/1/0 days; **per-area upload folders** + token-protected downloads;
+**activity log** with actor.
 
-1. **One policy table + `is_current` flag** (recommended) instead of moving rows
-   between running/previous. Reconcile currently destroys+recreates rows across
-   tables, which changes a policy's id — any linked document/audit FK would break.
-   Keeping all policies in one table and flipping a flag preserves ids + history.
-2. **DB transactions** around add/update (vehicle + running + previous + docs) so a
-   mid-failure can't leave orphan/duplicate policy rows.
-3. **Scheduled status + reminders (cron)**: nightly recompute statuses and emit
-   `renewal_due` notifications at 30/15/7/1 days before expiry; mark a current
-   policy past expiry as **Overdue** (lapsed cover is urgent/illegal to drive on).
-4. **Separate OD vs TP renewal**: OD/Full renews yearly even while long-term TP is
-   still valid — track and remind on `od_expiry_date` and `tp_expiry_date`
+Still to do:
+1. **DB transactions** around add/update (vehicle + running + previous + docs) so a
+   mid-failure can't leave orphan/duplicate rows. *(Next reliability item.)*
+2. **Overdue surfacing**: flag a current policy past its expiry as **Overdue**
+   (lapsed cover is urgent) and push it to the top of Pending.
+3. **Separate OD vs TP renewal reminders**: OD/Full renews yearly even while the
+   long-term TP is valid — remind on `od_expiry_date` and `tp_expiry_date`
    independently (status already prefers OD expiry).
-5. **Data integrity**: unique (vehicle_user_id, PolicyNumber); validate
-   PolicyFrom < PolicyTo and expiry consistency on write.
-6. **Audit trail**: record who/when for every policy change (created_by/updated_by
-   exist; add a policy_audit log for the full journey).
-7. **Document retention/versioning + backups** for the per-period policy PDFs.
-8. **Idempotent reconcile on read** as a safety net (already safe to re-run).
+4. **Data integrity**: unique (vehicle_user_id, PolicyNumber); validate
+   PolicyFrom < PolicyTo on write.
+5. **Audit trail table** + **PDF versioning/backups** for full history.
 
 ## Backend reference
 - Add: `POST /user/vehicle/user/add` · Update: `PUT /user/vehicle/user/update/:id`
