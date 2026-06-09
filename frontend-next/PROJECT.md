@@ -77,10 +77,10 @@ stable); idempotent reconcile; daily scheduler (status + reminders); per-area
 upload folders + token downloads; activity log with actor; recipient-filtered
 notifications; consumer-count excludes family; user role-update fix.
 
-🟡 **DB transactions / atomicity:**
-- ✅ Consumer add — true DB transaction (user + mappings + per-vertical records commit together).
-- ✅ Vehicle add — atomic via **rollback-on-failure** (deletes the orphan vehicle + policies/docs if a later step throws).
-- ⬜ Vehicle **update/renew** — wrap the archive + running-update + reconcile in a transaction (self-heals via reconcile today; lowest risk).
+✅ **DB transactions / atomicity (done):**
+- Consumer add — true DB transaction (user + mappings + per-vertical records commit together).
+- Vehicle add — atomic via **rollback-on-failure** (deletes the orphan vehicle + policies/docs if a later step throws).
+- Vehicle **update/renew** — wrapped in a DB transaction (user + vehicle + policy archive/update + docs + reconcile commit together; rolls back on any error).
 
 ⬜ **Pending (priority):**
 2. **Overdue** surfacing — flag current policy past expiry as Overdue (red) + top of Pending.
