@@ -104,6 +104,16 @@ counts (consumers + their vertical) show ONLY consumers assigned to them.
 ✅ Also: **dark mode** (Auto = dark 6 PM–6 AM, + Light/Dark, persisted, no flash);
 **document file-type icons** (PDF/image) in consumer KYC + vehicle journey.
 
+✅ **Mediclaim brought up to Vehicle standard:**
+- Phase 1 — vehicle-style management: Policies/Pending/Renewals/Closed tabs, rich
+  table (company/policy/expiry+countdown/Overdue), view modal + journey, edit/renew.
+- Phase 2 — **model compressed** into one `running_policies` table with `is_current`
+  (merged the old `previous_policies`); reconcile + scoped queries; old table dropped.
+- Phase 3 — **rich form** from the old app: Nominee, Members (floater), Employees
+  (group), Previous policy (portability), Zone/Add-on/Tenure/From-To.
+- ⬜ Remaining: policy-PDF/claim **file upload via the modal** (needs multipart submit);
+  DB **transactions** on mediclaim add/update (merge logic done, txn wrap pending).
+
 ⬜ **Optional (post-launch, infra/config — not blocking):**
 1. **PDF versioning / backups** — move uploads to cloud object storage (S3/GCS) with
    versioning, or schedule an uploads-folder backup. Needs a storage choice + creds.

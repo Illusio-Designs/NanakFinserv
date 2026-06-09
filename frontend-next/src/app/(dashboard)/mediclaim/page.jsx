@@ -162,6 +162,7 @@ function MediclaimDetail({ d }) {
         <Row label="Premium" value={rp.PremiumAmount ? `₹${rp.PremiumAmount}` : "—"} />
         <Row label="Period" value={period(rp)} />
         <Row label="Expiry" value={d.expiry ? `${fmtDate(d.expiry)} · ${expiryCountdown(d.expiry)}` : "—"} />
+        <Row label="Nominee" value={rp.NomineeName ? `${rp.NomineeName}${rp.NomineeRelation ? ` (${rp.NomineeRelation})` : ""}` : "—"} />
         <Row label="Status" value={<Badge tone={s.tone}>{s.label}</Badge>} />
         {fileUrl(rp.CurrentPolicyFile || rp.PdfFile) && (
           <Row label="Policy PDF" value={<span className="flex items-center gap-3"><FileTypeIcon file={rp.CurrentPolicyFile || rp.PdfFile} size={14} /><a className="text-ink hover:underline" href={fileUrl(rp.CurrentPolicyFile || rp.PdfFile)} target="_blank" rel="noopener noreferrer">View</a><a className="text-brand-600 hover:underline" href={fileUrl(rp.CurrentPolicyFile || rp.PdfFile)} download>Download</a></span>} />
@@ -188,6 +189,20 @@ function MediclaimDetail({ d }) {
           </div>
         ) : <p className="rounded-lg border border-line p-3 text-[13px] text-muted">No previous policies.</p>}
       </div>
+      {(d.familymembers?.length > 0) && (
+        <Section title={`Members (${d.familymembers.length})`}>
+          {d.familymembers.map((m, i) => (
+            <Row key={i} label={m.FamilyName || `Member ${i + 1}`} value={[m.RelationshipWithPolicyHolder, m.Gender, m.DateOfBirth ? fmtDate(m.DateOfBirth) : null].filter(Boolean).join(" · ") || "—"} />
+          ))}
+        </Section>
+      )}
+      {(d.employees?.length > 0) && (
+        <Section title={`Employees (${d.employees.length})`}>
+          {d.employees.map((e, i) => (
+            <Row key={i} label={e.EmployeeName || `Employee ${i + 1}`} value={[e.RelationshipWithPolicyHolder, e.Gender, e.DateOfBirth ? fmtDate(e.DateOfBirth) : null].filter(Boolean).join(" · ") || "—"} />
+          ))}
+        </Section>
+      )}
     </div>
   );
 }
