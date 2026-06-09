@@ -57,7 +57,7 @@ function statusFromExpiry(p) {
   return d >= new Date() ? "running" : "completed";
 }
 
-export default function VehicleFormModal({ open, onClose, onSaved, editRow, renewMode = false }) {
+export default function VehicleFormModal({ open, onClose, onSaved, editRow, renewMode = false, prefillMobile = "" }) {
   const isEdit = !!editRow;
   const [form, setForm] = useState(empty);
   const [headUserId, setHeadUserId] = useState(null);
@@ -135,7 +135,8 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
       const mob = r.mobile || r.MobileNumber || "";
       if (/^\d{10}$/.test(mob)) api.get(`/user/consumer/documents/by-mobile/${mob}`).then((d) => setKyc(d.data?.data || [])).catch(() => setKyc(null));
     } else {
-      setForm(empty); setFound(null); setKyc(null); setHeadUserId(null);
+      setForm({ ...empty, MobileNumber: prefillMobile || "" });
+      setFound(null); setKyc(null); setHeadUserId(null);
     }
     Promise.all([
       api.get("/user/data/company-type").catch(() => null),
@@ -148,7 +149,7 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
       setPolicyPlans((pl?.data?.data || []).map((r) => ({ value: r.policy_plan_id, label: r.policy_name })));
       setHeads((cons?.data?.data || []).map((r) => ({ value: r.user_id, label: `${r.username || "—"} · ${r.mobileNumber || ""}` })));
     });
-  }, [open, isEdit, editRow]);
+  }, [open, isEdit, editRow, prefillMobile]);
 
   const findConsumer = async () => {
     const mobile = form.MobileNumber;

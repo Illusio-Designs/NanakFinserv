@@ -10,6 +10,7 @@ import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import Spinner from "@/components/ui/Spinner";
 import api, { showError, BASE_URL } from "@/lib/api";
+import { CATEGORY_IDS } from "@/config/ids";
 import VehicleFormModal from "./VehicleFormModal";
 
 const fileUrl = (f) => (f ? (String(f).startsWith("http") ? f : `${BASE_URL}/${f}`) : null);
@@ -51,6 +52,7 @@ export default function VehiclePage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
   const [renewRow, setRenewRow] = useState(null);
+  const [addPrefill, setAddPrefill] = useState(null); // mobile to prefill a new policy for an assigned consumer
   const [viewId, setViewId] = useState(null);
   const [viewData, setViewData] = useState(null);
   const [renewingId, setRenewingId] = useState(null);
@@ -78,26 +80,29 @@ export default function VehiclePage() {
     finally { setLoading(false); }
   };
 
-  // Pending = renewals due in the next 30 days + new this week — a manager's action list.
+  // Pending = (a) consumers assigned to Vehicle who have NO policy yet → Add record,
+  //           (b) policies due for renewal (within 30d / expired) → Renew.
   const loadPending = async () => {
     setLoading(true);
-    const now = new Date();
-    const todayISO = now.toISOString().slice(0, 10);
-    const in30 = new Date(now.getTime() + 30 * 864e5).toISOString().slice(0, 10);
-    const weekAgo = new Date(now.getTime() - 7 * 864e5).toISOString().slice(0, 10);
+    const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
     try {
-      const res = await api.post("/user/vehicle/user/list", {});
-      const all = (res?.data?.data || []).map(norm);
-      const due = all
-        .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) >= todayISO && r.expiry_date.slice(0, 10) <= in30)
-        .map((r) => ({ ...r, reason: "Renewal due (30d)", when: r.expiry_date }));
-      const fresh = all
-        .filter((r) => (r.createdAt || "").slice(0, 10) >= weekAgo)
-        .map((r) => ({ ...r, reason: "New (this week)", when: (r.createdAt || "").slice(0, 10) }));
-      // de-dupe by vehicle (a renewal-due row wins over new)
-      const map = new Map();
-      [...due, ...fresh].forEach((r) => { if (!map.has(r.vehicle_user_id)) map.set(r.vehicle_user_id, r); });
-      setPending([...map.values()]);
+      const [cRes, pRes] = await Promise.all([
+        api.get("/user/list/consumer").catch(() => null),
+        api.post("/user/vehicle/user/list", {}).catch(() => null),
+      ]);
+      const policies = (pRes?.data?.data || []).map(norm);
+      const policyUserIds = new Set(policies.map((p) => p.user_id).filter(Boolean));
+      const assigned = (cRes?.data?.data || [])
+        .filter((c) => (c.category || []).some((m) => m.category_id === CATEGORY_IDS.VEHICLE) && !policyUserIds.has(c.user_id))
+        .map((c) => ({
+          vehicle_user_id: c.user_id, user_id: c.user_id,
+          name: c.username || "—", mobile: c.mobileNumber || "—", vehicle_number: "—",
+          reason: "Assigned — add policy", when: (c.createdAt || "").slice(0, 10),
+        }));
+      const due = policies
+        .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) <= in30)
+        .map((r) => ({ ...r, reason: "Renewal due", when: r.expiry_date }));
+      setPending([...assigned, ...due]);
     } catch (e) { showError(e, "Could not load pending"); setPending([]); }
     finally { setLoading(false); }
   };
@@ -155,7 +160,7 @@ export default function VehiclePage() {
         String(r.reason).includes("Renewal") ? (
           <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
         ) : (
-          <Button size="sm" icon={FilePlus} onClick={() => setRenewRow(r)}>Add record</Button>
+          <Button size="sm" icon={FilePlus} onClick={() => setAddPrefill(r.mobile)}>Add record</Button>
         ),
     },
   ], [renewingId]);
@@ -239,6 +244,7 @@ export default function VehiclePage() {
       )}
 
       <VehicleFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={loadPolicies} />
+      <VehicleFormModal open={!!addPrefill} prefillMobile={addPrefill} onClose={() => setAddPrefill(null)} onSaved={() => { setAddPrefill(null); loadPending(); }} />
       <VehicleFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={loadPolicies} />
       <VehicleFormModal open={!!renewRow} editRow={renewRow} renewMode onClose={() => setRenewRow(null)} onSaved={() => { loadPolicies(); if (tab === "renewals") loadRenewals(); }} />
 
@@ -286,30 +292,55 @@ function VehicleDetail({ d }) {
       <Section title={`Past journey (${prev.length})`}>
         {prev.length ? (
           <div className="relative space-y-3 pl-4 before:absolute before:left-1 before:top-1 before:bottom-1 before:w-px before:bg-line">
-            {[...prev].sort((a, b) => String(b.PolicyTo || b.ExpiryDate || "").localeCompare(String(a.PolicyTo || a.ExpiryDate || ""))).map((p, i) => (
-              <div key={i} className="relative">
-                <span className="absolute -left-[13px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-brand-600" />
-                <div className="flex items-center justify-between gap-3 rounded-lg border border-line p-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-[14px] font-medium text-ink">
-                      <span className="rounded bg-subtle px-1.5 py-0.5 text-[12px] font-semibold text-muted">{policyYear(p)}</span>
-                      {p.PolicyNumber || `Policy ${i + 1}`}
-                      <Badge tone={statusTone(p.status)}>{statusLabel(p.status)}</Badge>
-                    </div>
-                    <div className="mt-0.5 text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}</div>
-                  </div>
-                  {fileUrl(p.CurrentPolicyFile) && (
-                    <div className="flex shrink-0 gap-1">
-                      <a className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-ink hover:bg-subtle" href={fileUrl(p.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">View</a>
-                      <a className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle" href={fileUrl(p.CurrentPolicyFile)} download>Download</a>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+            {[...prev]
+              .sort((a, b) => String(b.PolicyTo || b.ExpiryDate || "").localeCompare(String(a.PolicyTo || a.ExpiryDate || "")))
+              .map((p, i) => <JourneyItem key={i} p={p} index={i} />)}
           </div>
         ) : <p className="py-1 text-[13px] text-muted">No previous policies.</p>}
       </Section>
+    </div>
+  );
+}
+
+function JourneyItem({ p, index }) {
+  const [open, setOpen] = useState(false);
+  const url = fileUrl(p.CurrentPolicyFile);
+  return (
+    <div className="relative">
+      <span className="absolute -left-[13px] top-3 h-2.5 w-2.5 rounded-full border-2 border-surface bg-brand-600" />
+      <div className="rounded-lg border border-line">
+        <div className="flex items-center justify-between gap-3 p-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 text-[14px] font-medium text-ink">
+              <span className="rounded bg-subtle px-1.5 py-0.5 text-[12px] font-semibold text-muted">{policyYear(p)}</span>
+              {p.PolicyNumber || `Policy ${index + 1}`}
+              <Badge tone={statusTone(p.status)}>{statusLabel(p.status)}</Badge>
+            </div>
+            <div className="mt-0.5 text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}</div>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            <button onClick={() => setOpen((o) => !o)} className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-ink hover:bg-subtle">{open ? "Hide" : "View"}</button>
+            {url ? (
+              <a href={url} download className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle">Download</a>
+            ) : (
+              <span className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-muted/60">No PDF</span>
+            )}
+          </div>
+        </div>
+        {open && (
+          <div className="grid grid-cols-1 gap-x-6 border-t border-line p-3 sm:grid-cols-2">
+            <Row label="Policy No." value={p.PolicyNumber || "—"} />
+            <Row label="Premium" value={p.PremiumAmount ? `₹${p.PremiumAmount}` : "—"} />
+            <Row label="NCB" value={p.NCB || "—"} />
+            <Row label="IDV" value={p.IDV || "—"} />
+            <Row label="Period" value={period(p)} />
+            <Row label="OD / Full expiry" value={p.od_expiry_date || p.ExpiryDate || "—"} />
+            <Row label="TP expiry" value={p.tp_expiry_date || "—"} />
+            <Row label="Nominee" value={p.NomineeName || "—"} />
+            {url && <Row label="Policy PDF" value={<a className="text-brand-600 hover:underline" href={url} target="_blank" rel="noopener noreferrer">View PDF</a>} />}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
