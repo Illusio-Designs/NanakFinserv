@@ -2501,13 +2501,10 @@ exports.getVehicleUserRenewalData = async (req, res) => {
           raw: true,
         });
   
-        // Check category presence
-        const hasMediclaim = crList.some(
-          (m) => m["category.category_name"] === "Mediclaim"
-        );
-        const hasVehicle = crList.some(
-          (m) => m["category.category_name"] === "Vehicle Insurance"
-        );
+        // Check category presence by stable id (seeded name is "Vehicle", not
+        // "Vehicle Insurance" — the old name check skipped everyone).
+        const hasMediclaim = crList.some((m) => m.category_id === CATEGORY_IDS.MEDICLAIM);
+        const hasVehicle = crList.some((m) => m.category_id === CATEGORY_IDS.VEHICLE);
         if (!hasVehicle) {
             logger.debug("Skipping Non-Vehicle User:", user.username);
             continue;

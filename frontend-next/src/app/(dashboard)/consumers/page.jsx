@@ -129,7 +129,7 @@ export default function ConsumersPage() {
       {
         key: "family",
         title: "Family",
-        render: (r) => (r.family ? <Badge tone="success">👨‍👩‍👧 {r.family}</Badge> : "—"),
+        render: (r) => (r.family ? <Badge tone="success"><Users size={12} className="mr-1 inline" />{r.family}</Badge> : "—"),
       },
     ],
     []
