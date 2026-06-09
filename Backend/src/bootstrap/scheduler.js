@@ -54,11 +54,56 @@ async function runRenewalReminders() {
   return sent;
 }
 
+// Mediclaim policy renewal reminders (ExpiryDate on the running policy).
+async function runMediclaimReminders() {
+  let sent = 0;
+  const running = await db.runningPolicyMediclaim.findAll({ raw: true });
+  for (const rp of running) {
+    const dleft = daysTo(rp.ExpiryDate || rp.PolicyTo);
+    if (dleft === null || ![7, 3, 1, 0].includes(dleft)) continue;
+    try {
+      const mu = await db.medicliamuser.findByPk(rp.mediclaim_id, { raw: true });
+      if (!mu) continue;
+      await db.notification.create({
+        title: dleft <= 0 ? "Mediclaim policy expires today" : `Mediclaim policy due in ${dleft} day(s)`,
+        message: "Mediclaim renewal due",
+        type: "mediclaim", category: "renewal_due",
+        user_id: null, target_user_id: mu.user_id || null, is_read: false,
+      });
+      sent++;
+    } catch (e) { logger.error({ err: e }, "mediclaim reminder failed"); }
+  }
+  return sent;
+}
+
+// Life insurance premium-due reminders (due_date_of_premium).
+async function runLifeReminders() {
+  let sent = 0;
+  const policies = await db.lifeInsurance.findAll({ raw: true });
+  for (const p of policies) {
+    const dleft = daysTo(p.due_date_of_premium);
+    if (dleft === null || ![7, 3, 1, 0].includes(dleft)) continue;
+    try {
+      await db.notification.create({
+        title: dleft <= 0 ? "Life premium due today" : `Life premium due in ${dleft} day(s)`,
+        message: `${p.proposer_name || "Policy"} — premium due`,
+        type: "life_insurance", category: "renewal_due",
+        user_id: null, target_user_id: p.user_id || null, is_read: false,
+      });
+      sent++;
+    } catch (e) { logger.error({ err: e }, "life reminder failed"); }
+  }
+  return sent;
+}
+
 async function runDaily() {
   try {
     const refreshed = await runStatusRefresh();
     const reminders = await runRenewalReminders();
-    logger.info({ refreshed, reminders }, "daily scheduler complete");
+    let medi = 0, life = 0;
+    try { medi = await runMediclaimReminders(); } catch (e) { logger.error({ err: e }, "mediclaim reminders failed"); }
+    try { life = await runLifeReminders(); } catch (e) { logger.error({ err: e }, "life reminders failed"); }
+    logger.info({ refreshed, reminders, medi, life }, "daily scheduler complete");
   } catch (e) {
     logger.error({ err: e }, "daily scheduler failed");
   }
