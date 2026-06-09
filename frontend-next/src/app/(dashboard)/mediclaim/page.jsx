@@ -11,7 +11,9 @@ import Dropdown from "@/components/ui/Dropdown";
 import Tabs from "@/components/ui/Tabs";
 import Badge from "@/components/ui/Badge";
 import FileTypeIcon from "@/components/ui/FileTypeIcon";
-import api, { showError, fileUrl } from "@/lib/api";
+import FileUpload from "@/components/ui/FileUpload";
+import Cookies from "js-cookie";
+import api, { showError, fileUrl, BASE_URL } from "@/lib/api";
 import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
 import { CATEGORY_IDS } from "@/config/ids";
 import MediclaimPolicyModal from "./MediclaimPolicyModal";
@@ -75,7 +77,8 @@ export default function MediclaimPage() {
 
   const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
   const closedRows = useMemo(() => rows.filter((r) => daysUntil(r.expiry) !== null && daysUntil(r.expiry) < 0), [rows]);
-  const renewals = useMemo(() => [...rows].filter((r) => r.expiry).sort((a, b) => String(a.expiry).localeCompare(String(b.expiry))), [rows]);
+  // Renewals = policies still valid (not overdue) — overdue ones live in Closed.
+  const renewals = useMemo(() => [...rows].filter((r) => r.expiry && daysUntil(r.expiry) !== null && daysUntil(r.expiry) >= 0).sort((a, b) => String(a.expiry).localeCompare(String(b.expiry))), [rows]);
   const pending = useMemo(() => {
     const policyUserIds = new Set(rows.map((r) => r.user_id).filter(Boolean));
     const assigned = consumers
@@ -284,6 +287,7 @@ function Products() {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [pdfs, setPdfs] = useState([]); // product brochure/policy PDFs
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -306,9 +310,18 @@ function Products() {
     if (!name.trim()) return toast.error("Product name is required");
     setSaving(true);
     try {
-      await api.post(`/user/mediclaim/product/add/${companyId}`, { mediclaim_product_name: name });
+      let payload;
+      if (pdfs.length) {
+        const fd = new FormData();
+        fd.append("mediclaim_product_name", name);
+        pdfs.forEach((f, i) => fd.append(`pdf${i}`, f)); // backend reads keys starting with "pdf"
+        payload = fd;
+      } else {
+        payload = { mediclaim_product_name: name };
+      }
+      await api.post(`/user/mediclaim/product/add/${companyId}`, payload);
       toast.success("Product added");
-      setOpen(false); setName("");
+      setOpen(false); setName(""); setPdfs([]);
       loadProducts(companyId);
     } catch (e) { showError(e, "Could not add product"); }
     finally { setSaving(false); }
@@ -321,13 +334,38 @@ function Products() {
         <Button icon={Plus} disabled={!companyId} onClick={() => { setName(""); setOpen(true); }}>Add Product</Button>
       </div>
       {companyId ? (
-        <DataTable columns={[{ key: "name", title: "Product", render: (r) => <span className="font-medium">{r.name}</span> }]} data={rows} loading={loading} rowKey="mediclaim_product_id" searchKeys={["name"]} />
+        <DataTable columns={[
+          { key: "name", title: "Product", render: (r) => <span className="font-medium">{r.name}</span> },
+          { key: "pdfs", title: "Brochure / PDF", render: (r) => {
+            const list = r.mediclaimproductpdfs || r.mediclaimProductPdfs || [];
+            if (!list.length) return <span className="text-muted">—</span>;
+            return <span className="flex flex-wrap items-center gap-2">{list.map((p, i) => {
+              const url = `${BASE_URL}${String(p.pdf_path || "").startsWith("/") ? "" : "/"}${p.pdf_path}?token=${encodeURIComponent(Cookies.get("token") || "")}`;
+              return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[12px] text-brand-600 hover:underline"><FileTypeIcon file={p.pdf_name} size={12} />{p.pdf_name}</a>;
+            })}</span>;
+          } },
+        ]} data={rows} loading={loading} rowKey="mediclaim_product_id" searchKeys={["name"]} />
       ) : (
         <p className="rounded-lg border border-dashed border-line py-10 text-center text-[13px] text-muted">Select a company to view its products.</p>
       )}
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Product" size="sm"
-        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} loading={saving}>Save</Button></div>}>
-        <Input label="Product Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <Modal open={open} onClose={() => { setOpen(false); setPdfs([]); }} title="Add Product" size="sm"
+        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setOpen(false); setPdfs([]); }}>Cancel</Button><Button onClick={save} loading={saving}>Save</Button></div>}>
+        <div className="space-y-4">
+          <Input label="Product Name" value={name} onChange={(e) => setName(e.target.value)} />
+          <div>
+            <FileUpload label="Product brochure / PDF (optional)" accept=".pdf,.jpg,.jpeg,.png" onChange={(f) => f && setPdfs((p) => [...p, f])} />
+            {pdfs.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {pdfs.map((f, i) => (
+                  <li key={i} className="flex items-center justify-between rounded-md border border-line px-2.5 py-1.5 text-[12px]">
+                    <span className="flex items-center gap-2 truncate"><FileTypeIcon file={f.name} size={13} />{f.name}</span>
+                    <button type="button" className="text-muted hover:text-danger" onClick={() => setPdfs((p) => p.filter((_, idx) => idx !== i))}>Remove</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );
