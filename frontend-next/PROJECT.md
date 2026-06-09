@@ -77,8 +77,12 @@ stable); idempotent reconcile; daily scheduler (status + reminders); per-area
 upload folders + token downloads; activity log with actor; recipient-filtered
 notifications; consumer-count excludes family; user role-update fix.
 
+🟡 **DB transactions / atomicity:**
+- ✅ Consumer add — true DB transaction (user + mappings + per-vertical records commit together).
+- ✅ Vehicle add — atomic via **rollback-on-failure** (deletes the orphan vehicle + policies/docs if a later step throws).
+- ⬜ Vehicle **update/renew** — wrap the archive + running-update + reconcile in a transaction (self-heals via reconcile today; lowest risk).
+
 ⬜ **Pending (priority):**
-1. **DB transactions** around consumer add + vehicle add/update (no partial writes). *(next)*
 2. **Overdue** surfacing — flag current policy past expiry as Overdue (red) + top of Pending.
 3. **Separate OD vs TP** renewal reminders (OD yearly while TP long-term).
 4. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write.
