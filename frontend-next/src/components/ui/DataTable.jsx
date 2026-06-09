@@ -25,13 +25,15 @@ export default function DataTable({
   onView,
   onDelete,
   rowActions = [],
-  pageSize = 10,
+  pageSize: initialPageSize = 10,
   rowKey = "id",
   exportName = "export",
+  serial = true,
 }) {
   const { query: q } = useSearch(); // global header search drives all pages
   const [activeFilters, setActiveFilters] = useState({});
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(initialPageSize);
 
   useEffect(() => setPage(1), [q]);
 
@@ -145,6 +147,7 @@ export default function DataTable({
         <table className="w-full text-left text-[14px]">
           <thead>
             <tr className="border-b border-line bg-subtle text-[11px] uppercase tracking-wider text-muted">
+              {serial && <th className="w-12 px-3 py-3.5 font-semibold">#</th>}
               {columns.map((c) => (
                 <th key={c.key} className={cn("px-3 py-3.5 font-semibold", c.className)}>
                   {c.title}
@@ -157,17 +160,18 @@ export default function DataTable({
             {loading ? (
               [...Array(pageSize)].map((_, i) => (
                 <tr key={i} className="border-b border-line">
+                  {serial && <td className="px-3 py-3"><div className="skeleton h-4 w-6 rounded" /></td>}
                   {columns.map((c) => (
-                    <td key={c.key} className="px-4 py-3">
+                    <td key={c.key} className="px-3 py-3">
                       <div className="skeleton h-4 w-3/4 rounded" />
                     </td>
                   ))}
-                  {hasActions && <td className="px-4 py-3" />}
+                  {hasActions && <td className="px-3 py-3" />}
                 </tr>
               ))
             ) : pageRows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + (hasActions ? 1 : 0)} className="p-6">
+                <td colSpan={columns.length + (hasActions ? 1 : 0) + (serial ? 1 : 0)} className="p-6">
                   <EmptyState title="No records found" subtitle="Try adjusting your search or filters." />
                 </td>
               </tr>
@@ -180,6 +184,7 @@ export default function DataTable({
                   transition={{ delay: idx * 0.015 }}
                   className="border-b border-line transition-colors even:bg-subtle/20 hover:bg-brand-50/50"
                 >
+                  {serial && <td className="px-3 py-3 text-muted">{(safePage - 1) * pageSize + idx + 1}</td>}
                   {columns.map((c) => (
                     <td key={c.key} className={cn("px-3 py-3 text-ink", c.className)}>
                       {c.render ? c.render(row) : row[c.key] ?? "—"}
@@ -211,6 +216,7 @@ export default function DataTable({
         ) : (
           pageRows.map((row, idx) => (
             <div key={row[rowKey] ?? idx} className="rounded-lg border border-line p-3">
+              {serial && <div className="mb-1 text-[11px] font-semibold text-muted">#{(safePage - 1) * pageSize + idx + 1}</div>}
               {columns.map((c) => (
                 <div key={c.key} className="flex justify-between gap-3 py-1 text-[13px]">
                   <span className="text-muted">{c.title}</span>
@@ -232,18 +238,29 @@ export default function DataTable({
         )}
       </div>
 
-      {/* Pagination */}
-      {!loading && filtered.length > pageSize && (
-        <div className="flex items-center justify-between border-t border-line px-4 py-3 text-[13px] text-muted">
-          <span>
-            {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} of {filtered.length}
-          </span>
-          <div className="flex items-center gap-1">
-            <RowBtn icon={ChevronLeft} title="Prev" disabled={safePage === 1} onClick={() => setPage((p) => p - 1)} />
-            <span className="px-2 font-medium text-ink">
-              {safePage} / {totalPages}
+      {/* Pagination + "Show by" page-size selector */}
+      {!loading && filtered.length > 0 && (
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-line px-4 py-3 text-[13px] text-muted sm:flex-row">
+          <div className="flex items-center gap-2">
+            <span>Show</span>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              className="rounded-md border border-line bg-surface px-2 py-1 text-[13px] text-ink outline-none focus:border-brand-600"
+            >
+              {[10, 25, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span>per page</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span>
+              {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filtered.length)} of {filtered.length}
             </span>
-            <RowBtn icon={ChevronRight} title="Next" disabled={safePage === totalPages} onClick={() => setPage((p) => p + 1)} />
+            <div className="flex items-center gap-1">
+              <RowBtn icon={ChevronLeft} title="Prev" disabled={safePage === 1} onClick={() => setPage((p) => p - 1)} />
+              <span className="px-2 font-medium text-ink">{safePage} / {totalPages}</span>
+              <RowBtn icon={ChevronRight} title="Next" disabled={safePage === totalPages} onClick={() => setPage((p) => p + 1)} />
+            </div>
           </div>
         </div>
       )}
