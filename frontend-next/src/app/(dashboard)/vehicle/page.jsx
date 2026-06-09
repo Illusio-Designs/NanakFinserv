@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import Spinner from "@/components/ui/Spinner";
+import FileTypeIcon from "@/components/ui/FileTypeIcon";
 import api, { showError, fileUrl } from "@/lib/api";
 import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
 import { CATEGORY_IDS } from "@/config/ids";
@@ -288,7 +289,8 @@ function VehicleDetail({ d }) {
         <Row label="Status" value={(() => { const s = currentStatus({ expiry_date: rp.od_expiry_date || rp.ExpiryDate, status: rp.status }); return <Badge tone={s.tone}>{s.label}</Badge>; })()} />
         {fileUrl(rp.CurrentPolicyFile) && (
           <Row label="Policy PDF" value={
-            <span className="flex gap-3">
+            <span className="flex items-center gap-3">
+              <FileTypeIcon file={rp.CurrentPolicyFile} size={14} />
               <a className="text-ink hover:underline" href={fileUrl(rp.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">View</a>
               <a className="text-brand-600 hover:underline" href={fileUrl(rp.CurrentPolicyFile)} download>Download</a>
             </span>
@@ -331,7 +333,7 @@ function JourneyItem({ p, index, isLast }) {
           <div className="flex shrink-0 gap-1.5">
             <button onClick={() => setOpen((o) => !o)} className="press rounded-md border border-line px-2.5 py-1 text-[12px] font-medium text-ink hover:bg-subtle">{open ? "Hide" : "View"}</button>
             {url ? (
-              <a href={url} download className="press rounded-md border border-line px-2.5 py-1 text-[12px] font-medium text-brand-600 hover:bg-subtle">Download</a>
+              <a href={url} download className="press flex items-center gap-1 rounded-md border border-line px-2.5 py-1 text-[12px] font-medium text-brand-600 hover:bg-subtle"><FileTypeIcon file={p.CurrentPolicyFile} size={12} />Download</a>
             ) : (
               <span className="rounded-md border border-dashed border-line px-2.5 py-1 text-[12px] text-muted/60">No PDF</span>
             )}

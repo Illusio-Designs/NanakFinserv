@@ -5,6 +5,7 @@ import { Plus, UserPlus, Trash2, Users, UploadCloud } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
+import FileTypeIcon from "@/components/ui/FileTypeIcon";
 import StepperModal from "@/components/ui/StepperModal";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -468,7 +469,7 @@ export default function ConsumersPage() {
                   <div className="space-y-1">
                     {viewDocs.map((d) => (
                       <div key={d.id} className="flex items-center justify-between border-b border-line py-1.5 last:border-0">
-                        <span className="text-ink">{d.documents?.doc_name || "Document"}</span>
+                        <span className="flex items-center gap-2 text-ink"><FileTypeIcon file={d.file} size={15} />{d.documents?.doc_name || "Document"}</span>
                         {d.file && <a href={fileUrl(d.file)} target="_blank" rel="noopener noreferrer" className="text-[13px] text-brand-600 hover:underline">View</a>}
                       </div>
                     ))}
