@@ -13,13 +13,24 @@ export default function Popover({ open, onClose, anchorRef, children, matchWidth
 
   useEffect(() => {
     if (!open) return;
+    let raf;
     const update = () => {
       const el = anchorRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left, width: r.width });
+      const menuH = menuRef.current?.offsetHeight || 0;
+      const spaceBelow = window.innerHeight - r.bottom;
+      // Flip above the trigger when there isn't room below (e.g. table footer).
+      const openUp = menuH > 0 && spaceBelow < menuH + 12 && r.top > spaceBelow;
+      setPos({
+        top: openUp ? Math.max(8, r.top - menuH - 4) : r.bottom + 4,
+        left: r.left,
+        width: r.width,
+      });
     };
     update();
+    // Re-measure once the menu has a height so the flip decision is accurate.
+    if (typeof requestAnimationFrame !== "undefined") raf = requestAnimationFrame(update);
     const onDoc = (e) => {
       if (anchorRef.current?.contains(e.target)) return;
       if (menuRef.current?.contains(e.target)) return;
@@ -29,6 +40,7 @@ export default function Popover({ open, onClose, anchorRef, children, matchWidth
     window.addEventListener("scroll", update, true);
     document.addEventListener("mousedown", onDoc);
     return () => {
+      if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
       document.removeEventListener("mousedown", onDoc);

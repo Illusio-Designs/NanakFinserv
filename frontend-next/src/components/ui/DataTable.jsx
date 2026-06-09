@@ -245,9 +245,10 @@ export default function DataTable({
             <span>Show</span>
             <div className="w-[88px]">
               <Dropdown
+                placeholder=""
                 options={[10, 25, 50, 100].map((n) => ({ value: String(n), label: String(n) }))}
                 value={String(pageSize)}
-                onChange={(v) => { setPageSize(Number(v)); setPage(1); }}
+                onChange={(v) => { if (v) { setPageSize(Number(v)); setPage(1); } }}
               />
             </div>
             <span>per page</span>
