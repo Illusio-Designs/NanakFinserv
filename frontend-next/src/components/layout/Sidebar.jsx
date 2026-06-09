@@ -40,6 +40,9 @@ const isItemVisible = (item, verticals) => !item.vertical || !verticals || verti
 
 export default function Sidebar({ open, onClose, collapsed, onToggleCollapse, verticals }) {
   const pathname = usePathname();
+  // verticals === null → settings not loaded yet (first load, no cache): show a
+  // skeleton instead of every item, so disabled verticals never flash in.
+  const loading = verticals === null;
   const groups = NAV
     .map((g) => ({ ...g, items: g.items.filter((it) => isItemVisible(it, verticals)) }))
     .filter((g) => g.items.length > 0);
@@ -79,7 +82,13 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse, ve
         {/* Nav — when collapsed, allow overflow so the right-side tooltips
             aren't clipped; expanded uses vertical scroll. */}
         <nav className={cn("flex-1 space-y-5 px-3 py-4", collapsed ? "overflow-visible" : "overflow-y-auto")}>
-          {groups.map((group) => (
+          {loading ? (
+            <div className="space-y-2">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className={cn("h-10 rounded-lg bg-white/10", collapsed ? "mx-auto w-10" : "w-full")} />
+              ))}
+            </div>
+          ) : groups.map((group) => (
             <div key={group.section}>
               {!collapsed && (
                 <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/40">
