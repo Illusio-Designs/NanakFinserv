@@ -87,14 +87,16 @@ Mediclaim/Life; **Overdue** badge (red) for lapsed current vehicle policies; Pen
 sorted overdue-first; renewal reminders extended to **Mediclaim + Life**; shared
 `lib/format` date helper ("09 Jun 2026").
 
+✅ Also: **OD vs TP separate reminders**; **per-step form validation** (vehicle Consumer/Vehicle/Policy + consumer Details).
+
 ⬜ **Pending (priority):**
-1. **Separate OD vs TP** renewal reminders (OD yearly while TP long-term).
-2. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write.
-3. **Audit-log table** + **PDF versioning/backups**.
-4. Allow **vertical managers** to create masters (company/plan/type) or pre-seed them.
-5. Optional **email/SMS** on renewal_due via MSG91.
-6. **Building-manager dashboard** variant + per-manager scoped counts (org-wide today).
-7. **Per-step form validation**; consumer **KYC completeness** meter + filter; dark mode.
+1. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write. *(maintenance window — can fail if dupes exist)*
+2. **Audit-log table** + **PDF versioning/backups**.
+3. Allow **vertical managers** to create masters (company/plan/type) or pre-seed them.
+4. Optional **email/SMS** on renewal_due via MSG91.
+5. **Building-manager dashboard** variant + per-manager scoped counts (org-wide today).
+6. Consumer **KYC completeness** meter + "missing KYC" filter; document thumbnails; dark mode.
+7. Replicate full Pending/Closed + journey patterns to other verticals as they get data.
 
 ---
 
