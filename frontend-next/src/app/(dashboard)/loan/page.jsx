@@ -50,12 +50,21 @@ export default function LoanPage() {
 
   const statuses = useMemo(() => Array.from(new Set(rows.map((r) => r.status).filter((s) => s && s !== "—"))).sort(), [rows]);
 
+  // Pending = unassigned (notAssign) + added this week — what needs action.
+  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+  const isPending = (r) => {
+    const s = String(r.status || "").toLowerCase();
+    return s.includes("notassign") || s.includes("not assign") || s === "new" || (r.createdAt || "").slice(0, 10) >= weekAgo;
+  };
+  const pendingRows = useMemo(() => rows.filter(isPending), [rows]);
+
   const tabs = useMemo(() => [
     { value: "all", label: `All (${rows.length})` },
+    { value: "pending", label: `Pending (${pendingRows.length})` },
     ...statuses.map((s) => ({ value: s, label: `${s} (${rows.filter((r) => r.status === s).length})` })),
-  ], [rows, statuses]);
+  ], [rows, statuses, pendingRows]);
 
-  const data = tab === "all" ? rows : rows.filter((r) => r.status === tab);
+  const data = tab === "all" ? rows : tab === "pending" ? pendingRows : rows.filter((r) => r.status === tab);
 
   const openStatus = (r) => { setStatusRow(r); setNewStatus(r.status !== "—" ? r.status : ""); setRemarks(""); };
 

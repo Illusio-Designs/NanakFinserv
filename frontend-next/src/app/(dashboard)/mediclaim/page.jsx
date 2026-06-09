@@ -24,12 +24,14 @@ export default function MediclaimPage() {
         onChange={setTab}
         tabs={[
           { value: "policies", label: "Policies" },
+          { value: "pending", label: "Pending" },
           { value: "renewals", label: "Renewals" },
           { value: "companies", label: "Companies" },
           { value: "products", label: "Products" },
         ]}
       />
       {tab === "policies" && <Policies />}
+      {tab === "pending" && <Renewals dueWithinDays={30} title="Renewals due in 30 days" />}
       {tab === "renewals" && <Renewals />}
       {tab === "companies" && <Companies />}
       {tab === "products" && <Products />}
@@ -74,7 +76,7 @@ function Policies() {
   );
 }
 
-function Renewals() {
+function Renewals({ dueWithinDays, title } = {}) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -83,17 +85,25 @@ function Renewals() {
         // Wide window so all upcoming/expiring policies surface.
         const res = await api.post("/user/mediclaim/user/renewal/list", { startDate: "2000-01-01", endDate: "2100-01-01" });
         const d = res.data?.data || [];
-        setRows((Array.isArray(d) ? d : []).map((r) => ({
+        let mapped = (Array.isArray(d) ? d : []).map((r) => ({
           ...r,
           name: r.username || r.user_name || r.name || "—",
           mobile: r.mobileNumber || r.mobile || "—",
           expiry: r.runningPolicy?.ExpiryDate || r.ExpiryDate || "—",
-        })));
+        }));
+        if (dueWithinDays) {
+          const todayISO = new Date().toISOString().slice(0, 10);
+          const limit = new Date(Date.now() + dueWithinDays * 864e5).toISOString().slice(0, 10);
+          mapped = mapped.filter((r) => r.expiry && r.expiry !== "—" && String(r.expiry).slice(0, 10) >= todayISO && String(r.expiry).slice(0, 10) <= limit);
+        }
+        setRows(mapped);
       } catch (e) { showError(e, "Could not load renewals"); setRows([]); }
       finally { setLoading(false); }
     })();
-  }, []);
+  }, [dueWithinDays]);
   return (
+    <>
+      {title && <p className="mb-2 text-[13px] text-muted">{title}</p>}
     <DataTable
       columns={[
         { key: "name", title: "Name", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -106,6 +116,7 @@ function Renewals() {
       searchKeys={["name", "mobile"]}
       filters={[{ key: "expiry", label: "Expiry", type: "dateRange" }]}
     />
+    </>
   );
 }
 

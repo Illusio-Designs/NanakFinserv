@@ -63,22 +63,25 @@ export default function VehiclePage() {
     finally { setLoading(false); }
   };
 
-  // Pending = newly added (today) + renewals due today — what a manager needs to action.
+  // Pending = renewals due in the next 30 days + new this week — a manager's action list.
   const loadPending = async () => {
     setLoading(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const todayISO = now.toISOString().slice(0, 10);
+    const in30 = new Date(now.getTime() + 30 * 864e5).toISOString().slice(0, 10);
+    const weekAgo = new Date(now.getTime() - 7 * 864e5).toISOString().slice(0, 10);
     try {
-      const [pRes, rRes] = await Promise.all([
-        api.post("/user/vehicle/user/list", {}).catch(() => null),
-        api.post("/user/vehicle/user/renewal/list", { startDate: today, endDate: today }).catch(() => null),
-      ]);
-      const pol = (pRes?.data?.data || []).map(norm).filter((r) => (r.createdAt || "").slice(0, 10) === today)
-        .map((r) => ({ ...r, reason: "New entry", when: (r.createdAt || "").slice(0, 10) }));
-      const ren = (rRes?.data?.data || []).map(norm)
-        .map((r) => ({ ...r, reason: "Renewal due today", when: r.expiry_date || today }));
-      // de-dupe by vehicle_user_id (renewal reason wins)
+      const res = await api.post("/user/vehicle/user/list", {});
+      const all = (res?.data?.data || []).map(norm);
+      const due = all
+        .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) >= todayISO && r.expiry_date.slice(0, 10) <= in30)
+        .map((r) => ({ ...r, reason: "Renewal due (30d)", when: r.expiry_date }));
+      const fresh = all
+        .filter((r) => (r.createdAt || "").slice(0, 10) >= weekAgo)
+        .map((r) => ({ ...r, reason: "New (this week)", when: (r.createdAt || "").slice(0, 10) }));
+      // de-dupe by vehicle (a renewal-due row wins over new)
       const map = new Map();
-      [...pol, ...ren].forEach((r) => map.set(r.vehicle_user_id, r));
+      [...due, ...fresh].forEach((r) => { if (!map.has(r.vehicle_user_id)) map.set(r.vehicle_user_id, r); });
       setPending([...map.values()]);
     } catch (e) { showError(e, "Could not load pending"); setPending([]); }
     finally { setLoading(false); }
