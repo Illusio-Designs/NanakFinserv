@@ -31,7 +31,7 @@ export default function Button({
       whileTap={{ scale: 0.97 }}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed",
         VARIANTS[variant],
         SIZES[size],
         className

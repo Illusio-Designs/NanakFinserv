@@ -102,7 +102,7 @@ export default function DataTable({
         <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
           {resolvedFilters.map((f) =>
             f.type === "dateRange" ? (
-              <div key={f.key} className="sm:w-auto">
+              <div key={f.key} className="sm:w-64">
                 <DateRange
                   value={activeFilters[f.key] || {}}
                   onChange={(v) => {

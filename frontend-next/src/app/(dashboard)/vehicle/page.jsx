@@ -38,7 +38,7 @@ const norm = (r) => {
     company: (rp.CompanyType && rp.CompanyType.company_name) || r.company_name || "—",
     policy_number: rp.PolicyNumber || "—",
     plan: (rp.policyPlan && rp.policyPlan.PolicyPlanType) || r.policy_plan_type || "—",
-    status: rp.status || r.status || "—",
+    status: statusLabel(rp.status || r.status), // friendly: Running / Closed (also drives the filter)
     expiry_date: rp.od_expiry_date || rp.ExpiryDate || r.expiry_date || "",
   };
 };
@@ -116,11 +116,11 @@ export default function VehiclePage() {
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "mobile", title: "Mobile" },
     { key: "vehicle_number", title: "Vehicle No." },
-    { key: "makeModel", title: "Make / Model" },
+    { key: "makeModel", title: "Make / Model", className: "hidden lg:table-cell" },
     { key: "company", title: "Company" },
-    { key: "policy_number", title: "Policy No." },
+    { key: "policy_number", title: "Policy No.", className: "hidden xl:table-cell" },
     { key: "expiry_date", title: "Expiry", render: (r) => r.expiry_date || "—" },
-    { key: "ptype", title: "Type", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
+    { key: "ptype", title: "Type", className: "hidden xl:table-cell", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
     { key: "status", title: "Status", render: (r) => <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge> },
   ], []);
 
