@@ -156,7 +156,8 @@ exports.getUserCounts = async (req, res) => {
             consumerWhereObj.builder_user = req.user.id; // Only consumers linked to the builder user.
         }
         consumerWhereObj.role_id = [ROLE_IDS.CONSUMER, ROLE_IDS.BUILDER_CONSUMER]; // Consumer and builder consumer roles
-        
+        consumerWhereObj.family_head_id = null; // count households/heads only, not family members
+
 
         // Calculate dates for expiry counts
         const nextWeek = new Date(today);

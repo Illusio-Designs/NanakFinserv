@@ -12,7 +12,7 @@ import PhoneInput from "@/components/ui/PhoneInput";
 import Checkbox from "@/components/ui/Checkbox";
 import Dropdown from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
-import api, { showError } from "@/lib/api";
+import api, { showError, BASE_URL } from "@/lib/api";
 import { CATEGORY_IDS } from "@/config/ids";
 import { firstError, field, checks } from "@/utils/validators";
 import ConsumerManageModal from "./ConsumerManageModal";
@@ -70,6 +70,9 @@ export default function ConsumersPage() {
   const [manageRow, setManageRow] = useState(null);
   const [manageTab, setManageTab] = useState("family");
   const [viewRow, setViewRow] = useState(null);
+  const [viewFamily, setViewFamily] = useState([]);
+  const [viewDocs, setViewDocs] = useState([]);
+  const [viewLoading, setViewLoading] = useState(false);
   const [familyList, setFamilyList] = useState([]);
   const [famDraft, setFamDraft] = useState({ username: "", phone_number: "", email: "", picked: {} });
   const [joinHeadId, setJoinHeadId] = useState("");
@@ -150,6 +153,25 @@ export default function ConsumersPage() {
     () => rows.map((r) => ({ value: r.user_id, label: `${r.username || "—"} · ${r.mobileNumber || ""}` })),
     [rows]
   );
+
+  // View shows EVERYTHING on a single click: profile + services + family + KYC.
+  const openView = async (r) => {
+    setViewRow(r);
+    setViewFamily([]);
+    setViewDocs([]);
+    if (!r.mobileNumber) return;
+    setViewLoading(true);
+    try {
+      const [h, d] = await Promise.all([
+        api.get(`/user/household/${r.mobileNumber}`).catch(() => null),
+        api.get(`/user/consumer/documents/by-mobile/${r.mobileNumber}`).catch(() => null),
+      ]);
+      setViewFamily(h?.data?.data?.members || []);
+      setViewDocs(d?.data?.data || []);
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
   const openEdit = (r) => {
     setEditRow(r);
@@ -363,7 +385,7 @@ export default function ConsumersPage() {
         rowKey="user_id"
         searchKeys={["username", "email", "mobileNumber"]}
         onEdit={openEdit}
-        onView={(r) => setViewRow(r)}
+        onView={openView}
         rowActions={[
           { icon: Users, title: "Family & documents", onClick: (r) => { setManageTab("family"); setManageRow(r); } },
           { icon: UploadCloud, title: "Upload document", onClick: (r) => { setManageTab("documents"); setManageRow(r); } },
@@ -408,18 +430,55 @@ export default function ConsumersPage() {
         onChanged={load}
       />
 
-      {/* View — read-only info */}
-      <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Consumer details" subtitle={viewRow?.mobileNumber}>
+      {/* View — everything on one click: profile + services + family + documents */}
+      <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Consumer details" subtitle={viewRow?.mobileNumber} size="lg">
         {viewRow && (
-          <div className="space-y-2 text-[14px]">
-            <Row label="Name" value={viewRow.username || "—"} />
-            <Row label="Mobile" value={viewRow.mobileNumber || "—"} />
-            <Row label="Email" value={viewRow.email || "—"} />
-            <Row label="Reference" value={viewRow.referenceName || "—"} />
-            <Row label="Services" value={viewRow.services ? `${viewRow.services} active` : "None"} />
-            <Row label="Family members" value={viewRow.family || 0} />
-            <div className="flex justify-end gap-2 pt-3">
-              <Button variant="secondary" icon={Users} onClick={() => { setViewRow(null); setManageTab("family"); setManageRow(viewRow); }}>Family & docs</Button>
+          <div className="space-y-5 text-[14px]">
+            <div>
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">Profile</div>
+              <div className="rounded-lg border border-line p-3">
+                <Row label="Name" value={viewRow.username || "—"} />
+                <Row label="Mobile" value={viewRow.mobileNumber || "—"} />
+                <Row label="Email" value={viewRow.email || "—"} />
+                <Row label="Reference" value={viewRow.referenceName || "—"} />
+                <Row label="Services" value={viewRow.serviceNames?.length ? viewRow.serviceNames.join(", ") : "None"} />
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">Family ({viewFamily.length})</div>
+              <div className="rounded-lg border border-line p-3">
+                {viewLoading ? <div className="skeleton h-8 rounded" /> : viewFamily.length ? (
+                  <div className="space-y-1">
+                    {viewFamily.map((m) => (
+                      <div key={m.user_id} className="flex items-center justify-between border-b border-line py-1.5 last:border-0">
+                        <span className="font-medium text-ink">{m.username || "—"} {m.isHead && <Badge tone="brand">Head</Badge>}</span>
+                        <span className="text-muted">{m.mobileNumber}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="py-1 text-[13px] text-muted">No family members.</p>}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">KYC documents ({viewDocs.length})</div>
+              <div className="rounded-lg border border-line p-3">
+                {viewLoading ? <div className="skeleton h-8 rounded" /> : viewDocs.length ? (
+                  <div className="space-y-1">
+                    {viewDocs.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between border-b border-line py-1.5 last:border-0">
+                        <span className="text-ink">{d.documents?.doc_name || "Document"}</span>
+                        {d.file && <a href={`${BASE_URL}/${d.file}`} target="_blank" rel="noopener noreferrer" className="text-[13px] text-brand-600 hover:underline">View</a>}
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="py-1 text-[13px] text-muted">No documents.</p>}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" icon={Users} onClick={() => { setViewRow(null); setManageTab("family"); setManageRow(viewRow); }}>Manage family</Button>
               <Button icon={UploadCloud} onClick={() => { setViewRow(null); setManageTab("documents"); setManageRow(viewRow); }}>Upload doc</Button>
             </div>
           </div>

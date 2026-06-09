@@ -32,6 +32,7 @@ export default function VehiclePage() {
   const [tab, setTab] = useState("policies");
   const [rows, setRows] = useState([]);
   const [renewals, setRenewals] = useState([]);
+  const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
@@ -60,9 +61,31 @@ export default function VehiclePage() {
     finally { setLoading(false); }
   };
 
+  // Pending = newly added (today) + renewals due today — what a manager needs to action.
+  const loadPending = async () => {
+    setLoading(true);
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const [pRes, rRes] = await Promise.all([
+        api.post("/user/vehicle/user/list", {}).catch(() => null),
+        api.post("/user/vehicle/user/renewal/list", { startDate: today, endDate: today }).catch(() => null),
+      ]);
+      const pol = (pRes?.data?.data || []).map(norm).filter((r) => (r.createdAt || "").slice(0, 10) === today)
+        .map((r) => ({ ...r, reason: "New entry", when: (r.createdAt || "").slice(0, 10) }));
+      const ren = (rRes?.data?.data || []).map(norm)
+        .map((r) => ({ ...r, reason: "Renewal due today", when: r.expiry_date || today }));
+      // de-dupe by vehicle_user_id (renewal reason wins)
+      const map = new Map();
+      [...pol, ...ren].forEach((r) => map.set(r.vehicle_user_id, r));
+      setPending([...map.values()]);
+    } catch (e) { showError(e, "Could not load pending"); setPending([]); }
+    finally { setLoading(false); }
+  };
+
   useEffect(() => {
     if (tab === "policies") loadPolicies();
-    else loadRenewals();
+    else if (tab === "renewals") loadRenewals();
+    else loadPending();
   }, [tab]);
 
   // Load full detail (running + previous policies) for the view modal.
@@ -94,6 +117,14 @@ export default function VehiclePage() {
     { key: "company", title: "Company" },
   ], []);
 
+  const pendingColumns = useMemo(() => [
+    { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: "mobile", title: "Mobile" },
+    { key: "vehicle_number", title: "Vehicle No." },
+    { key: "reason", title: "Reason", render: (r) => <Badge tone={r.reason === "Renewal due today" ? "warning" : "success"}>{r.reason}</Badge> },
+    { key: "when", title: "Date" },
+  ], []);
+
   const renewalColumns = useMemo(() => [
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "mobile", title: "Mobile" },
@@ -111,9 +142,9 @@ export default function VehiclePage() {
     <div>
       <PageHeader title="Vehicle Insurance" subtitle="Vehicle policies & renewals" actions={<Button icon={Plus} onClick={() => setAddOpen(true)}>Add Vehicle Policy</Button>} />
 
-      <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[{ value: "policies", label: "Policies" }, { value: "renewals", label: "Renewals" }]} />
+      <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[{ value: "policies", label: "Policies" }, { value: "pending", label: `Pending${pending.length ? ` (${pending.length})` : ""}` }, { value: "renewals", label: "Renewals" }]} />
 
-      {tab === "policies" ? (
+      {tab === "policies" && (
         <DataTable
           columns={columns}
           data={rows}
@@ -125,7 +156,23 @@ export default function VehiclePage() {
           onEdit={(r) => setEditRow(r)}
           rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
         />
-      ) : (
+      )}
+
+      {tab === "pending" && (
+        <DataTable
+          columns={pendingColumns}
+          data={pending}
+          loading={loading}
+          rowKey="vehicle_user_id"
+          searchKeys={["name", "mobile", "vehicle_number", "reason"]}
+          filters={[{ key: "reason", label: "Reason" }]}
+          onView={openView}
+          onEdit={(r) => setEditRow(r)}
+          rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
+        />
+      )}
+
+      {tab === "renewals" && (
         <DataTable
           columns={renewalColumns}
           data={renewals}
