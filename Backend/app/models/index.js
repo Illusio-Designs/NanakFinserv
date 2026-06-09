@@ -56,7 +56,7 @@ db.previousPolicyMediclaim  = require("./previousPolicyMediclaim.model")(sequeli
 db.blog = require("./blog.model")(sequelize, Sequelize);
 db.vehicleUser  = require("./vehicle_details/vehicleUser.model")(sequelize,Sequelize)
 db.vehcileRunningPolicy  = require("./vehicle_details/vehcileRunningPolicy.model")(sequelize,Sequelize)
-db.vehiclePreviousPolicy  = require("./vehicle_details/vehiclePreviousPolicy.model")(sequelize,Sequelize)
+// vehiclePreviousPolicy merged into vehcileRunningPolicy (is_current flag); table dropped at boot.
 db.vehicle_document  = require("./vehicle_details/vehicle_document.model")(sequelize,Sequelize)
 db.lifeInsurance = require("./lifeInsurance.model")(sequelize, Sequelize)
 db.lifeInsuranceDocument = require("./lifeInsuranceDocument.model")(sequelize, Sequelize)
@@ -263,21 +263,13 @@ db.vehcileRunningPolicy.belongsTo(db.policyType, { foreignKey: 'policy_type_id',
 db.companyType.hasOne(db.vehcileRunningPolicy, { foreignKey: 'company_id' });
 db.vehcileRunningPolicy.belongsTo(db.companyType, { foreignKey: 'company_id', as: 'CompanyType' });
 
-db.policyPlan.hasOne(db.vehiclePreviousPolicy, { foreignKey: 'policy_plan_id' });
-db.vehiclePreviousPolicy.belongsTo(db.policyPlan, { foreignKey: 'policy_plan_id', as: 'policyPlan' });
-
-db.policyType.hasOne(db.vehiclePreviousPolicy, { foreignKey: 'policy_type_id' });
-db.vehiclePreviousPolicy.belongsTo(db.policyType, { foreignKey: 'policy_type_id', as: 'policyType' });
-
-db.companyType.hasOne(db.vehiclePreviousPolicy, { foreignKey: 'company_id' });
-db.vehiclePreviousPolicy.belongsTo(db.companyType, { foreignKey: 'company_id', as: 'CompanyType' });
-
-db.vehicleUser.hasOne(db.vehcileRunningPolicy, { foreignKey: 'vehicle_user_id', as: 'runningPolicy' });
+// Unified policy table (runningpolicies_vehicle): current = is_current true,
+// history (previousPolicies) = same table with is_current false. The old
+// previouspolicies_vehicle table is dropped at boot (bootstrap/dropLegacyTables).
+db.vehicleUser.hasOne(db.vehcileRunningPolicy, { foreignKey: 'vehicle_user_id', as: 'runningPolicy', scope: { is_current: true } });
 db.vehcileRunningPolicy.belongsTo(db.vehicleUser, { foreignKey: 'vehicle_user_id' });
 
-  // Changed from hasOne to hasMany to fetch ALL previous policies
-db.vehicleUser.hasMany(db.vehiclePreviousPolicy, { foreignKey: 'vehicle_user_id', as: 'previousPolicies' });
-db.vehiclePreviousPolicy.belongsTo(db.vehicleUser, { foreignKey: 'vehicle_user_id' });
+db.vehicleUser.hasMany(db.vehcileRunningPolicy, { foreignKey: 'vehicle_user_id', as: 'previousPolicies', scope: { is_current: false } });
 
 db.vehicleUser.hasMany(db.vehicle_document, { foreignKey: 'vehicle_user_id', as: 'documents' });
 db.vehicle_document.belongsTo(db.vehicleUser, { foreignKey: 'vehicle_user_id' });

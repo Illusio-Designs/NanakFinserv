@@ -64,7 +64,6 @@ const {
   userCatergory,
   uuidv4,
   vehcileRunningPolicy,
-  vehiclePreviousPolicy,
   vehicleUser,
   vehicle_document,
   vehicles,
@@ -725,15 +724,15 @@ AgentContactNumber: _AgentContactNumber
                 // If there is no identifying field (shouldn't happen because hasMeaningfulPreviousPolicy true), fallback to a simple existence check
                 let alreadyExists = null;
                 if (duplicateWhere[Op.or].length > 0) {
-                    alreadyExists = await vehiclePreviousPolicy.findOne({ where: duplicateWhere });
+                    alreadyExists = await vehcileRunningPolicy.findOne({ where: { ...duplicateWhere, is_current: false } });
                 } else {
                     // fallback - check any previous policy for this vehicle_user_id (conservative)
-                    alreadyExists = await vehiclePreviousPolicy.findOne({ where: { vehicle_user_id: vehicle.vehicle_user_id } });
+                    alreadyExists = await vehcileRunningPolicy.findOne({ where: { vehicle_user_id: vehicle.vehicle_user_id, is_current: false } });
                 }
 
                 if (!alreadyExists) {
                     logger.debug("🧾 [CREATE] Inserting previous policy:", historyData);
-                    await vehiclePreviousPolicy.create(historyData);
+                    await vehcileRunningPolicy.create({ ...historyData, is_current: false });
                     insertedPreviousPolicy = true;
                 } else {
                     logger.debug("⚠️ [CREATE] Skipping previous policy insert because a matching previous policy already exists:", alreadyExists && alreadyExists.previous_policy_id ? alreadyExists.previous_policy_id : alreadyExists);
@@ -750,15 +749,15 @@ AgentContactNumber: _AgentContactNumber
             // Fetch all related data for complete response
             const createdVehicleUser = await vehicleUser.findByPk(vehicle.vehicle_user_id);
             const createdRunningPolicy = await vehcileRunningPolicy.findOne({
-                where: { vehicle_user_id: vehicle.vehicle_user_id },
+                where: { vehicle_user_id: vehicle.vehicle_user_id, is_current: true },
                 include: [
                     { model: companyType, as: 'CompanyType' },
                     { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
                     { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
                 ]
             });
-            const previousPolicies = await vehiclePreviousPolicy.findAll({
-                where: { vehicle_user_id: vehicle.vehicle_user_id },
+            const previousPolicies = await vehcileRunningPolicy.findAll({
+                where: { vehicle_user_id: vehicle.vehicle_user_id, is_current: false },
                 include: [
                     { model: companyType, as: 'CompanyType' },
                     { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
@@ -1136,7 +1135,7 @@ exports.updateVehicleUserData = async (req, res) => {
             
             // Fetch the CURRENT running policy before we overwrite it
             const currentRunningPolicy = await vehcileRunningPolicy.findOne({
-                where: { vehicle_user_id: req.params.vehicle_user_id },
+                where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true },
                 include: [
                     { model: companyType, as: 'CompanyType' },
                     { model: db.policyPlan, as: 'policyPlan' },
@@ -1157,13 +1156,13 @@ exports.updateVehicleUserData = async (req, res) => {
                     policyType: currentRunningPolicy.policyType
                 });
                 
-                // Mark all existing previous policies as inactive
-                await vehiclePreviousPolicy.update({
+                // Mark all existing history policies as inactive (reconcile recomputes status after)
+                await vehcileRunningPolicy.update({
                     status: "notActive",
                 }, {
-                    where: { vehicle_user_id: req.params.vehicle_user_id }
+                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false }
                 });
-                
+
                 // Transfer current running policy to previous policy
                 const transferredPolicy = {
                     vehicle_user_id: req.params.vehicle_user_id,
@@ -1193,7 +1192,7 @@ exports.updateVehicleUserData = async (req, res) => {
                 
                 logger.debug('🔄 [RENEWAL] Transferring policy with company_id:', currentRunningPolicy.company_id);
                 
-                const createdPreviousPolicy = await vehiclePreviousPolicy.create(transferredPolicy);
+                const createdPreviousPolicy = await vehcileRunningPolicy.create({ ...transferredPolicy, is_current: false });
                 logger.debug('✅ [RENEWAL] Successfully transferred running policy to previous policy');
                 logger.debug('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
             } else {
@@ -1205,7 +1204,7 @@ exports.updateVehicleUserData = async (req, res) => {
         if (runningPolicy && typeof runningPolicy === 'object') {
             const uploadsDir = path.join(CTRL_DIR, "../../uploads");
             let findPolicy = await vehcileRunningPolicy.findOne({
-                where: { vehicle_user_id: req.params.vehicle_user_id }
+                where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true }
             });
             
             // Resolve company name to company_id if CompanyName is provided
@@ -1279,10 +1278,11 @@ exports.updateVehicleUserData = async (req, res) => {
             };
             logger.debug('[VehicleUserUpdate] RunningPolicy update object:', runningPolicyData);
             if (findPolicy) {
-                await vehcileRunningPolicy.update(runningPolicyData, { where: { vehicle_user_id: req.params.vehicle_user_id } });
+                await vehcileRunningPolicy.update(runningPolicyData, { where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true } });
                 logger.debug('[VehicleUserUpdate] RunningPolicy updated for vehicle_user_id:', req.params.vehicle_user_id);
             } else {
                 runningPolicyData.vehicle_user_id = req.params.vehicle_user_id;
+                runningPolicyData.is_current = true;
                 await vehcileRunningPolicy.create(runningPolicyData);
                 logger.debug('[VehicleUserUpdate] RunningPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
             }
@@ -1297,11 +1297,11 @@ exports.updateVehicleUserData = async (req, res) => {
                                          previousPolicy.PolicyFrom || previousPolicy.PolicyTo;
             
             if (hasPreviousPolicyData) {
-                // Mark existing previous policies as inactive
-                await vehiclePreviousPolicy.update({
+                // Mark existing history policies as inactive (reconcile recomputes status after)
+                await vehcileRunningPolicy.update({
                     status: "notActive",
                 }, {
-                    where: { vehicle_user_id: req.params.vehicle_user_id }
+                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false }
                 });
                 
                 const uploadsDir = path.join(CTRL_DIR, "../../uploads");
@@ -1327,8 +1327,8 @@ exports.updateVehicleUserData = async (req, res) => {
                 };
                 // Remove id if present to avoid duplicate primary key error
                 if (historyData.id) delete historyData.id;
-                
-                await vehiclePreviousPolicy.create(historyData);
+
+                await vehcileRunningPolicy.create({ ...historyData, is_current: false });
                 logger.debug('✅ [PORTABILITY] PreviousPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
             } else {
                 logger.debug('⚠️ [PORTABILITY] No previous policy data provided, skipping');
@@ -1422,16 +1422,16 @@ exports.updateVehicleUserData = async (req, res) => {
         }
         // --- Fetch all related data for full response ---
         const updatedVehicleUser = await vehicleUser.findByPk(req.params.vehicle_user_id);
-        const runningPolicyData = await vehcileRunningPolicy.findOne({ 
-            where: { vehicle_user_id: req.params.vehicle_user_id },
+        const runningPolicyData = await vehcileRunningPolicy.findOne({
+            where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true },
             include: [
                 { model: companyType, as: 'CompanyType' },
                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
                 { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
             ]
         });
-        const previousPolicies = await vehiclePreviousPolicy.findAll({ 
-            where: { vehicle_user_id: req.params.vehicle_user_id },
+        const previousPolicies = await vehcileRunningPolicy.findAll({
+            where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false },
             include: [
                 { model: companyType, as: 'CompanyType' },
                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
@@ -1519,7 +1519,7 @@ exports.getVehicleUserData = async (req, res) => {
                     raw: true,
                 });
                 const runningPolicies = await vehcileRunningPolicy.findAll({
-                    where: { vehicle_user_id: vehicleIds },
+                    where: { vehicle_user_id: vehicleIds, is_current: true },
                     include: [
                         { model: companyType, as: 'CompanyType' },  // Use correct alias 'CompanyType'
                         { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
@@ -1527,8 +1527,8 @@ exports.getVehicleUserData = async (req, res) => {
                     ]
                     // remove raw: true
                 });
-                const previousPolicies = await vehiclePreviousPolicy.findAll({
-                    where: { vehicle_user_id: vehicleIds },
+                const previousPolicies = await vehcileRunningPolicy.findAll({
+                    where: { vehicle_user_id: vehicleIds, is_current: false },
                     include: [
                         { model: companyType, as: 'CompanyType' },
                         { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
@@ -1771,9 +1771,8 @@ exports.getVehicleUserRenewalData = async (req, res) => {
               ],
             },
             {
-              model: vehiclePreviousPolicy,
+              model: vehcileRunningPolicy,
               as: "previousPolicies",
-              where: { status: "active" },
               required: false,
               attributes: [
                 "id",
@@ -2077,9 +2076,9 @@ exports.getVehicleRenewalSheet = async (req, res) => {
                         }
                     ]
                 },
-                { 
-                    model: vehiclePreviousPolicy, 
-                    as: 'previousPolicies', 
+                {
+                    model: vehcileRunningPolicy,
+                    as: 'previousPolicies',
                     include: [
                         { model: companyType, as: 'CompanyType' },
                         { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] }
@@ -2152,7 +2151,7 @@ exports.getVehicleUserById = async (req, res) => {
                 },
                 { model: references, as: 'reference' },
                 { model: vehcileRunningPolicy, as: "runningPolicy" },
-                { model: vehiclePreviousPolicy, as: "previousPolicies" }
+                { model: vehcileRunningPolicy, as: "previousPolicies" }
             ]
         });
         if (!vehicle) {
@@ -2302,7 +2301,7 @@ exports.renewVehiclePolicy = async (req, res) => {
     }
 
     // 🔍 Find the running policy record for this vehicle
-    const runningRecord = await vehcileRunningPolicy.findOne({ where: { vehicle_user_id } });
+    const runningRecord = await vehcileRunningPolicy.findOne({ where: { vehicle_user_id, is_current: true } });
     if (!runningRecord) {
       return res.status(404).json({ status: false, message: "Running policy not found for this vehicle_user_id" });
     }
@@ -2356,19 +2355,21 @@ exports.renewVehiclePolicy = async (req, res) => {
     let existingPrev = null;
 
     if (previousPayload.PolicyNumber) {
-      existingPrev = await vehiclePreviousPolicy.findOne({
+      existingPrev = await vehcileRunningPolicy.findOne({
         where: {
           vehicle_user_id,
           PolicyNumber: previousPayload.PolicyNumber,
+          is_current: false,
         },
       });
     }
 
     if (!existingPrev && previousPayload.CurrentPolicyFile) {
-      existingPrev = await vehiclePreviousPolicy.findOne({
+      existingPrev = await vehcileRunningPolicy.findOne({
         where: {
           vehicle_user_id,
           CurrentPolicyFile: previousPayload.CurrentPolicyFile,
+          is_current: false,
         },
       });
     }
@@ -2376,9 +2377,9 @@ exports.renewVehiclePolicy = async (req, res) => {
     let createdPrev;
     if (existingPrev) {
       logger.debug("⚠️ Existing previous policy found — updating instead of creating new.");
-      createdPrev = await existingPrev.update(previousPayload);
+      createdPrev = await existingPrev.update({ ...previousPayload, is_current: false });
     } else {
-      createdPrev = await vehiclePreviousPolicy.create(previousPayload);
+      createdPrev = await vehcileRunningPolicy.create({ ...previousPayload, is_current: false });
       logger.debug("✅ Previous policy created:", createdPrev.PolicyNumber);
     }
 

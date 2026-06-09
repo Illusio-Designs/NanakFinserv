@@ -63,6 +63,11 @@ module.exports = (sequelize, Sequelize) => {
         status: {
             type: DataTypes.STRING,
         },
+        // Unified policy table: true = the vehicle's current policy, false = history.
+        is_current: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,
+        },
         NomineeDob: {
             type: DataTypes.STRING,
         },

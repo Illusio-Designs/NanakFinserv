@@ -181,6 +181,13 @@ const initializeDatabase = async () => {
     } catch (err) {
       recordErr("Schema sync failed (server still starting)", err);
     }
+
+    // One-time: drop the legacy previouspolicies_vehicle table — its rows were
+    // merged into runningpolicies_vehicle (is_current flag). No-op once dropped.
+    try {
+      await db.sequelize.getQueryInterface().dropTable("previouspolicies_vehicle");
+      logger.info("Dropped legacy table previouspolicies_vehicle");
+    } catch (e) { /* already gone — ignore */ }
   }
 
   // Seed default data (lookup tables + default admin user). Best-effort.

@@ -565,7 +565,7 @@ exports.getConsumerDashboardData = async (req, res) => {
                     required: false
                 },
                 {
-                    model: vehiclePreviousPolicy,
+                    model: vehcileRunningPolicy,
                     as: 'previousPolicies',
                     required: false
                 }

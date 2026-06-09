@@ -105,7 +105,9 @@ const documents = db.documents;
 const policyPlan = db.policyPlan;
 const vehicleUser = db.vehicleUser;
 const vehcileRunningPolicy = db.vehcileRunningPolicy;
-const vehiclePreviousPolicy = db.vehiclePreviousPolicy;
+// Merged into the unified policy table (is_current flag). Aliased to the same model
+// so any leftover read/include still resolves; the previousPolicies association is scoped.
+const vehiclePreviousPolicy = db.vehcileRunningPolicy;
 const vehicle_document = db.vehicle_document;
 const policyType = db.policyType;
 const companyType = db.companyType;

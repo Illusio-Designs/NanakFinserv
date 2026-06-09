@@ -93,8 +93,7 @@ function parseUpdatePayload(body, contentType) {
   return { Data };
 }
 
-const VehcileRunningPolicy = db.vehcileRunningPolicy;
-const VehiclePreviousPolicy = db.vehiclePreviousPolicy;
+const VehcileRunningPolicy = db.vehcileRunningPolicy; // unified policy table (is_current flag)
 
 /** "running" while within the period, "completed" once the expiry has passed. */
 function policyStatus(p) {
@@ -113,50 +112,28 @@ function policyEnd(p) {
 }
 
 /**
- * Auto-organize a vehicle's policy timeline year-by-year, regardless of the
- * order records were entered:
- *  - the policy with the LATEST end date becomes the single running policy;
- *  - every other policy is archived into previous-policies (history);
+ * Auto-organize a vehicle's policy timeline year-by-year on the single policy
+ * table, regardless of entry order:
+ *  - the policy with the LATEST end date is flagged is_current = true (the
+ *    current/running policy); every other policy is is_current = false (history);
  *  - each record's status is recomputed (running while active, completed once
  *    its expiry has passed).
- * Safe to call after any add/update/renew.
+ * Safe to call after any add/update/renew. Pass { transaction } to run inside a tx.
  */
-async function reconcileVehiclePolicies(vehicleUserId) {
+async function reconcileVehiclePolicies(vehicleUserId, opts = {}) {
   if (!vehicleUserId) return;
-  const running = await VehcileRunningPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
-  const previous = await VehiclePreviousPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
-
-  const all = [
-    ...running.map((inst) => ({ inst, tbl: "run", p: inst.get({ plain: true }) })),
-    ...previous.map((inst) => ({ inst, tbl: "prev", p: inst.get({ plain: true }) })),
-  ];
+  const transaction = opts.transaction;
+  const all = await VehcileRunningPolicy.findAll({ where: { vehicle_user_id: vehicleUserId }, transaction });
   if (!all.length) return;
 
-  // Pick the chronologically latest policy as the current/running one.
-  all.sort((a, b) => policyEnd(b.p) - policyEnd(a.p));
-  const current = all[0];
-  const others = all.slice(1);
-
-  // 1. Ensure the current policy lives in the running table.
-  if (current.tbl === "prev") {
-    const o = { ...current.p };
-    delete o.id;
-    await VehcileRunningPolicy.create({ ...o, status: policyStatus(o) });
-    await current.inst.destroy();
-  } else {
-    await current.inst.update({ status: policyStatus(current.p) });
-  }
-
-  // 2. Demote every other policy into history; recompute its status.
-  for (const o of others) {
-    if (o.tbl === "run") {
-      const x = { ...o.p };
-      delete x.id;
-      await VehiclePreviousPolicy.create({ ...x, status: policyStatus(x) });
-      await o.inst.destroy();
-    } else {
-      const ns = policyStatus(o.p);
-      if (o.inst.status !== ns) await o.inst.update({ status: ns });
+  // Latest end date first → that one is current; the rest are history.
+  const sorted = [...all].sort((a, b) => policyEnd(b.get({ plain: true })) - policyEnd(a.get({ plain: true })));
+  for (let i = 0; i < sorted.length; i++) {
+    const inst = sorted[i];
+    const isCurrent = i === 0;
+    const status = policyStatus(inst.get({ plain: true }));
+    if (inst.is_current !== isCurrent || inst.status !== status) {
+      await inst.update({ is_current: isCurrent, status }, { transaction });
     }
   }
 }
