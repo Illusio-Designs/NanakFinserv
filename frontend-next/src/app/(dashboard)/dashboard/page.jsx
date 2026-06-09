@@ -22,7 +22,36 @@ export default function DashboardPage() {
   }, []);
   if (role === undefined) return <div className="space-y-4"><div className="skeleton h-24 rounded-lg" /></div>;
   if (role === ROLE_IDS.CONSUMER || role === ROLE_IDS.BUILDER_CONSUMER) return <ConsumerDashboard />;
+  if (role === ROLE_IDS.BUILDING_MANAGER) return <BuildingManagerDashboard />;
   return <AdminDashboard role={role} />;
+}
+
+function BuildingManagerDashboard() {
+  const [d, setD] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    api.get("/user/building-manager/dashboard-stats")
+      .then((res) => setD(res.data?.data || {}))
+      .catch((e) => { showError(e, "Could not load dashboard"); setD({}); })
+      .finally(() => setLoading(false));
+  }, []);
+  const c = d || {};
+  const stats = [
+    { title: "Total consumers", value: c.total, icon: Users, tone: "brand" },
+    { title: "On process", value: c.onProcess, icon: TrendingUp, tone: "warning" },
+    { title: "Disbursement", value: c.disbursement, icon: IndianRupee, tone: "success" },
+    { title: "Completed", value: c.completed, icon: ListChecks, tone: "success" },
+    { title: "Cancelled", value: c.cancel, icon: RefreshCw, tone: "danger" },
+    { title: "Not interested", value: c.notInterested, icon: RefreshCw, tone: "muted" },
+  ];
+  return (
+    <div>
+      <PageHeader title="Dashboard" subtitle="Your assigned buildings" />
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {stats.map((s) => <StatCard key={s.title} title={s.title} value={loading ? "…" : (s.value ?? 0)} icon={s.icon} tone={s.tone} />)}
+      </div>
+    </div>
+  );
 }
 
 // Vertical managers → the single vertical they manage (others see everything).

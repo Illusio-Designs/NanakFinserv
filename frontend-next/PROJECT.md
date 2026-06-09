@@ -92,9 +92,8 @@ sorted overdue-first; renewal reminders extended to **Mediclaim + Life**; shared
 ⬜ **Pending (priority):**
 1. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write. *(maintenance window — can fail if dupes exist)*
 2. **Audit-log table** + **PDF versioning/backups**.
-3. Allow **vertical managers** to create masters (company/plan/type) or pre-seed them.
-4. Optional **email/SMS** on renewal_due via MSG91.
-5. **Building-manager dashboard** variant + per-manager scoped counts (org-wide today).
+3. Optional **email/SMS** on renewal_due via MSG91.
+4. Per-manager **scoped counts** on the admin dashboard (org-wide today).
 6. Consumer **KYC completeness** meter + "missing KYC" filter; document thumbnails; dark mode.
 7. Replicate full Pending/Closed + journey patterns to other verticals as they get data.
 
