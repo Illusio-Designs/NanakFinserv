@@ -20,7 +20,8 @@ const empty = {
   PolicyNumber: "", PremiumAmount: "", PolicyIssuedDate: "", ExpiryDate: "", agentName: "", agentCode: "",
 };
 
-export default function MediclaimPolicyModal({ open, onClose, onSaved }) {
+export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, renewMode = false, prefillMobile = "" }) {
+  const isEdit = !!editRow && !renewMode;
   const [form, setForm] = useState(empty);
   const [userConsumerId, setUserConsumerId] = useState(null);
   const [found, setFound] = useState(null);
@@ -33,9 +34,32 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved }) {
 
   useEffect(() => {
     if (!open) return;
-    setForm(empty); setFound(null); setUserConsumerId(null); setCompanyId(""); setProducts([]);
-    api.get("/user/mediclaim/company").then((r) => setCompanies((r.data?.data || []).map((c) => ({ value: c.mediclaim_company_id, label: c.mediclaim_company_name })))).catch(() => setCompanies([]));
-  }, [open]);
+    setProducts([]);
+    api.get("/user/mediclaim/company")
+      .then((r) => {
+        const list = (r.data?.data || []).map((c) => ({ value: c.mediclaim_company_id, label: c.mediclaim_company_name }));
+        setCompanies(list);
+        if (editRow) {
+          const rp = editRow.rp || {};
+          setForm({
+            username: editRow.name || "", mobile: editRow.mobile || "", email: editRow.email || "",
+            mediclaim_type: editRow.mtype || "Individual", company_name: editRow.company || "",
+            mediclaim_product_id: editRow.mediclaim_product_id || "", SumInsured: editRow.sum || "",
+            PolicyNumber: renewMode ? "" : (rp.PolicyNumber || ""), PremiumAmount: renewMode ? "" : (rp.PremiumAmount || ""),
+            PolicyIssuedDate: renewMode ? "" : (rp.PolicyIssuedDate || ""), ExpiryDate: renewMode ? "" : (rp.ExpiryDate || ""),
+            agentName: rp.agentName || "", agentCode: rp.agentCode || "",
+          });
+          setUserConsumerId(editRow.user_id || null);
+          setFound(true);
+          const co = list.find((c) => c.label === editRow.company);
+          if (co) { setCompanyId(co.value); api.get(`/user/mediclaim/product/${co.value}`).then((pr) => setProducts((pr.data?.data || []).map((p) => ({ value: p.mediclaim_product_id, label: p.mediclaim_product_name })))).catch(() => {}); }
+        } else {
+          setForm({ ...empty, mobile: prefillMobile || "" });
+          setFound(null); setUserConsumerId(null); setCompanyId("");
+        }
+      })
+      .catch(() => setCompanies([]));
+  }, [open, editRow, renewMode, prefillMobile]);
 
   const onCompany = (v) => {
     setCompanyId(v);
@@ -62,7 +86,8 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved }) {
     try {
       const data = {
         username: form.username, user_name: form.username, mobile: form.mobile, mobileNumber: form.mobile, email: form.email,
-        user_consumer_id: userConsumerId, mediclaim_type: form.mediclaim_type, policy_type: "Fresh",
+        user_consumer_id: userConsumerId, mediclaim_type: form.mediclaim_type,
+        policy_type: renewMode ? "Renewal" : "Fresh", policyRadio: renewMode ? "Renewal" : "Fresh",
         company_name: form.company_name, mediclaim_product_id: form.mediclaim_product_id || null, SumInsured: form.SumInsured,
         runningPolicy: {
           PolicyNumber: form.PolicyNumber, PremiumAmount: form.PremiumAmount,
@@ -71,11 +96,17 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved }) {
         },
         previousPolicy: {},
       };
-      await api.post("/user/mediclaim/user/add", { data });
-      toast.success("Mediclaim policy added");
+      if (editRow && (isEdit || renewMode)) {
+        data.id = editRow.id; data.user_id = editRow.user_id;
+        await api.put(`/user/mediclaim/user/update/${editRow.id}`, { data });
+        toast.success(renewMode ? "Policy renewed" : "Policy updated");
+      } else {
+        await api.post("/user/mediclaim/user/add", { data });
+        toast.success("Mediclaim policy added");
+      }
       onClose();
       onSaved?.();
-    } catch (e) { showError(e, "Could not add mediclaim policy"); }
+    } catch (e) { showError(e, renewMode ? "Could not renew" : isEdit ? "Could not update" : "Could not add mediclaim policy"); }
     finally { setSubmitting(false); }
   };
 
@@ -107,6 +138,12 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved }) {
     },
     {
       title: "Policy",
+      validate: () => {
+        if (!(companyId || form.company_name)) { toast.error("Select the company"); return "company"; }
+        if (!form.ExpiryDate) { toast.error("Enter the expiry date"); return "expiry"; }
+        if (form.PolicyIssuedDate && form.ExpiryDate && String(form.PolicyIssuedDate).slice(0, 10) > String(form.ExpiryDate).slice(0, 10)) { toast.error("Issued date must be before expiry"); return "dates"; }
+        return true;
+      },
       render: () => (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Dropdown label="Type" options={TYPES} value={form.mediclaim_type} onChange={set("mediclaim_type")} />
@@ -136,7 +173,7 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved }) {
     },
   ];
 
-  return <StepperModal open={open} onClose={onClose} title="Add Mediclaim Policy" steps={steps} onSubmit={submit} submitting={submitting} />;
+  return <StepperModal open={open} onClose={onClose} title={renewMode ? "Renew / Add Next Mediclaim Policy" : isEdit ? "Edit Mediclaim Policy" : "Add Mediclaim Policy"} steps={steps} onSubmit={submit} submitting={submitting} />;
 }
 
 function Row({ label, value }) {
