@@ -882,6 +882,7 @@ exports.updateVehicleUserData = async (req, res) => {
         MobileNumber: MobileNumber
     });
 
+    let t = null; // transaction handle (declared here so the catch can roll back)
     try {
         let resolvedUserId = user_id;
         if (!resolvedUserId) {
@@ -1050,6 +1051,11 @@ exports.updateVehicleUserData = async (req, res) => {
 
         logger.debug('✅ [updateVehicleUserData] Validation passed, proceeding with update');
 
+        // Atomic: all writes below (user + vehicle + policy archive/update + docs +
+        // reconcile) commit together. Validation/dup-check early-returns above happen
+        // before this, so there's no dangling transaction.
+        t = await vehicleUser.sequelize.transaction();
+
         // First, update the User table with basic user information
         if (Name || Email || MobileNumber) {
             try {
@@ -1062,7 +1068,8 @@ exports.updateVehicleUserData = async (req, res) => {
                 logger.debug('🔍 [updateVehicleUserData] User ID to update:', resolvedUserId);
                 
                 const userUpdateResult = await User.update(userUpdateData, {
-                    where: { user_id: resolvedUserId }
+                    where: { user_id: resolvedUserId },
+                    transaction: t
                 });
                 logger.debug('✅ [updateVehicleUserData] User table updated:', userUpdateResult);
             } catch (userUpdateError) {
@@ -1102,7 +1109,7 @@ exports.updateVehicleUserData = async (req, res) => {
             policy_plan_type: vehicleUserUpdateObj.policy_plan_type || vehicleUserRecord.policy_plan_type,
             vehicle_type: vehicleUserUpdateObj.vehicle_type || vehicleUserRecord.vehicle_type,
             vendor: vehicleUserUpdateObj.vendor || vehicleUserRecord.vendor,
-        });
+        }, { transaction: t });
         logger.debug('[VehicleUserUpdate] vehicleUser update successful for ID:', req.params.vehicle_user_id);
 
         // --- RENEWAL FLOW: Transfer Running Policy to Previous Policy FIRST (before updating running policy) ---
@@ -1120,7 +1127,8 @@ exports.updateVehicleUserData = async (req, res) => {
                     { model: companyType, as: 'CompanyType' },
                     { model: db.policyPlan, as: 'policyPlan' },
                     { model: db.policyType, as: 'policyType' }
-                ]
+                ],
+                transaction: t
             });
             
             if (currentRunningPolicy) {
@@ -1140,7 +1148,8 @@ exports.updateVehicleUserData = async (req, res) => {
                 await vehcileRunningPolicy.update({
                     status: "notActive",
                 }, {
-                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false }
+                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false },
+                    transaction: t
                 });
 
                 // Transfer current running policy to previous policy
@@ -1172,7 +1181,7 @@ exports.updateVehicleUserData = async (req, res) => {
                 
                 logger.debug('🔄 [RENEWAL] Transferring policy with company_id:', currentRunningPolicy.company_id);
                 
-                const createdPreviousPolicy = await vehcileRunningPolicy.create({ ...transferredPolicy, is_current: false });
+                const createdPreviousPolicy = await vehcileRunningPolicy.create({ ...transferredPolicy, is_current: false }, { transaction: t });
                 logger.debug('✅ [RENEWAL] Successfully transferred running policy to previous policy');
                 logger.debug('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
             } else {
@@ -1184,7 +1193,8 @@ exports.updateVehicleUserData = async (req, res) => {
         if (runningPolicy && typeof runningPolicy === 'object') {
             const uploadsDir = path.join(CTRL_DIR, "../../uploads");
             let findPolicy = await vehcileRunningPolicy.findOne({
-                where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true }
+                where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true },
+                transaction: t
             });
             
             // Resolve company name to company_id if CompanyName is provided
@@ -1240,12 +1250,12 @@ exports.updateVehicleUserData = async (req, res) => {
             };
             logger.debug('[VehicleUserUpdate] RunningPolicy update object:', runningPolicyData);
             if (findPolicy) {
-                await vehcileRunningPolicy.update(runningPolicyData, { where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true } });
+                await vehcileRunningPolicy.update(runningPolicyData, { where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true }, transaction: t });
                 logger.debug('[VehicleUserUpdate] RunningPolicy updated for vehicle_user_id:', req.params.vehicle_user_id);
             } else {
                 runningPolicyData.vehicle_user_id = req.params.vehicle_user_id;
                 runningPolicyData.is_current = true;
-                await vehcileRunningPolicy.create(runningPolicyData);
+                await vehcileRunningPolicy.create(runningPolicyData, { transaction: t });
                 logger.debug('[VehicleUserUpdate] RunningPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
             }
         }
@@ -1263,7 +1273,8 @@ exports.updateVehicleUserData = async (req, res) => {
                 await vehcileRunningPolicy.update({
                     status: "notActive",
                 }, {
-                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false }
+                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false },
+                    transaction: t
                 });
                 
                 if (req.files && req.files.PreviousCurrentPolicyFile) {
@@ -1285,7 +1296,7 @@ exports.updateVehicleUserData = async (req, res) => {
                 // Remove id if present to avoid duplicate primary key error
                 if (historyData.id) delete historyData.id;
 
-                await vehcileRunningPolicy.create({ ...historyData, is_current: false });
+                await vehcileRunningPolicy.create({ ...historyData, is_current: false }, { transaction: t });
                 logger.debug('✅ [PORTABILITY] PreviousPolicy created for vehicle_user_id:', req.params.vehicle_user_id);
             } else {
                 logger.debug('⚠️ [PORTABILITY] No previous policy data provided, skipping');
@@ -1315,16 +1326,17 @@ exports.updateVehicleUserData = async (req, res) => {
                     where: {
                         vehicle_user_id: req.params.vehicle_user_id,
                         categoryId: doc.categoryId
-                    }
+                    },
+                    transaction: t
                 });
-                
+
                 // Create new document record
                 await vehicle_document.create({
                     user_id: resolvedUserId,
                     vehicle_user_id: req.params.vehicle_user_id,
                     categoryId: doc.categoryId,
                     file: uniqueName
-                });
+                }, { transaction: t });
                 logger.debug(`[VehicleUserUpdate] ${doc.fieldName} document saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
             }
         }
@@ -1357,20 +1369,23 @@ exports.updateVehicleUserData = async (req, res) => {
                         vehicle_user_id: req.params.vehicle_user_id,
                         categoryId: doc.categoryId,
                         file: uniqueName
-                    });
+                    }, { transaction: t });
                     logger.debug(`[VehicleUserUpdate] Custom document ${fieldName} saved for vehicle_user_id: ${req.params.vehicle_user_id}`);
                 }
             }
         }
+        // Reconcile the timeline, then fetch the final state — all within the tx.
+        try { await vehicleService.reconcileVehiclePolicies(req.params.vehicle_user_id, { transaction: t }); } catch (e) { logger.error({ err: e }, "reconcile after update failed"); }
         // --- Fetch all related data for full response ---
-        const updatedVehicleUser = await vehicleUser.findByPk(req.params.vehicle_user_id);
+        const updatedVehicleUser = await vehicleUser.findByPk(req.params.vehicle_user_id, { transaction: t });
         const runningPolicyData = await vehcileRunningPolicy.findOne({
             where: { vehicle_user_id: req.params.vehicle_user_id, is_current: true },
             include: [
                 { model: companyType, as: 'CompanyType' },
                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
                 { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
-            ]
+            ],
+            transaction: t
         });
         const previousPolicies = await vehcileRunningPolicy.findAll({
             where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false },
@@ -1378,9 +1393,9 @@ exports.updateVehicleUserData = async (req, res) => {
                 { model: companyType, as: 'CompanyType' },
                 { model: db.policyPlan, as: 'policyPlan', attributes: [['policy_name', 'PolicyPlanType']] },
                 { model: db.policyType, as: 'policyType', attributes: [['policy_type_name', 'PolicyTypeName']] }
-            ]
+            ],
+            transaction: t
         });
-        try { await vehicleService.reconcileVehiclePolicies(req.params.vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after update failed"); }
         // Activity log: record the policy update/renewal.
         try {
           const isRenew = (policy_type === "Renewal" || policy_type === "Portability");
@@ -1393,7 +1408,8 @@ exports.updateVehicleUserData = async (req, res) => {
             target_user_id: (updatedVehicleUser && updatedVehicleUser.user_id) || null,
           });
         } catch (e) { logger.error({ err: e }, "vehicle update log failed"); }
-        const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: req.params.vehicle_user_id } });
+        const vehicleDocuments = await vehicle_document.findAll({ where: { vehicle_user_id: req.params.vehicle_user_id }, transaction: t });
+        await t.commit(); // all writes succeeded — persist atomically
         return res.status(200).send({
             message: "Vehicle successfully updated!",
             status: true,
@@ -1403,6 +1419,7 @@ exports.updateVehicleUserData = async (req, res) => {
             documents: vehicleDocuments
         });
     } catch (error) {
+        try { if (t && !t.finished) await t.rollback(); } catch (rbErr) { logger.error({ err: rbErr }, "update rollback failed"); }
         logger.error("[VehicleUserUpdate] Error updating vehicle user data:", error);
         if (error.name === 'SequelizeValidationError') {
             const errors = error.errors.map(err => err.message);
