@@ -105,42 +105,59 @@ function policyStatus(p) {
   return d >= new Date() ? "running" : "completed";
 }
 
-/** Sort key: most recent policy start first. */
-function policyStart(p) {
-  const s = p.PolicyFrom || p.PolicyIssuedDate || p.PolicyTo || "";
+/** End date used to order the timeline (latest policy = the current one). */
+function policyEnd(p) {
+  const s = p.od_expiry_date || p.ExpiryDate || p.PolicyTo || p.PolicyFrom || "";
   const d = new Date(s);
   return isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
 /**
- * Auto-organize a vehicle's policy timeline year-by-year:
- *  - if more than one running policy exists, keep the most recent as running and
- *    archive the older ones into the previous-policies (history) table;
- *  - recompute every record's status (running/completed) from its expiry vs today.
+ * Auto-organize a vehicle's policy timeline year-by-year, regardless of the
+ * order records were entered:
+ *  - the policy with the LATEST end date becomes the single running policy;
+ *  - every other policy is archived into previous-policies (history);
+ *  - each record's status is recomputed (running while active, completed once
+ *    its expiry has passed).
  * Safe to call after any add/update/renew.
  */
 async function reconcileVehiclePolicies(vehicleUserId) {
   if (!vehicleUserId) return;
   const running = await VehcileRunningPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
+  const previous = await VehiclePreviousPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
 
-  if (running.length > 1) {
-    const sorted = [...running].sort((a, b) => policyStart(b.get({ plain: true })) - policyStart(a.get({ plain: true })));
-    const keep = sorted[0];
-    for (const old of sorted.slice(1)) {
-      const o = old.get({ plain: true });
-      delete o.id;
-      await VehiclePreviousPolicy.create({ ...o, status: policyStatus(o) });
-      await old.destroy();
-    }
-    await keep.update({ status: policyStatus(keep.get({ plain: true })) });
-  } else if (running.length === 1) {
-    await running[0].update({ status: policyStatus(running[0].get({ plain: true })) });
+  const all = [
+    ...running.map((inst) => ({ inst, tbl: "run", p: inst.get({ plain: true }) })),
+    ...previous.map((inst) => ({ inst, tbl: "prev", p: inst.get({ plain: true }) })),
+  ];
+  if (!all.length) return;
+
+  // Pick the chronologically latest policy as the current/running one.
+  all.sort((a, b) => policyEnd(b.p) - policyEnd(a.p));
+  const current = all[0];
+  const others = all.slice(1);
+
+  // 1. Ensure the current policy lives in the running table.
+  if (current.tbl === "prev") {
+    const o = { ...current.p };
+    delete o.id;
+    await VehcileRunningPolicy.create({ ...o, status: policyStatus(o) });
+    await current.inst.destroy();
+  } else {
+    await current.inst.update({ status: policyStatus(current.p) });
   }
 
-  const previous = await VehiclePreviousPolicy.findAll({ where: { vehicle_user_id: vehicleUserId } });
-  for (const pp of previous) {
-    const next = policyStatus(pp.get({ plain: true }));
-    if (pp.status !== next) await pp.update({ status: next });
+  // 2. Demote every other policy into history; recompute its status.
+  for (const o of others) {
+    if (o.tbl === "run") {
+      const x = { ...o.p };
+      delete x.id;
+      await VehiclePreviousPolicy.create({ ...x, status: policyStatus(x) });
+      await o.inst.destroy();
+    } else {
+      const ns = policyStatus(o.p);
+      if (o.inst.status !== ns) await o.inst.update({ status: ns });
+    }
   }
 }
 

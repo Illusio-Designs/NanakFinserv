@@ -9,8 +9,20 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
 import Spinner from "@/components/ui/Spinner";
-import api, { showError } from "@/lib/api";
+import api, { showError, BASE_URL } from "@/lib/api";
 import VehicleFormModal from "./VehicleFormModal";
+
+const fileUrl = (f) => (f ? (String(f).startsWith("http") ? f : `${BASE_URL}/${f}`) : null);
+const period = (p) => [p.PolicyFrom, p.PolicyTo || p.ExpiryDate].filter(Boolean).join(" → ") || "—";
+const policyYear = (p) => { const d = p.PolicyFrom || p.PolicyTo || p.ExpiryDate || ""; return d ? String(d).slice(0, 4) : "—"; };
+// Friendly status: Running while active, else Closed.
+const statusLabel = (s) => {
+  const x = String(s || "").toLowerCase();
+  if (x === "running" || x === "active") return "Running";
+  if (x === "completed" || x === "closed" || x === "expired") return "Closed";
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "—";
+};
+const statusTone = (s) => (statusLabel(s) === "Running" ? "success" : "warning");
 
 const norm = (r) => {
   const u = r.user_pk_vehicle_id || {};
@@ -122,7 +134,7 @@ export default function VehiclePage() {
     { key: "policy_number", title: "Policy No." },
     { key: "expiry_date", title: "Expiry", render: (r) => r.expiry_date || "—" },
     { key: "ptype", title: "Type", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
-    { key: "status", title: "Status", render: (r) => <Badge tone={r.status === "running" ? "success" : r.status === "completed" ? "warning" : "brand"}>{r.status}</Badge> },
+    { key: "status", title: "Status", render: (r) => <Badge tone={statusTone(r.status)}>{statusLabel(r.status)}</Badge> },
   ], []);
 
   const pendingColumns = useMemo(() => [
@@ -223,17 +235,36 @@ function VehicleDetail({ d }) {
         <Row label="Engine / Chassis" value={[d.engine_number, d.chassis_number].filter(Boolean).join(" / ") || "—"} />
         <Row label="Nature" value={d.vehicle_policy_type || "—"} />
       </Section>
-      <Section title="Running policy">
+      <Section title="Current policy">
         <Row label="Policy No." value={rp.PolicyNumber || "—"} />
         <Row label="Premium" value={rp.PremiumAmount || "—"} />
+        <Row label="Period" value={period(rp)} />
         <Row label="OD / Full expiry" value={rp.od_expiry_date || rp.ExpiryDate || "—"} />
         <Row label="TP expiry" value={rp.tp_expiry_date || "—"} />
-        <Row label="Status" value={<Badge tone={rp.status === "running" ? "success" : "warning"}>{rp.status || "—"}</Badge>} />
+        <Row label="Status" value={<Badge tone={statusTone(rp.status)}>{statusLabel(rp.status)}</Badge>} />
+        {fileUrl(rp.CurrentPolicyFile) && <Row label="Policy PDF" value={<a className="text-brand-600 hover:underline" href={fileUrl(rp.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">Download</a>} />}
       </Section>
-      <Section title={`Previous policies (${prev.length})`}>
-        {prev.length ? prev.map((p, i) => (
-          <Row key={i} label={p.PolicyNumber || `Policy ${i + 1}`} value={<Badge tone={p.status === "running" ? "success" : "warning"}>{p.status || "—"}</Badge>} />
-        )) : <p className="py-1 text-[13px] text-muted">No previous policies.</p>}
+      <Section title={`Past journey (${prev.length})`}>
+        {prev.length ? (
+          <div className="relative space-y-3 pl-4 before:absolute before:left-1 before:top-1 before:bottom-1 before:w-px before:bg-line">
+            {[...prev].sort((a, b) => String(b.PolicyTo || b.ExpiryDate || "").localeCompare(String(a.PolicyTo || a.ExpiryDate || ""))).map((p, i) => (
+              <div key={i} className="relative">
+                <span className="absolute -left-[13px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-brand-600" />
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-line p-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-[14px] font-medium text-ink">
+                      <span className="rounded bg-subtle px-1.5 py-0.5 text-[12px] font-semibold text-muted">{policyYear(p)}</span>
+                      {p.PolicyNumber || `Policy ${i + 1}`}
+                      <Badge tone={statusTone(p.status)}>{statusLabel(p.status)}</Badge>
+                    </div>
+                    <div className="mt-0.5 text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}</div>
+                  </div>
+                  {fileUrl(p.CurrentPolicyFile) && <a className="press shrink-0 rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle" href={fileUrl(p.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">Download PDF</a>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="py-1 text-[13px] text-muted">No previous policies.</p>}
       </Section>
     </div>
   );
