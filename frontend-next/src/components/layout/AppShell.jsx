@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
+import Footer from "./Footer";
 import api from "@/lib/api";
 import { SearchProvider } from "@/lib/search";
 
@@ -36,9 +37,10 @@ export default function AppShell({ children }) {
         verticals={verticals}
       />
       <SearchProvider>
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <Header onMenu={() => setSidebarOpen(true)} />
           <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <Footer />
         </div>
       </SearchProvider>
     </div>

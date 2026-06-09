@@ -49,7 +49,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse, ve
 
       <aside
         className={cn(
-          "fixed z-40 flex h-screen flex-col bg-sidebar text-sidebar-text transition-all duration-200 lg:static lg:translate-x-0",
+          "fixed z-40 flex h-screen flex-col bg-sidebar text-sidebar-text transition-all duration-200 lg:sticky lg:top-0 lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
           collapsed ? "w-[76px]" : "w-[var(--sidebar-w)]"
         )}
