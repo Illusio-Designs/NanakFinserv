@@ -93,14 +93,15 @@ sorted overdue-first; renewal reminders extended to **Mediclaim + Life**; shared
 user add-update, renew, wipe) + `/user/audit-logs` endpoint; Activity Log page now
 reads it (Who / Action / Module / Detail).
 
-✅ Also: **ISO date normalisation** on write (policy dates → YYYY-MM-DD).
+✅ Also: **ISO date normalisation** on write (policy dates → YYYY-MM-DD); **unique DB
+constraints** handled on the DB side by the owner. KYC-completeness meter — **not required**.
 
 ⬜ **Pending (priority):**
-1. **Unique DB constraints** (vehicle_number; vehicle_user_id+PolicyNumber) — **at go-live, right after the wipe** (adding them fails if dupes already exist).
-2. **PDF versioning / backups**.
-3. Optional **email/SMS** on renewal_due via MSG91.
-4. Per-manager **scoped counts** on the admin dashboard (org-wide today).
-6. Consumer **KYC completeness** meter + "missing KYC" filter; document thumbnails; dark mode.
+1. **PDF versioning / backups**.
+2. Optional **email/SMS** on renewal_due via MSG91 (needs send creds/templates).
+3. Per-manager **scoped counts** on the admin dashboard (org-wide today).
+4. Document thumbnails; dark mode (polish).
+5. **Pre-go-live: wipe test data** (if not already done).
 7. Replicate full Pending/Closed + journey patterns to other verticals as they get data.
 
 ---
