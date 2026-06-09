@@ -99,11 +99,12 @@ constraints** handled on the DB side by the owner. KYC-completeness meter — **
 ✅ Also: **per-manager scoping** — a vertical manager's Consumer list AND dashboard
 counts (consumers + their vertical) show ONLY consumers assigned to them.
 
-⬜ **Pending (priority):**
+**Go-live prep done by owner:** unique DB constraints added + test data wiped. 🚀
+
+⬜ **Optional (post-launch, not blocking):**
 1. **PDF versioning / backups**.
-2. Optional **email/SMS** on renewal_due via MSG91 (needs send creds/templates).
+2. **Email/SMS** on renewal_due via MSG91 (needs send creds/templates).
 3. Document thumbnails; dark mode (polish).
-4. **Pre-go-live: wipe test data** (if not already done).
 7. Replicate full Pending/Closed + journey patterns to other verticals as they get data.
 
 ---
