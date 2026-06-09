@@ -141,9 +141,18 @@ export default function VehiclePage() {
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "mobile", title: "Mobile" },
     { key: "vehicle_number", title: "Vehicle No." },
-    { key: "reason", title: "Reason", render: (r) => <Badge tone={r.reason === "Renewal due today" ? "warning" : "success"}>{r.reason}</Badge> },
+    { key: "reason", title: "Reason", render: (r) => <Badge tone={String(r.reason).includes("Renewal") ? "warning" : "success"}>{r.reason}</Badge> },
     { key: "when", title: "Date" },
-  ], []);
+    {
+      key: "act", title: "",
+      render: (r) => (
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
+          <Button size="sm" icon={FilePlus} onClick={() => setRenewRow(r)}>Add record</Button>
+        </div>
+      ),
+    },
+  ], [renewingId]);
 
   const renewalColumns = useMemo(() => [
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -242,7 +251,14 @@ function VehicleDetail({ d }) {
         <Row label="OD / Full expiry" value={rp.od_expiry_date || rp.ExpiryDate || "—"} />
         <Row label="TP expiry" value={rp.tp_expiry_date || "—"} />
         <Row label="Status" value={<Badge tone={statusTone(rp.status)}>{statusLabel(rp.status)}</Badge>} />
-        {fileUrl(rp.CurrentPolicyFile) && <Row label="Policy PDF" value={<a className="text-brand-600 hover:underline" href={fileUrl(rp.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">Download</a>} />}
+        {fileUrl(rp.CurrentPolicyFile) && (
+          <Row label="Policy PDF" value={
+            <span className="flex gap-3">
+              <a className="text-ink hover:underline" href={fileUrl(rp.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">View</a>
+              <a className="text-brand-600 hover:underline" href={fileUrl(rp.CurrentPolicyFile)} download>Download</a>
+            </span>
+          } />
+        )}
       </Section>
       <Section title={`Past journey (${prev.length})`}>
         {prev.length ? (
@@ -259,7 +275,12 @@ function VehicleDetail({ d }) {
                     </div>
                     <div className="mt-0.5 text-[12px] text-muted">{period(p)}{p.PremiumAmount ? ` · ₹${p.PremiumAmount}` : ""}</div>
                   </div>
-                  {fileUrl(p.CurrentPolicyFile) && <a className="press shrink-0 rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle" href={fileUrl(p.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">Download PDF</a>}
+                  {fileUrl(p.CurrentPolicyFile) && (
+                    <div className="flex shrink-0 gap-1">
+                      <a className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-ink hover:bg-subtle" href={fileUrl(p.CurrentPolicyFile)} target="_blank" rel="noopener noreferrer">View</a>
+                      <a className="press rounded-md border border-line px-2.5 py-1 text-[12px] text-brand-600 hover:bg-subtle" href={fileUrl(p.CurrentPolicyFile)} download>Download</a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
