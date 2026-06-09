@@ -157,6 +157,21 @@ exports.addConsumerData = async (req, res) => {
                         if (array.length) {
                             let Rs = await consumerRoleMapping.bulkCreate(array);
                             logger.debug('🔍 [ADD CONSUMER] New ConsumerRoleMapping created:', Rs);
+
+                            // Notify each assigned working person.
+                            try {
+                                const assignees = [...new Set(array.map((a) => a.user_role_id).filter((id) => id && id !== req.user.id))];
+                                for (const assigneeId of assignees) {
+                                    await createNotification({
+                                        title: "Consumer assigned to you",
+                                        message: `${userData.username || "A consumer"} has been assigned to you.`,
+                                        type: "system",
+                                        category: "assigned",
+                                        user_id: req.user.id,
+                                        target_user_id: assigneeId,
+                                    });
+                                }
+                            } catch (e) { logger.error({ err: e }, "assign-on-add notification failed"); }
                         }
 
                         let findLoan = array.find((item) => item.category_id == CATEGORY_IDS.LOAN);

@@ -1127,7 +1127,10 @@ exports.updateVehicleUserData = async (req, res) => {
         logger.debug('[VehicleUserUpdate] vehicleUser update successful for ID:', req.params.vehicle_user_id);
 
         // --- RENEWAL FLOW: Transfer Running Policy to Previous Policy FIRST (before updating running policy) ---
-        const isRenewalOrPortability = policy_type === 'Renewal' || policy_type === 'Portability';
+        // Accept either field name (policy_type or policyRadio) so the running
+        // policy is always archived to history on renewal/portability.
+        const _nature = policy_type || Data.policyRadio;
+        const isRenewalOrPortability = _nature === 'Renewal' || _nature === 'Portability';
         if (isRenewalOrPortability && runningPolicy && typeof runningPolicy === 'object') {
             logger.debug('🔄 [RENEWAL] Starting renewal process - transferring current running policy to previous');
             
