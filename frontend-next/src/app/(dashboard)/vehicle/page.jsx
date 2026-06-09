@@ -22,9 +22,11 @@ const norm = (r) => {
     vehicle_number: r.vehicle_number || r.VehicleNumber || "—",
     makeModel: [r.make, r.model].filter(Boolean).join(" ") || "—",
     ptype: r.vehicle_policy_type || "—",
-    company: r.company_name || "—",
+    company: (rp.CompanyType && rp.CompanyType.company_name) || r.company_name || "—",
+    policy_number: rp.PolicyNumber || "—",
+    plan: (rp.policyPlan && rp.policyPlan.PolicyPlanType) || r.policy_plan_type || "—",
     status: rp.status || r.status || "—",
-    expiry_date: rp.ExpiryDate || rp.od_expiry_date || r.expiry_date || r.od_expiry_date || "",
+    expiry_date: rp.od_expiry_date || rp.ExpiryDate || r.expiry_date || "",
   };
 };
 
@@ -113,8 +115,11 @@ export default function VehiclePage() {
     { key: "mobile", title: "Mobile" },
     { key: "vehicle_number", title: "Vehicle No." },
     { key: "makeModel", title: "Make / Model" },
-    { key: "ptype", title: "Type", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
     { key: "company", title: "Company" },
+    { key: "policy_number", title: "Policy No." },
+    { key: "expiry_date", title: "Expiry", render: (r) => r.expiry_date || "—" },
+    { key: "ptype", title: "Type", render: (r) => <Badge tone="brand">{r.ptype}</Badge> },
+    { key: "status", title: "Status", render: (r) => <Badge tone={r.status === "running" ? "success" : r.status === "completed" ? "warning" : "brand"}>{r.status}</Badge> },
   ], []);
 
   const pendingColumns = useMemo(() => [
@@ -150,8 +155,8 @@ export default function VehiclePage() {
           data={rows}
           loading={loading}
           rowKey="vehicle_user_id"
-          searchKeys={["name", "mobile", "vehicle_number", "makeModel", "company"]}
-          filters={[{ key: "ptype", label: "Type" }]}
+          searchKeys={["name", "mobile", "vehicle_number", "makeModel", "company", "policy_number"]}
+          filters={[{ key: "status", label: "Status" }, { key: "ptype", label: "Type" }]}
           onView={openView}
           onEdit={(r) => setEditRow(r)}
           rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
