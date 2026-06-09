@@ -82,13 +82,19 @@ notifications; consumer-count excludes family; user role-update fix.
 - Vehicle add — atomic via **rollback-on-failure** (deletes the orphan vehicle + policies/docs if a later step throws).
 - Vehicle **update/renew** — wrapped in a DB transaction (user + vehicle + policy archive/update + docs + reconcile commit together; rolls back on any error).
 
+✅ **Also done:** renewal **countdown** ("in N days" / "N days overdue") on Vehicle/
+Mediclaim/Life; **Overdue** badge (red) for lapsed current vehicle policies; Pending
+sorted overdue-first; renewal reminders extended to **Mediclaim + Life**; shared
+`lib/format` date helper ("09 Jun 2026").
+
 ⬜ **Pending (priority):**
-2. **Overdue** surfacing — flag current policy past expiry as Overdue (red) + top of Pending.
-3. **Separate OD vs TP** renewal reminders (OD yearly while TP long-term).
-4. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write.
-5. **Audit-log table** + **PDF versioning/backups**.
-6. Allow **vertical managers** to create masters (company/plan/type) or pre-seed them.
-7. Extend reminders to **Mediclaim/Life**; optional email/SMS via MSG91.
+1. **Separate OD vs TP** renewal reminders (OD yearly while TP long-term).
+2. **Data integrity** — unique (vehicle_user_id, PolicyNumber); validate dates; ISO-normalise on write.
+3. **Audit-log table** + **PDF versioning/backups**.
+4. Allow **vertical managers** to create masters (company/plan/type) or pre-seed them.
+5. Optional **email/SMS** on renewal_due via MSG91.
+6. **Building-manager dashboard** variant + per-manager scoped counts (org-wide today).
+7. **Per-step form validation**; consumer **KYC completeness** meter + filter; dark mode.
 
 ---
 
