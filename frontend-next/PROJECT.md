@@ -113,9 +113,9 @@ counts (consumers + their vertical) show ONLY consumers assigned to them.
   (group), Previous policy (portability), Zone/Add-on/Tenure/From-To.
 - Phase 4 — **uploads + safety**: all mediclaim files (Aadhar/PAN/GST/custom + policy
   PDF) now save to **uploads/mediclaim/** via saveUpload; modal uploads the policy PDF
-  (multipart); **add has compensation rollback** (orphan mediclaim cleaned on failure).
-- ⬜ Remaining: DB **transaction wrap on mediclaim UPDATE** (add rollback done; update
-  is mostly idempotent so lower risk) + claim/portability doc uploads in the modal.
+  (multipart). **Both write paths atomic**: add = compensation rollback, update =
+  managed DB transaction (commit/rollback). Mirrors vehicle.
+- ⬜ Nice-to-have: claim/portability **doc uploads** in the modal (policy PDF done).
 
 ⬜ **Optional (post-launch, infra/config — not blocking):**
 1. **PDF versioning / backups** — move uploads to cloud object storage (S3/GCS) with
