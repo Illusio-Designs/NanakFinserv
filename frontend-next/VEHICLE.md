@@ -108,6 +108,30 @@ recomputed from its dates — keeping the year-by-year timeline correct.
   next policy / renew** on that row to add the next period's policy to the same
   vehicle. The old one is archived to history and the new one becomes running.
 
+## Reliability roadmap (to harden as an insurance system)
+Status today: policies auto-organize (latest = current/running, rest = history),
+status is date-derived (Running while active, **Closed** once expired), past PDFs
+are kept and downloadable. To make it production-reliable:
+
+1. **One policy table + `is_current` flag** (recommended) instead of moving rows
+   between running/previous. Reconcile currently destroys+recreates rows across
+   tables, which changes a policy's id — any linked document/audit FK would break.
+   Keeping all policies in one table and flipping a flag preserves ids + history.
+2. **DB transactions** around add/update (vehicle + running + previous + docs) so a
+   mid-failure can't leave orphan/duplicate policy rows.
+3. **Scheduled status + reminders (cron)**: nightly recompute statuses and emit
+   `renewal_due` notifications at 30/15/7/1 days before expiry; mark a current
+   policy past expiry as **Overdue** (lapsed cover is urgent/illegal to drive on).
+4. **Separate OD vs TP renewal**: OD/Full renews yearly even while long-term TP is
+   still valid — track and remind on `od_expiry_date` and `tp_expiry_date`
+   independently (status already prefers OD expiry).
+5. **Data integrity**: unique (vehicle_user_id, PolicyNumber); validate
+   PolicyFrom < PolicyTo and expiry consistency on write.
+6. **Audit trail**: record who/when for every policy change (created_by/updated_by
+   exist; add a policy_audit log for the full journey).
+7. **Document retention/versioning + backups** for the per-period policy PDFs.
+8. **Idempotent reconcile on read** as a safety net (already safe to re-run).
+
 ## Backend reference
 - Add: `POST /user/vehicle/user/add` · Update: `PUT /user/vehicle/user/update/:id`
 - List: `POST /user/vehicle/user/list` · Renewals: `POST /user/vehicle/user/renewal/list`
