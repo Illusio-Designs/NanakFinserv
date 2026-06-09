@@ -18,8 +18,8 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={poppins.variable} suppressHydrationWarning>
       <head>
-        {/* Apply the saved theme before paint to avoid a flash. */}
-        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}" }} />
+        {/* Apply the theme before paint (no flash). Default 'auto' = dark from 6 PM to 6 AM. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var m=localStorage.getItem('theme')||'auto';var h=new Date().getHours();var night=h>=18||h<6;if(m==='dark'||(m==='auto'&&night))document.documentElement.classList.add('dark')}catch(e){}" }} />
       </head>
       <body>
         {children}
