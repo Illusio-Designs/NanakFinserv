@@ -228,9 +228,15 @@ function BuildingConsumers() {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-[12px] uppercase tracking-wide text-muted">Wing {wing} · Unit {picked.number} — vacant</div>
-            <Input label="Consumer name" value="" onChange={() => {}} placeholder="Full name" />
-            <Input label="Mobile" value="" onChange={() => {}} placeholder="10-digit" />
+            <div className="text-[12px] uppercase tracking-wide text-muted">Wing {wing} · Unit {picked.number} · Flat — vacant</div>
+            <p className="text-[12px] text-muted">Office no <b className="text-ink">{picked.number}</b>, wing <b className="text-ink">{wing}</b> and category are taken from the selected unit.</p>
+            <Input label="Name" value="" onChange={() => {}} placeholder="Full name" />
+            <Input label="Mobile Number" value="" onChange={() => {}} placeholder="10-digit" />
+            <Input label="Email" value="" onChange={() => {}} placeholder="email@example.com" />
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Sq Feet" value="" onChange={() => {}} placeholder="e.g. 1200" />
+              <Input label="Sr No" value="" onChange={() => {}} placeholder="serial" />
+            </div>
             <Button size="sm" icon={Plus}>Add consumer to unit {picked.number}</Button>
           </div>
         )}
