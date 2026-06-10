@@ -72,6 +72,19 @@ const {
 const lifeInsuranceService = require("./lifeInsurance.service");
 const logger = require("../../config/logger");
 
+/**
+ * Minimal payload validation for create/update. (Was referenced but never defined,
+ * which 500'd every create/update with "validateLifeInsurancePayload is not defined".)
+ * @returns {string[]} list of error messages (empty = valid).
+ */
+function validateLifeInsurancePayload(body = {}) {
+  const errors = [];
+  if (!body.proposer_name || !String(body.proposer_name).trim()) errors.push("Proposer name is required");
+  const mob = String(body.proposer_mobile_numbers || "").trim();
+  if (!/^\d{10}$/.test(mob)) errors.push("Proposer mobile must be a 10-digit number");
+  return errors;
+}
+
 exports.getAllLifeInsUser = async (req, res) => {
     // Set cache control headers to prevent 304 responses
     res.set({
