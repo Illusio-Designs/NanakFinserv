@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Building2, ChevronRight } from "lucide-react";
+import { Plus, Building2, ChevronRight, Trash2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Dropdown from "@/components/ui/Dropdown";
 import Badge from "@/components/ui/Badge";
+import Switch from "@/components/ui/Switch";
 import Spinner from "@/components/ui/Spinner";
 import api, { showError } from "@/lib/api";
 import { ROLE_IDS, UNIT_CATEGORY_IDS } from "@/config/ids";
@@ -25,6 +26,9 @@ export default function UnitsPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ builder_id: "", unit_name: "", address: "" });
+  const emptyCats = () => ({ Showroom: { on: false, wings: [] }, Office: { on: false, wings: [] }, Flat: { on: false, wings: [] }, House: { on: false, wings: [] } });
+  const [cats, setCats] = useState(emptyCats());
+  const setCat = (c, patch) => setCats((s) => ({ ...s, [c]: { ...s[c], ...patch } }));
   const [saving, setSaving] = useState(false);
   const [detailUnit, setDetailUnit] = useState(null);
   const [detail, setDetail] = useState(null);
@@ -71,9 +75,20 @@ export default function UnitsPage() {
     if (!form.unit_name.trim()) return toast.error("Building name is required");
     setSaving(true);
     try {
-      await api.post("/user/data/add/builderUnit", { builder_id: form.builder_id, unit_name: form.unit_name, address: form.address, unit_categories: [] });
+      const enabled = CAT_NAMES.filter((c) => cats[c].on);
+      const payload = { builder_id: form.builder_id, unit_name: form.unit_name, address: form.address, unit_categories: enabled.map((c) => CAT_ID[c]) };
+      for (const c of enabled) {
+        const wings = (cats[c].wings || []).map((w) => ({
+          wingName: w.wingName,
+          floors: (w.floors || []).map((f) => ({ floorNumber: f.floorNumber, startRange: Number(f.start), endRange: Number(f.end) })),
+        }));
+        const floorCount = wings.reduce((a, w) => a + w.floors.length, 0);
+        const totalUnits = wings.reduce((a, w) => a + w.floors.reduce((b, f) => b + Math.max(0, (f.endRange - f.startRange + 1)), 0), 0);
+        payload[c] = { summary: { totalCount: totalUnits, floorCount, wingCount: wings.length }, wings };
+      }
+      await api.post("/user/data/add/builderUnit", payload);
       toast.success("Building added");
-      setOpen(false); setForm({ builder_id: "", unit_name: "", address: "" });
+      setOpen(false); setForm({ builder_id: "", unit_name: "", address: "" }); setCats(emptyCats());
       load();
     } catch (e) { showError(e, "Could not add building"); }
     finally { setSaving(false); }
@@ -85,12 +100,16 @@ export default function UnitsPage() {
       <DataTable columns={columns} data={rows} loading={loading} rowKey="unit_id" searchKeys={["name", "company", "addr"]}
         rowActions={[{ icon: Building2, title: "View units & consumers", onClick: openDetail }]} />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Building" size="sm"
+      <Modal open={open} onClose={() => setOpen(false)} title="Add Building" size="lg"
         footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} loading={saving}>Save</Button></div>}>
         <div className="space-y-4">
-          <Dropdown label="Builder" placeholder="Select builder" options={builders} value={form.builder_id} onChange={(v) => setForm({ ...form, builder_id: v })} searchable />
-          <Input label="Building / Unit Name" value={form.unit_name} onChange={(e) => setForm({ ...form, unit_name: e.target.value })} />
-          <Input label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Dropdown label="Builder" placeholder="Select builder" options={builders} value={form.builder_id} onChange={(v) => setForm({ ...form, builder_id: v })} searchable />
+            <Input label="Building / Unit Name" value={form.unit_name} onChange={(e) => setForm({ ...form, unit_name: e.target.value })} />
+            <Input label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          </div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-muted">Categories, wings &amp; floors</div>
+          {CAT_NAMES.map((c) => <CategoryEditor key={c} name={c} cat={cats[c]} setCat={(p) => setCat(c, p)} />)}
         </div>
       </Modal>
 
@@ -98,6 +117,52 @@ export default function UnitsPage() {
         {detailLoading ? <div className="flex justify-center py-8"><Spinner /></div>
           : detail ? <BuildingGrid d={detail} unit={detailUnit} reload={() => fetchDetail(detailUnit)} /> : null}
       </Modal>
+    </div>
+  );
+}
+
+function CategoryEditor({ name, cat, setCat }) {
+  const addWing = () => setCat({ wings: [...cat.wings, { wingName: "", floors: [{ floorNumber: "", start: "", end: "" }] }] });
+  const setWing = (i, patch) => setCat({ wings: cat.wings.map((w, idx) => idx === i ? { ...w, ...patch } : w) });
+  const delWing = (i) => setCat({ wings: cat.wings.filter((_, idx) => idx !== i) });
+  const addFloor = (wi) => setWing(wi, { floors: [...cat.wings[wi].floors, { floorNumber: "", start: "", end: "" }] });
+  const setFloor = (wi, fi, patch) => setWing(wi, { floors: cat.wings[wi].floors.map((f, idx) => idx === fi ? { ...f, ...patch } : f) });
+  const delFloor = (wi, fi) => setWing(wi, { floors: cat.wings[wi].floors.filter((_, idx) => idx !== fi) });
+
+  return (
+    <div className="rounded-lg border border-line p-3">
+      <div className="flex items-center justify-between">
+        <span className="font-medium">{name}</span>
+        <Switch checked={cat.on} onChange={() => setCat({ on: !cat.on, wings: !cat.on && cat.wings.length === 0 ? [{ wingName: "A", floors: [{ floorNumber: "", start: "", end: "" }] }] : cat.wings })} />
+      </div>
+      {cat.on && (
+        <div className="mt-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-semibold uppercase tracking-wide text-muted">Wings</span>
+            <Button size="sm" icon={Plus} onClick={addWing}>Add wing</Button>
+          </div>
+          {cat.wings.map((w, wi) => (
+            <div key={wi} className="rounded-md border border-line bg-subtle/40 p-3">
+              <div className="flex items-end gap-2">
+                <Input label="Wing name" value={w.wingName} onChange={(e) => setWing(wi, { wingName: e.target.value })} />
+                <Button size="sm" variant="ghost" icon={Trash2} onClick={() => delWing(wi)}>Remove</Button>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-wide text-muted">Floors (unit-number ranges)</span>
+                <Button size="sm" variant="secondary" icon={Plus} onClick={() => addFloor(wi)}>Floor</Button>
+              </div>
+              {w.floors.map((f, fi) => (
+                <div key={fi} className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                  <Input label="Floor" value={f.floorNumber} onChange={(e) => setFloor(wi, fi, { floorNumber: e.target.value })} />
+                  <Input label="From" value={f.start} onChange={(e) => setFloor(wi, fi, { start: e.target.value })} />
+                  <Input label="To" value={f.end} onChange={(e) => setFloor(wi, fi, { end: e.target.value })} />
+                  <div className="flex items-end"><Button size="sm" variant="ghost" icon={Trash2} onClick={() => delFloor(wi, fi)} /></div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
