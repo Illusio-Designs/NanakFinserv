@@ -1276,3 +1276,21 @@ exports.uploadConsumerDocument = async (req, res) => {
   }
 };
 
+
+/**
+ * DELETE /user/data/consumer/vacate/:id — free a unit by removing its
+ * builderConsumer link (the user record is kept). Used by the unit grid's
+ * Vacate / Replace flow.
+ */
+exports.vacateUnitConsumer = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const bc = await db.builderConsumer.findOne({ where: { builderConsumerId: id } });
+    if (!bc) return res.status(404).json({ status: false, message: "Unit consumer not found" });
+    await db.builderConsumer.destroy({ where: { builderConsumerId: id } });
+    return res.status(200).json({ status: true, message: "Unit vacated" });
+  } catch (e) {
+    logger.error({ err: e }, "vacateUnitConsumer failed");
+    return res.status(500).json({ status: false, message: e.message });
+  }
+};

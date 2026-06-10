@@ -258,17 +258,32 @@ function BuildingGrid({ d, unit, reload }) {
 }
 
 function UnitConsumerForm({ d, unit, picked, wing, onSaved }) {
-  const c = picked.consumer;
-  const [status, setStatus] = useState(c ? (c["user.user_pk_id.status"] || c.status || "interested") : "interested");
-  const [f, setF] = useState({
+  const fromC = (c) => ({
     Name: c?.["user.username"] || c?.username || "",
     MobileNumber: c?.["user.mobileNumber"] || c?.mobileNumber || "",
     Email: c?.["user.email"] || c?.email || "",
     Sqfeet: c?.sqFeet || "",
     Deed: c?.srNo || "",
   });
+  const [existing, setExisting] = useState(picked.consumer); // null = add mode (vacant or after Replace)
+  const c = existing;
+  const [status, setStatus] = useState(c ? (c["user.user_pk_id.status"] || c.status || "interested") : "interested");
+  const [f, setF] = useState(fromC(c));
   const [saving, setSaving] = useState(false);
   const set = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+
+  const vacate = async (thenReplace) => {
+    const bcId = existing?.builderConsumerId || existing?.builder_consumer_id;
+    if (!bcId) return;
+    if (!thenReplace && !confirm("Vacate this unit? The current consumer will be removed from it.")) return;
+    setSaving(true);
+    try {
+      await api.delete(`/user/data/consumer/vacate/${bcId}`);
+      if (thenReplace) { setExisting(null); setStatus("interested"); setF(fromC(null)); toast.success("Unit vacated — enter the new consumer"); }
+      else { toast.success("Unit vacated"); onSaved(); }
+    } catch (e) { showError(e, "Could not vacate unit"); }
+    finally { setSaving(false); }
+  };
 
   const submit = async () => {
     if (status === "interested") {
@@ -338,7 +353,12 @@ function UnitConsumerForm({ d, unit, picked, wing, onSaved }) {
         </>
       ) : <p className="rounded-lg border border-dashed border-line p-3 text-[13px] text-muted">Marked Not Interested — no consumer details needed.</p>}
       {c && status === "interested" && <div><Badge tone={LOAN_TONE[c["user.user_pk_id.status"] || c.status] || "muted"}>{loanLbl(c["user.user_pk_id.status"] || c.status)}</Badge></div>}
-      <Button size="sm" icon={c ? undefined : Plus} loading={saving} onClick={submit}>{c ? "Update" : "Add"}</Button>
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button size="sm" icon={c ? undefined : Plus} loading={saving} onClick={submit}>{c ? "Update" : "Add"}</Button>
+        {c && <Button size="sm" variant="secondary" loading={saving} onClick={() => vacate(true)}>Replace consumer</Button>}
+        {c && <Button size="sm" variant="ghost" loading={saving} onClick={() => vacate(false)}>Vacate unit</Button>}
+      </div>
+      {c && <p className="text-[11px] text-muted">Replace = remove this consumer then add a new one to unit {picked.number}. Vacate = free the unit.</p>}
     </div>
   );
 }

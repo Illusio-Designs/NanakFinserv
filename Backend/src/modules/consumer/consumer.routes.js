@@ -16,6 +16,7 @@ router.put("/user/data/add/consumer/loan", verifyToken, builderOps, controller.u
 router.put("/user/data/update/consumer", verifyToken, builderOps, controller.updateConsumerData);
 router.post("/user/data/consumer/add", verifyToken, builderOps, v.validateAddConsumer, controller.addConsumer);
 router.put("/user/data/consumer/update/:id", verifyToken, builderOps, v.validateUpdateConsumer, controller.updateConsumer);
+router.delete("/user/data/consumer/vacate/:id", verifyToken, builderOps, controller.vacateUnitConsumer);
 
 // Household / family members (members are full users linked to a head).
 router.post("/user/data/consumer/family/add", verifyToken, builderOps, v.validateFamilyMember, controller.addFamilyMember);
