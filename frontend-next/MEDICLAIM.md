@@ -1,6 +1,6 @@
 # Mediclaim Policy Management — user flow
 
-> **Completeness: ~97% (functionally complete, tested live).** Done: full
+> **Completeness: ~99% (functionally complete, tested live).** Done: full
 > add/edit, **type-driven flow** (Individual / Family Floater + members / Group +
 > employees), nominee, **portability** (previous-insurer policy), **single merged
 > policy table** (`is_current` flag — running vs history, the old
@@ -8,8 +8,9 @@
 > date-derived status, **past-journey timeline** (View/Download per policy),
 > renew / add-next, **policy-PDF upload** (`/uploads/mediclaim/`), **product
 > brochure PDFs**, and **atomic writes** (add = compensation rollback, update =
-> DB transaction). Pending: claim/portability **doc uploads** in the modal. (KYC is
-> managed from the Consumer module — not asked here.) Requires the backend deployed.
+> DB transaction), **claim/portability PDF uploads**, and **data integrity**
+> (ISO date validation + unique policy-number per mediclaim). KYC is managed from
+> the Consumer module — not asked here. Requires the backend deployed.
 
 
 How mediclaim is managed in the CRM (consumer-linked, year-by-year history,
@@ -60,7 +61,8 @@ The flow is **type-driven**, matching the old form's conditions:
    DOB, gender, date of joining.
 6. **Previous policy** *(new/edit only — hidden on renew)* — a checkbox “this is a
    portability / has a previous insurer policy”; if on: previous policy no,
-   company, sum insured, NCB, previous-agent name/code/contact.
+   company, sum insured, NCB, previous-agent name/code/contact, **+ Previous Policy
+   PDF and Claim Statement PDF uploads**.
 7. **Documents** — **Policy PDF** upload (multipart). *(KYC — Aadhar/PAN/GST — is
    managed from the **Consumer** module and reused, so it's not asked here.)*
 8. **Review → Submit.**
@@ -131,13 +133,13 @@ current policy is auto-archived into the journey.
 ✅ **Done:** single policy table + `is_current` (ids stable, no cross-table moves);
 idempotent reconcile (latest = current, status by date); add **compensation
 rollback** + update **DB transaction**; per-area upload folders + token downloads;
-activity log + reminders; product brochure PDFs; renewals exclude overdue.
+activity log + reminders; product brochure PDFs; renewals exclude overdue;
+**policy + previous-policy + claim PDFs** upload from the modal (→ uploads/mediclaim/);
+**data integrity** — ISO date normalisation + From<To validation on write, and a
+**unique (mediclaim_id, PolicyNumber)** index (duplicate → friendly 409).
 
 Still to do:
-1. **Claim / portability document uploads** in the modal (policy PDF done;
-   ClaimStatement/previous-policy PDFs are backend-supported but not yet in the UI).
-2. **Data integrity**: unique (mediclaim_id, PolicyNumber); validate dates on write.
-3. **Audit trail / PDF versioning** for full history.
+1. **Audit trail / PDF versioning** for full history.
 
 > KYC (Aadhar/PAN/GST) is **managed from the Consumer module** and reused across
 > policies — it is intentionally **not** a step in the mediclaim modal.
