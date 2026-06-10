@@ -149,34 +149,41 @@ function CategoryBuilder({ cats, setCat, addWing, delWing, setWing, addFloor, se
 
 function BuildingConsumers() {
   const [wing, setWing] = useState("A");
-  const [picked, setPicked] = useState(null); // { unit, consumer }
+  const [openFloor, setOpenFloor] = useState("Flat-1"); // category-floor key that's expanded
+  const [picked, setPicked] = useState(null);
+  const [status, setStatus] = useState("interested");
 
-  // Sample wings → floors with unit-number ranges (like the old app).
+  // Building → wing → category → floors (with unit-number ranges) — like old Unit.js.
   const wings = {
-    A: { floors: [{ n: "1", start: 101, end: 110 }, { n: "2", start: 201, end: 210 }, { n: "3", start: 301, end: 310 }] },
-    B: { floors: [{ n: "1", start: 101, end: 108 }, { n: "2", start: 201, end: 208 }] },
+    A: {
+      Showroom: [{ n: "G", start: 1, end: 6 }],
+      Flat: [{ n: "1", start: 101, end: 110 }, { n: "2", start: 201, end: 210 }, { n: "3", start: 301, end: 310 }],
+    },
+    B: {
+      Flat: [{ n: "1", start: 101, end: 108 }, { n: "2", start: 201, end: 208 }],
+    },
   };
-  // Occupied units → consumer + loan status (keyed by "wing-unit").
+  // Occupied units keyed by "wing-category-unit".
   const occupied = {
-    "A-103": { name: "Sita Sharma", mobile: "9000000012", status: "Login" },
-    "A-105": { name: "Ramesh Patel", mobile: "9000000011", status: "Disbursement" },
-    "A-208": { name: "Vikram Shah", mobile: "9000000014", status: "Sanction" },
-    "A-302": { name: "Neha Verma", mobile: "9000000015", status: "Pending" },
-    "B-102": { name: "Karan Joshi", mobile: "9000000016", status: "Not interested" },
-    "B-205": { name: "Anil Kumar", mobile: "9000000017", status: "Completed" },
+    "A-Flat-103": { name: "Sita Sharma", mobile: "9000000012", status: "Login" },
+    "A-Flat-105": { name: "Ramesh Patel", mobile: "9000000011", status: "Disbursement" },
+    "A-Flat-208": { name: "Vikram Shah", mobile: "9000000014", status: "Sanction" },
+    "A-Showroom-3": { name: "Metro Traders", mobile: "9000000019", status: "Sanction" },
+    "B-Flat-102": { name: "Karan Joshi", mobile: "9000000016", status: "Not interested" },
+    "B-Flat-205": { name: "Anil Kumar", mobile: "9000000017", status: "Completed" },
   };
   const w = wings[wing];
-  const total = Object.values(wings).reduce((a, x) => a + x.floors.reduce((b, f) => b + (f.end - f.start + 1), 0), 0);
+  const total = Object.values(wings).reduce((a, cats) => a + Object.values(cats).reduce((b, fls) => b + fls.reduce((c, f) => c + (f.end - f.start + 1), 0), 0), 0);
   const filled = Object.keys(occupied).length;
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
       <Card className="p-4">
-        <div className="mb-1 text-[15px] font-semibold">Skyline Towers — Flat units</div>
-        <div className="mb-3 text-[13px] text-muted">Nanak Builders · {filled}/{total} units occupied · click a unit to add/view a consumer</div>
+        <div className="mb-1 text-[15px] font-semibold">Building Skyline Towers</div>
+        <div className="mb-3 text-[13px] text-muted">Nanak Builders · {filled}/{total} units occupied · click a unit to add / view a consumer</div>
 
         {/* Wing selector */}
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           {Object.keys(wings).map((wn) => (
             <button key={wn} onClick={() => { setWing(wn); setPicked(null); }}
               className={`press rounded-md border px-4 py-1.5 text-[13px] font-medium ${wing === wn ? "border-brand-600 bg-brand-600 text-white" : "border-line text-ink hover:bg-subtle"}`}>
@@ -185,23 +192,41 @@ function BuildingConsumers() {
           ))}
         </div>
 
-        {/* Floors → unit-number grid */}
-        <div className="space-y-4">
-          {w.floors.map((f) => (
-            <div key={f.n}>
-              <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted">Floor {f.n} · {f.start}–{f.end}</div>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: f.end - f.start + 1 }, (_, i) => {
-                  const unit = f.start + i;
-                  const c = occupied[`${wing}-${unit}`];
-                  const on = picked?.unit === `${wing}-${unit}`;
+        {/* Category → floors (expandable) → unit grid */}
+        <div className="space-y-5">
+          {Object.entries(w).map(([cat, floors]) => (
+            <div key={cat}>
+              <div className="mb-2 text-[13px] font-semibold text-ink">{cat}</div>
+              <div className="space-y-2">
+                {floors.map((f) => {
+                  const key = `${cat}-${f.n}`;
+                  const open = openFloor === key;
                   return (
-                    <button key={unit} onClick={() => setPicked({ unit: `${wing}-${unit}`, number: unit, consumer: c })}
-                      title={c ? `${c.name} · ${c.status}` : "Vacant — click to add"}
-                      className={`press h-12 w-14 rounded-md border text-[12px] font-medium ${on ? "ring-2 ring-brand-600 " : ""}${c ? "border-brand-200 bg-brand-50 text-brand-700" : "border-dashed border-line text-muted hover:bg-subtle"}`}>
-                      <div>{unit}</div>
-                      {c && <div className="mt-0.5 h-1.5 w-1.5 mx-auto rounded-full" style={{ background: "currentColor" }} />}
-                    </button>
+                    <div key={key} className="rounded-lg border border-line">
+                      <button onClick={() => setOpenFloor(open ? null : key)}
+                        className="flex w-full items-center justify-between px-3 py-2 text-[13px] font-medium hover:bg-subtle">
+                        <span>Floor {f.n} <span className="text-muted">· units {f.start}–{f.end}</span></span>
+                        <ChevronRight size={15} className={`text-muted transition-transform ${open ? "rotate-90" : ""}`} />
+                      </button>
+                      {open && (
+                        <div className="flex flex-wrap gap-2 border-t border-line p-3">
+                          {Array.from({ length: f.end - f.start + 1 }, (_, i) => {
+                            const unit = f.start + i;
+                            const uk = `${wing}-${cat}-${unit}`;
+                            const c = occupied[uk];
+                            const on = picked?.unit === uk;
+                            return (
+                              <button key={unit} onClick={() => { setPicked({ unit: uk, number: unit, cat, consumer: c }); setStatus(c ? "interested" : "interested"); }}
+                                title={c ? `${c.name} · ${c.status}` : "Vacant — click to add"}
+                                className={`press flex h-12 w-14 flex-col items-center justify-center rounded-md border text-[12px] font-medium ${on ? "ring-2 ring-brand-600 " : ""}${c ? "border-brand-200 bg-brand-50 text-brand-700" : "border-dashed border-line text-muted hover:bg-subtle"}`}>
+                                <span>{unit}</span>
+                                {c && <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-current" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -214,30 +239,48 @@ function BuildingConsumers() {
         </div>
       </Card>
 
-      {/* Side panel: selected unit */}
+      {/* Add/Edit Unit Consumer — matches old Unit.js modal */}
       <Card className="p-4">
         {!picked ? (
-          <div className="flex h-full min-h-[200px] items-center justify-center text-center text-[13px] text-muted">Select a unit to see its consumer or add one.</div>
-        ) : picked.consumer ? (
-          <div className="space-y-3">
-            <div className="text-[12px] uppercase tracking-wide text-muted">Wing {wing} · Unit {picked.number}</div>
-            <div className="text-[16px] font-semibold">{picked.consumer.name}</div>
-            <div className="text-[13px] text-muted">{picked.consumer.mobile}</div>
-            <div><Badge tone={LOAN_TONE[picked.consumer.status] || "muted"}>{picked.consumer.status}</Badge></div>
-            <div className="flex gap-2 pt-2"><Button size="sm" variant="secondary">View loan</Button><Button size="sm" variant="ghost">Edit</Button></div>
-          </div>
+          <div className="flex h-full min-h-[220px] items-center justify-center text-center text-[13px] text-muted">Select a unit to add / edit its consumer.</div>
         ) : (
-          <div className="space-y-3">
-            <div className="text-[12px] uppercase tracking-wide text-muted">Wing {wing} · Unit {picked.number} · Flat — vacant</div>
-            <p className="text-[12px] text-muted">Office no <b className="text-ink">{picked.number}</b>, wing <b className="text-ink">{wing}</b> and category are taken from the selected unit.</p>
-            <Input label="Name" value="" onChange={() => {}} placeholder="Full name" />
-            <Input label="Mobile Number" value="" onChange={() => {}} placeholder="10-digit" />
-            <Input label="Email" value="" onChange={() => {}} placeholder="email@example.com" />
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Sq Feet" value="" onChange={() => {}} placeholder="e.g. 1200" />
-              <Input label="Sr No" value="" onChange={() => {}} placeholder="serial" />
+          <div className="space-y-4">
+            <div>
+              <div className="text-[15px] font-semibold">{picked.consumer ? "Edit" : "Add"} Unit Consumer</div>
+              <div className="text-[12px] text-muted">Wing {wing} · {picked.cat} · Unit {picked.number}</div>
             </div>
-            <Button size="sm" icon={Plus}>Add consumer to unit {picked.number}</Button>
+
+            {/* Status radio (Interested / Not Interested) */}
+            <div>
+              <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted">Status</div>
+              <div className="flex gap-4 text-[13px]">
+                <label className="flex items-center gap-2"><input type="radio" name="ustatus" checked={status === "interested"} onChange={() => setStatus("interested")} /> Interested</label>
+                <label className="flex items-center gap-2"><input type="radio" name="ustatus" checked={status === "notInterested"} onChange={() => setStatus("notInterested")} /> Not Interested</label>
+              </div>
+            </div>
+
+            {status === "interested" ? (
+              <>
+                <Input label="Name *" value={picked.consumer?.name || ""} onChange={() => {}} placeholder="Enter name" />
+                <div>
+                  <div className="ui-label mb-1">Mobile Number *</div>
+                  <div className="flex">
+                    <span className="flex items-center gap-1 rounded-l-md border border-r-0 border-line bg-subtle px-2 text-[13px] text-muted"><img src="https://flagcdn.com/w320/in.png" alt="IN" className="h-3.5 w-5 rounded-sm" />+91</span>
+                    <input className="ui-control rounded-l-none" maxLength={10} value={picked.consumer?.mobile || ""} onChange={() => {}} placeholder="Enter mobile number" />
+                  </div>
+                </div>
+                <Input label="Email" value="" onChange={() => {}} placeholder="Enter email address" />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input label="Sq. Ft." value="" onChange={() => {}} placeholder="Enter square feet" />
+                  <Input label="Deed Amount" value="" onChange={() => {}} placeholder="Enter deed amount" />
+                </div>
+              </>
+            ) : (
+              <p className="rounded-lg border border-dashed border-line p-3 text-[13px] text-muted">Marked Not Interested — no consumer details needed.</p>
+            )}
+
+            {picked.consumer && status === "interested" && <div><Badge tone={LOAN_TONE[picked.consumer.status] || "muted"}>{picked.consumer.status}</Badge></div>}
+            <Button size="sm" icon={picked.consumer ? undefined : Plus}>{picked.consumer ? "Update" : "Add"}</Button>
           </div>
         )}
       </Card>
