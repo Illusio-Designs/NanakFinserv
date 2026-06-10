@@ -566,12 +566,13 @@ exports.getUintByConsumer = async (req, res) => {
                 const wingCounts = element.wingCounts;
                 const unit_category_detail_ids = element.unit_category_detail_ids;
 
-                // Parse values from comma-separated strings into arrays
-                const unitCategoryList = (unit_categories && unit_categories?.split(",")?.map(Number)) || [];
+                // Parse comma-separated strings. Category id + detail id are UUIDs
+                // now (not numbers) — keep them as strings; only counts are numeric.
+                const unitCategoryList = (unit_categories && unit_categories?.split(",")) || [];
                 const totalCountList = (totalCounts && totalCounts?.split(",")?.map(Number)) || [];
                 const floorList = (floorCounts && floorCounts?.split(",")?.map(Number)) || [];
                 const wingsList = (wingCounts && wingCounts?.split(",")?.map(Number)) || [];
-                const wingsListIds = (unit_category_detail_ids && unit_category_detail_ids?.split(",")?.map(Number)) || [];
+                const wingsListIds = (unit_category_detail_ids && unit_category_detail_ids?.split(",")) || [];
 
                 // Initialize category structure
                 const categoryResponse = {
