@@ -148,34 +148,93 @@ function CategoryBuilder({ cats, setCat, addWing, delWing, setWing, addFloor, se
 }
 
 function BuildingConsumers() {
-  const rows = [
-    { name: "Ramesh Patel", mobile: "9000000011", wing: "A", floor: "3 (301)", status: "Disbursement" },
-    { name: "Sita Sharma", mobile: "9000000012", wing: "A", floor: "5 (505)", status: "Login" },
-    { name: "Vikram Shah", mobile: "9000000014", wing: "B", floor: "2 (210)", status: "Sanction" },
-    { name: "Neha Verma", mobile: "9000000015", wing: "B", floor: "7 (702)", status: "Pending" },
-    { name: "Karan Joshi", mobile: "9000000016", wing: "A", floor: "1 (108)", status: "Not interested" },
-  ];
+  const [wing, setWing] = useState("A");
+  const [picked, setPicked] = useState(null); // { unit, consumer }
+
+  // Sample wings → floors with unit-number ranges (like the old app).
+  const wings = {
+    A: { floors: [{ n: "1", start: 101, end: 110 }, { n: "2", start: 201, end: 210 }, { n: "3", start: 301, end: 310 }] },
+    B: { floors: [{ n: "1", start: 101, end: 108 }, { n: "2", start: 201, end: 208 }] },
+  };
+  // Occupied units → consumer + loan status (keyed by "wing-unit").
+  const occupied = {
+    "A-103": { name: "Sita Sharma", mobile: "9000000012", status: "Login" },
+    "A-105": { name: "Ramesh Patel", mobile: "9000000011", status: "Disbursement" },
+    "A-208": { name: "Vikram Shah", mobile: "9000000014", status: "Sanction" },
+    "A-302": { name: "Neha Verma", mobile: "9000000015", status: "Pending" },
+    "B-102": { name: "Karan Joshi", mobile: "9000000016", status: "Not interested" },
+    "B-205": { name: "Anil Kumar", mobile: "9000000017", status: "Completed" },
+  };
+  const w = wings[wing];
+  const total = Object.values(wings).reduce((a, x) => a + x.floors.reduce((b, f) => b + (f.end - f.start + 1), 0), 0);
+  const filled = Object.keys(occupied).length;
+
   return (
-    <Card className="p-0">
-      <div className="border-b border-line p-4">
-        <div className="text-[15px] font-semibold">Skyline Towers — consumers</div>
-        <div className="text-[13px] text-muted">Nanak Builders · MG Road, Surat · {rows.length} consumers</div>
-      </div>
-      <table className="w-full text-[13px]">
-        <thead className="bg-subtle text-left text-muted">
-          <tr><th className="px-4 py-2">Name</th><th className="px-4 py-2">Mobile</th><th className="px-4 py-2">Wing / Floor</th><th className="px-4 py-2">Loan status</th></tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.mobile} className="border-t border-line">
-              <td className="px-4 py-2 font-medium text-ink">{r.name}</td>
-              <td className="px-4 py-2">{r.mobile}</td>
-              <td className="px-4 py-2">{r.wing} · {r.floor}</td>
-              <td className="px-4 py-2"><Badge tone={LOAN_TONE[r.status] || "muted"}>{r.status}</Badge></td>
-            </tr>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+      <Card className="p-4">
+        <div className="mb-1 text-[15px] font-semibold">Skyline Towers — Flat units</div>
+        <div className="mb-3 text-[13px] text-muted">Nanak Builders · {filled}/{total} units occupied · click a unit to add/view a consumer</div>
+
+        {/* Wing selector */}
+        <div className="mb-4 flex gap-2">
+          {Object.keys(wings).map((wn) => (
+            <button key={wn} onClick={() => { setWing(wn); setPicked(null); }}
+              className={`press rounded-md border px-4 py-1.5 text-[13px] font-medium ${wing === wn ? "border-brand-600 bg-brand-600 text-white" : "border-line text-ink hover:bg-subtle"}`}>
+              Wing {wn}
+            </button>
           ))}
-        </tbody>
-      </table>
-    </Card>
+        </div>
+
+        {/* Floors → unit-number grid */}
+        <div className="space-y-4">
+          {w.floors.map((f) => (
+            <div key={f.n}>
+              <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wide text-muted">Floor {f.n} · {f.start}–{f.end}</div>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: f.end - f.start + 1 }, (_, i) => {
+                  const unit = f.start + i;
+                  const c = occupied[`${wing}-${unit}`];
+                  const on = picked?.unit === `${wing}-${unit}`;
+                  return (
+                    <button key={unit} onClick={() => setPicked({ unit: `${wing}-${unit}`, number: unit, consumer: c })}
+                      title={c ? `${c.name} · ${c.status}` : "Vacant — click to add"}
+                      className={`press h-12 w-14 rounded-md border text-[12px] font-medium ${on ? "ring-2 ring-brand-600 " : ""}${c ? "border-brand-200 bg-brand-50 text-brand-700" : "border-dashed border-line text-muted hover:bg-subtle"}`}>
+                      <div>{unit}</div>
+                      {c && <div className="mt-0.5 h-1.5 w-1.5 mx-auto rounded-full" style={{ background: "currentColor" }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex gap-4 text-[12px] text-muted">
+          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded border border-brand-200 bg-brand-50" /> Occupied</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded border border-dashed border-line" /> Vacant</span>
+        </div>
+      </Card>
+
+      {/* Side panel: selected unit */}
+      <Card className="p-4">
+        {!picked ? (
+          <div className="flex h-full min-h-[200px] items-center justify-center text-center text-[13px] text-muted">Select a unit to see its consumer or add one.</div>
+        ) : picked.consumer ? (
+          <div className="space-y-3">
+            <div className="text-[12px] uppercase tracking-wide text-muted">Wing {wing} · Unit {picked.number}</div>
+            <div className="text-[16px] font-semibold">{picked.consumer.name}</div>
+            <div className="text-[13px] text-muted">{picked.consumer.mobile}</div>
+            <div><Badge tone={LOAN_TONE[picked.consumer.status] || "muted"}>{picked.consumer.status}</Badge></div>
+            <div className="flex gap-2 pt-2"><Button size="sm" variant="secondary">View loan</Button><Button size="sm" variant="ghost">Edit</Button></div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="text-[12px] uppercase tracking-wide text-muted">Wing {wing} · Unit {picked.number} — vacant</div>
+            <Input label="Consumer name" value="" onChange={() => {}} placeholder="Full name" />
+            <Input label="Mobile" value="" onChange={() => {}} placeholder="10-digit" />
+            <Button size="sm" icon={Plus}>Add consumer to unit {picked.number}</Button>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
