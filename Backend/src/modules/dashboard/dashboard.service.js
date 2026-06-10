@@ -8,14 +8,14 @@ const db = require("../../../app/models");
 async function sumLoanAmounts(startOfDay, endOfDay) {
   const [totalDisbursedAmount, totalLoandAmount, totalPartPaymentAmount] =
     await Promise.all([
-      db.disbursementLoan.sum("disbursementAmount", {
-        where: { disbursementDate: { [Op.between]: [startOfDay, endOfDay] } },
+      db.loanStage.sum("disbursementAmount", {
+        where: { stage: "disbursement", disbursementDate: { [Op.between]: [startOfDay, endOfDay] } },
       }),
-      db.loginLoan.sum("loanAmount", {
-        where: { loanDate: { [Op.between]: [startOfDay, endOfDay] } },
+      db.loanStage.sum("loanAmount", {
+        where: { stage: "login", loanDate: { [Op.between]: [startOfDay, endOfDay] } },
       }),
-      db.partPaymentLoan.sum("part_amount", {
-        where: { part_date: { [Op.between]: [startOfDay, endOfDay] } },
+      db.loanStage.sum("part_amount", {
+        where: { stage: "partPayment", part_date: { [Op.between]: [startOfDay, endOfDay] } },
       }),
     ]);
 
