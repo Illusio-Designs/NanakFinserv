@@ -10,25 +10,25 @@ module.exports = (sequelize, Sequelize) => {
         // Agent Details
         agent_code: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
         },
         agent_name: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         channel: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         channel_code: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
         },
         
         // Policy Numbers
         proposer_number: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
             // unique: true - temporarily disabled to avoid "too many keys" error
         },
         policy_numbers: {
@@ -39,11 +39,11 @@ module.exports = (sequelize, Sequelize) => {
         // Proposer Details
         proposer_name: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         proposer_gender: {
             type: DataTypes.ENUM('Male', 'Female', 'Other'),
-            allowNull: false
+            allowNull: true
         },
         proposer_gender_custom: {
             type: DataTypes.STRING(50),
@@ -51,11 +51,11 @@ module.exports = (sequelize, Sequelize) => {
         },
         proposer_dob: {
             type: DataTypes.DATEONLY,
-            allowNull: false
+            allowNull: true
         },
         proposer_married_status: {
             type: DataTypes.ENUM('Single', 'Married', 'Divorced', 'Widowed'),
-            allowNull: false
+            allowNull: true
         },
         proposer_father_name: {
             type: DataTypes.STRING(100),
@@ -71,7 +71,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         proposer_mobile_numbers: {
             type: DataTypes.STRING(20), // Single mobile number
-            allowNull: false
+            allowNull: true
         },
         proposer_email: {
             type: DataTypes.STRING(100),
@@ -79,16 +79,16 @@ module.exports = (sequelize, Sequelize) => {
         },
         proposer_nationality: {
             type: DataTypes.STRING(50),
-            allowNull: false,
+            allowNull: true,
             defaultValue: 'Indian'
         },
         proposer_relationship_with_life_assured: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
         },
         proposer_residential_status: {
             type: DataTypes.ENUM('Resident', 'Non-Resident', 'Resident but Not Ordinarily Resident'),
-            allowNull: false
+            allowNull: true
         },
         proposer_pan_number: {
             type: DataTypes.STRING(10),
@@ -96,21 +96,21 @@ module.exports = (sequelize, Sequelize) => {
         },
         proposer_mailing_address: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: true
         },
         proposer_permanent_address: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: true
         },
         
         // Life Assured Details
         life_assured_name: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         life_assured_gender: {
             type: DataTypes.ENUM('Male', 'Female', 'Other'),
-            allowNull: false
+            allowNull: true
         },
         life_assured_gender_custom: {
             type: DataTypes.STRING(50),
@@ -118,11 +118,11 @@ module.exports = (sequelize, Sequelize) => {
         },
         life_assured_dob: {
             type: DataTypes.DATEONLY,
-            allowNull: false
+            allowNull: true
         },
         life_assured_married_status: {
             type: DataTypes.ENUM('Single', 'Married', 'Divorced', 'Widowed'),
-            allowNull: false
+            allowNull: true
         },
         life_assured_father_name: {
             type: DataTypes.STRING(100),
@@ -138,7 +138,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         life_assured_mobile_numbers: {
             type: DataTypes.STRING(20), // Single mobile number
-            allowNull: false
+            allowNull: true
         },
         life_assured_email: {
             type: DataTypes.STRING(100),
@@ -146,16 +146,16 @@ module.exports = (sequelize, Sequelize) => {
         },
         life_assured_nationality: {
             type: DataTypes.STRING(50),
-            allowNull: false,
+            allowNull: true,
             defaultValue: 'Indian'
         },
         life_assured_relationship_with_proposer: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
         },
         life_assured_residential_status: {
             type: DataTypes.ENUM('Resident', 'Non-Resident', 'Resident but Not Ordinarily Resident'),
-            allowNull: false
+            allowNull: true
         },
         life_assured_pan_number: {
             type: DataTypes.STRING(10),
@@ -163,11 +163,11 @@ module.exports = (sequelize, Sequelize) => {
         },
         life_assured_mailing_address: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: true
         },
         life_assured_permanent_address: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: true
         },
         life_assured_education: {
             type: DataTypes.STRING(100),
@@ -189,7 +189,7 @@ module.exports = (sequelize, Sequelize) => {
         // Nominee Details
         nominee_name: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         nominee_mobile_numbers: {
             type: DataTypes.STRING(20), // Single mobile number
@@ -209,29 +209,29 @@ module.exports = (sequelize, Sequelize) => {
         },
         nominee_relationship_with_life_assured: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
         },
         nominee_gender: {
             type: DataTypes.ENUM('Male', 'Female', 'Other'),
-            allowNull: false
+            allowNull: true
         },
         
         // Product Details
         product_name: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         premium_payment_term: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: true
         },
         sum_assured: {
             type: DataTypes.DECIMAL(15, 2),
-            allowNull: false
+            allowNull: true
         },
         policy_term: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull: true
         },
         
         // Health Details
@@ -245,7 +245,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         tobacco_consumption: {
             type: DataTypes.STRING(10),
-            allowNull: false,
+            allowNull: true,
             defaultValue: 'No'
         },
         tobacco_quantity: {
@@ -258,7 +258,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         alcohol_consumption: {
             type: DataTypes.STRING(10),
-            allowNull: false,
+            allowNull: true,
             defaultValue: 'No'
         },
         alcohol_quantity: {
@@ -271,7 +271,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         narcotics_consumption: {
             type: DataTypes.STRING(10),
-            allowNull: false,
+            allowNull: true,
             defaultValue: 'No'
         },
         narcotics_quantity: {
@@ -290,19 +290,19 @@ module.exports = (sequelize, Sequelize) => {
         // Bank Details
         account_type: {
             type: DataTypes.ENUM('Savings', 'Current', 'Fixed Deposit', 'Recurring Deposit'),
-            allowNull: false
+            allowNull: true
         },
         bank_name: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         branch: {
             type: DataTypes.STRING(100),
-            allowNull: false
+            allowNull: true
         },
         account_number: {
             type: DataTypes.STRING(50),
-            allowNull: false
+            allowNull: true
         },
         micr_code: {
             type: DataTypes.STRING(9),
@@ -325,11 +325,11 @@ module.exports = (sequelize, Sequelize) => {
         },
         premium_amount: {
             type: DataTypes.DECIMAL(15, 2),
-            allowNull: false
+            allowNull: true
         },
         premium_payment_mode: {
             type: DataTypes.ENUM('Monthly', 'Quarterly', 'Half-Yearly', 'Yearly', 'Single'),
-            allowNull: false
+            allowNull: true
         },
         policy_remarks: {
             type: DataTypes.TEXT,
@@ -351,7 +351,7 @@ module.exports = (sequelize, Sequelize) => {
         // User reference for integration
         user_id: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
             references: {
                 model: 'user',
                 key: 'user_id'
@@ -371,7 +371,7 @@ module.exports = (sequelize, Sequelize) => {
         // Status and tracking
         status: {
             type: DataTypes.ENUM('Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'Active', 'Lapsed'),
-            allowNull: false,
+            allowNull: true,
             defaultValue: 'Draft'
         },
         
