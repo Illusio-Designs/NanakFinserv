@@ -120,29 +120,69 @@ export default function LifePage() {
       <LifeFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={load} />
       <LifeFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={load} />
 
-      <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Life policy" subtitle={viewRow?.policy}>
-        {viewRow && (
-          <div className="space-y-2 text-[14px]">
-            <Row label="Proposer" value={viewRow.name} />
-            <Row label="Mobile" value={viewRow.mobile} />
-            <Row label="Life Assured" value={viewRow.life_assured_name || "—"} />
-            <Row label="Nominee" value={viewRow.nominee_name || "—"} />
-            <Row label="Policy No." value={viewRow.policy} />
-            <Row label="Sum Assured" value={viewRow.sum_assured || "—"} />
-            <Row label="Premium" value={viewRow.premium_amount || "—"} />
-            <Row label="Status" value={viewRow.status} />
-          </div>
-        )}
+      <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Life policy" subtitle={viewRow?.policy} size="lg">
+        {viewRow && <LifeDetail d={viewRow} />}
       </Modal>
     </div>
   );
 }
 
+function LifeDetail({ d }) {
+  const inr = (n) => (n ? "₹" + Number(String(n).replace(/[^\d.]/g, "")).toLocaleString("en-IN") : "—");
+  return (
+    <div className="space-y-5 text-[14px]">
+      <Section title="Proposer">
+        <Row label="Name" value={d.proposer_name || d.name || "—"} />
+        <Row label="Mobile" value={d.proposer_mobile_numbers || d.mobile || "—"} />
+        <Row label="Email" value={d.proposer_email || "—"} />
+        <Row label="DOB / Gender" value={[d.proposer_dob ? fmtDate(d.proposer_dob) : null, d.proposer_gender].filter(Boolean).join(" · ") || "—"} />
+        <Row label="PAN" value={d.proposer_pan_number || "—"} />
+      </Section>
+      <Section title="Life assured">
+        <Row label="Name" value={d.life_assured_name || "—"} />
+        <Row label="Mobile" value={d.life_assured_mobile_numbers || "—"} />
+        <Row label="DOB / Gender" value={[d.life_assured_dob ? fmtDate(d.life_assured_dob) : null, d.life_assured_gender].filter(Boolean).join(" · ") || "—"} />
+        <Row label="Relationship to proposer" value={d.life_assured_relationship_with_proposer || "—"} />
+      </Section>
+      <Section title="Nominee">
+        <Row label="Name" value={d.nominee_name || "—"} />
+        <Row label="Relationship" value={d.nominee_relationship_with_life_assured || "—"} />
+        <Row label="Mobile" value={d.nominee_mobile_numbers || "—"} />
+      </Section>
+      <Section title="Policy">
+        <Row label="Policy No." value={d.policy_number || d.policy || "—"} />
+        <Row label="Product" value={d.product_name || "—"} />
+        <Row label="Sum Assured" value={inr(d.sum_assured)} />
+        <Row label="Premium" value={`${inr(d.premium_amount)}${d.premium_payment_mode ? " · " + d.premium_payment_mode : ""}`} />
+        <Row label="Premium term / Policy term" value={[d.premium_payment_term, d.policy_term].filter(Boolean).join(" / ") || "—"} />
+        <Row label="Maturity" value={d.date_of_maturity ? fmtDate(d.date_of_maturity) : "—"} />
+        <Row label="Premium due" value={d.due_date_of_premium ? `${fmtDate(d.due_date_of_premium)} · ${expiryCountdown(d.due_date_of_premium)}` : "—"} />
+        <Row label="Agent" value={[d.agent_name, d.agent_code].filter(Boolean).join(" · ") || "—"} />
+        <Row label="Status" value={<Badge tone="brand">{d.status || "—"}</Badge>} />
+      </Section>
+      {(d.bank_name || d.account_number) && (
+        <Section title="Bank">
+          <Row label="Bank / Branch" value={[d.bank_name, d.branch].filter(Boolean).join(" · ") || "—"} />
+          <Row label="Account" value={[d.account_number, d.account_type].filter(Boolean).join(" · ") || "—"} />
+        </Section>
+      )}
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div>
+      <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">{title}</div>
+      <div className="rounded-lg border border-line p-3">{children}</div>
+    </div>
+  );
+}
 function Row({ label, value }) {
   return (
-    <div className="flex justify-between border-b border-line py-1.5">
+    <div className="flex justify-between gap-3 border-b border-line py-1.5 last:border-0">
       <span className="text-muted">{label}</span>
-      <span className="font-medium text-ink">{value}</span>
+      <span className="text-right font-medium text-ink">{value}</span>
     </div>
   );
 }
