@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Building2, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, Building2, ChevronRight, Trash2, PencilLine } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
@@ -25,6 +25,7 @@ export default function UnitsPage() {
   const [builders, setBuilders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editUnit, setEditUnit] = useState(null); // building being edited (null = add)
   const [form, setForm] = useState({ builder_id: "", unit_name: "", address: "" });
   const emptyCats = () => ({ Showroom: { on: false, wings: [] }, Office: { on: false, wings: [] }, Flat: { on: false, wings: [] }, House: { on: false, wings: [] } });
   const [cats, setCats] = useState(emptyCats());
@@ -64,6 +65,31 @@ export default function UnitsPage() {
   };
   const openDetail = (u) => { setDetailUnit(u); setDetail(null); fetchDetail(u); };
 
+  // Edit a building: prefill the rich form from its existing categories/wings/floors.
+  const openEditBuilding = async (u) => {
+    try {
+      const res = await api.post("/user/data/builder/getunitwithconsumer", { unit_id: u.unit_id });
+      const det = (res.data?.data || [])[0] || {};
+      const next = emptyCats();
+      for (const c of CAT_NAMES) {
+        const wings = det[c] || [];
+        if (wings.length) {
+          next[c] = {
+            on: true,
+            wings: wings.map((w) => ({
+              wingId: w.wingId || w.wing_id, wingName: w.wingName || w.wing_name || "",
+              floors: (w.floors || []).map((f) => ({ floor_id: f.floor_id, floorNumber: f.floorNumber, start: String(f.startRange ?? f.floor_start ?? ""), end: String(f.endRange ?? f.floor_end ?? "") })),
+            })),
+          };
+        }
+      }
+      setForm({ builder_id: det.builder_id || u.builder_id || "", unit_name: u.name || det.unit_name || "", address: u.addr || det.address || "" });
+      setCats(next);
+      setEditUnit(u);
+      setOpen(true);
+    } catch (e) { showError(e, "Could not load building for edit"); }
+  };
+
   const columns = useMemo(() => [
     { key: "name", title: "Building / Unit", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "company", title: "Builder" },
@@ -77,18 +103,27 @@ export default function UnitsPage() {
     try {
       const enabled = CAT_NAMES.filter((c) => cats[c].on);
       const payload = { builder_id: form.builder_id, unit_name: form.unit_name, address: form.address, unit_categories: enabled.map((c) => CAT_ID[c]) };
-      for (const c of enabled) {
-        const wings = (cats[c].wings || []).map((w) => ({
+      for (const c of CAT_NAMES) {
+        // Edit must send every category (empty = clear it); Add sends only enabled.
+        if (!editUnit && !cats[c].on) continue;
+        const wings = (cats[c].on ? cats[c].wings || [] : []).map((w) => ({
+          wingId: w.wingId, // present for existing wings (edit); undefined for new
           wingName: w.wingName,
-          floors: (w.floors || []).map((f) => ({ floorNumber: f.floorNumber, startRange: Number(f.start), endRange: Number(f.end) })),
+          floors: (w.floors || []).map((f) => ({ floor_id: f.floor_id, floorNumber: f.floorNumber, startRange: Number(f.start), endRange: Number(f.end) })),
         }));
         const floorCount = wings.reduce((a, w) => a + w.floors.length, 0);
         const totalUnits = wings.reduce((a, w) => a + w.floors.reduce((b, f) => b + Math.max(0, (f.endRange - f.startRange + 1)), 0), 0);
         payload[c] = { summary: { totalCount: totalUnits, floorCount, wingCount: wings.length }, wings };
       }
-      await api.post("/user/data/add/builderUnit", payload);
-      toast.success("Building added");
-      setOpen(false); setForm({ builder_id: "", unit_name: "", address: "" }); setCats(emptyCats());
+      if (editUnit) {
+        payload.unit_id = editUnit.unit_id;
+        await api.put("/user/data/update/builderUnit", payload);
+        toast.success("Building updated");
+      } else {
+        await api.post("/user/data/add/builderUnit", payload);
+        toast.success("Building added");
+      }
+      setOpen(false); setEditUnit(null); setForm({ builder_id: "", unit_name: "", address: "" }); setCats(emptyCats());
       load();
     } catch (e) { showError(e, "Could not add building"); }
     finally { setSaving(false); }
@@ -98,10 +133,13 @@ export default function UnitsPage() {
     <div>
       <PageHeader title="Buildings / Units" subtitle="Builder buildings, wings & their consumers" actions={<Button icon={Plus} onClick={() => { setForm({ builder_id: "", unit_name: "", address: "" }); setOpen(true); }}>Add Building</Button>} />
       <DataTable columns={columns} data={rows} loading={loading} rowKey="unit_id" searchKeys={["name", "company", "addr"]}
-        rowActions={[{ icon: Building2, title: "View units & consumers", onClick: openDetail }]} />
+        rowActions={[
+          { icon: Building2, title: "View units & consumers", onClick: openDetail },
+          { icon: PencilLine, title: "Edit building (categories/wings)", onClick: openEditBuilding },
+        ]} />
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add Building" size="lg"
-        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={save} loading={saving}>Save</Button></div>}>
+      <Modal open={open} onClose={() => { setOpen(false); setEditUnit(null); }} title={editUnit ? "Edit Building" : "Add Building"} size="lg"
+        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setOpen(false); setEditUnit(null); }}>Cancel</Button><Button onClick={save} loading={saving}>Save</Button></div>}>
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Dropdown label="Builder" placeholder="Select builder" options={builders} value={form.builder_id} onChange={(v) => setForm({ ...form, builder_id: v })} searchable />

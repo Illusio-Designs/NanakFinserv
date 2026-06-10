@@ -1,12 +1,17 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { PencilLine } from "lucide-react";
+import toast from "react-hot-toast";
+import { PencilLine, FileText, Plus } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import Tabs from "@/components/ui/Tabs";
-import api, { showError } from "@/lib/api";
+import FileUpload from "@/components/ui/FileUpload";
+import FileTypeIcon from "@/components/ui/FileTypeIcon";
+import api, { showError, fileUrl } from "@/lib/api";
 import { fmtDate } from "@/lib/format";
 import LoanStageModal from "./LoanStageModal";
 
@@ -48,6 +53,7 @@ export default function LoanPage() {
   const [tab, setTab] = useState("all");
   const [viewRow, setViewRow] = useState(null);
   const [stageRow, setStageRow] = useState(null);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -78,7 +84,7 @@ export default function LoanPage() {
 
   return (
     <div>
-      <PageHeader title="Loan" subtitle="Applications & processing pipeline" />
+      <PageHeader title="Loan" subtitle="Applications & processing pipeline" actions={<Button variant="secondary" icon={FileText} onClick={() => setConfigOpen(true)}>Document templates</Button>} />
       {!loading && tabs.length > 1 && <Tabs className="mb-4 flex-wrap" value={tab} onChange={setTab} tabs={tabs} />}
 
       <DataTable
@@ -97,6 +103,77 @@ export default function LoanPage() {
       <Modal open={!!viewRow} onClose={() => setViewRow(null)} title="Loan details" subtitle={viewRow?.name} size="lg">
         {viewRow && <LoanDetail d={viewRow} />}
       </Modal>
+
+      <Modal open={configOpen} onClose={() => setConfigOpen(false)} title="Loan document templates" subtitle="Document categories + their PDFs" size="lg">
+        {configOpen && <LoanConfig />}
+      </Modal>
+    </div>
+  );
+}
+
+function LoanConfig() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [pdf, setPdf] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/user/data/loan/configuration");
+      setRows(res.data?.data || []);
+    } catch (e) { showError(e, "Could not load templates"); setRows([]); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    if (!name.trim()) return toast.error("Category name is required");
+    if (!pdf) return toast.error("Attach a PDF");
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append("categoryname", name);
+      fd.append("pdfFile", pdf);
+      await api.post("/user/loan/configuration/add", fd);
+      toast.success("Template saved");
+      setName(""); setPdf(null);
+      load();
+    } catch (e) { showError(e, "Could not save template"); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-line p-3">
+        <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">Add template</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input label="Category name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Salaried checklist" />
+          <FileUpload label="PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setPdf} />
+        </div>
+        <div className="mt-3 flex justify-end"><Button size="sm" icon={Plus} loading={saving} onClick={add}>Add</Button></div>
+      </div>
+
+      <div>
+        <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">Templates ({rows.length})</div>
+        {loading ? <p className="text-[13px] text-muted">Loading…</p>
+          : rows.length ? (
+            <div className="overflow-hidden rounded-lg border border-line">
+              <table className="w-full text-[13px]">
+                <thead className="bg-subtle text-left text-muted"><tr><th className="px-3 py-2">Category</th><th className="px-3 py-2">Document</th></tr></thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.config_id} className="border-t border-line">
+                      <td className="px-3 py-2 font-medium text-ink">{r.categoryname}</td>
+                      <td className="px-3 py-2">{r.pdfname ? <a href={fileUrl(r.pdfname)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-brand-600 hover:underline"><FileTypeIcon file={r.pdfname} size={13} />View / Download</a> : <span className="text-muted">—</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="rounded-lg border border-dashed border-line py-6 text-center text-[13px] text-muted">No templates yet.</p>}
+      </div>
     </div>
   );
 }
