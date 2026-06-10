@@ -140,6 +140,7 @@ const property = db.property;
 const SanctionLoan = db.sanctionLoan;
 const QueryLoan = db.queryLoan;
 const CancelLoan = db.cancelLoan;
+const LoanStage = db.loanStage; // unified loan-stage table (merge)
 const Category = db.category;
 const MediclaimCompany = db.mediclaimCompany;
 const unit_category_list = db.unit_category_list;
@@ -240,4 +241,4 @@ async function upsertConsumerDocument(user_id, categoryId, file) {
   return ConsumerDocument.create({ user_id, categoryId, file });
 }
 
-module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, saveUpload, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, writeAudit, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };
+module.exports = { ensureCategoryMapping, ConsumerDocument, upsertConsumerDocument, saveUpload, Blog, BuilderUser, BuildingManager, CTRL_DIR, CancelLoan, Category, Disburse, DisbursementLoan, DocumentSelectedLoan, LoanStage, EmployeeMediclaim, FamilyMember, Inqueryuser, LifeInsurance, LifeInsuranceDocument, LoginLoan, Mediclaim, MediclaimCompany, MediclaimProduct, Op, PartPaymentLoan, PreviousPolicies, QueryLoan, RunningPolicies, SanctionLoan, Sequelize, Unit, UnitCategoryDetail, UnitCategoryList, User, Wing, authConfig, builderConsumer, codeDetail, companyType, consumerRoleMapping, createNotification, writeAudit, db, documents, dotenvParseVariables, env, floor, fs, fsExtra, fsSync, hasMeaningfulPreviousPolicyData, jwt, loanConfiguration, loanUser, moment, nodemailer, path, policyPlan, policyType, property, references, unit_category_list, userCatergory, uuidv4, vehcileRunningPolicy, vehiclePreviousPolicy, vehicleUser, vehicle_document, vehicles };

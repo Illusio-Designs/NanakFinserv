@@ -44,6 +44,7 @@ db.queryLoan  = require("./loan_details/query.model")(sequelize,Sequelize)
 db.cancelLoan  = require("./loan_details/cancel.model")(sequelize,Sequelize)
 db.sanctionLoan  = require("./loan_details/sanction.model")(sequelize,Sequelize)
 db.partPaymentLoan  = require("./loan_details/partPayment.model")(sequelize,Sequelize)
+db.loanStage  = require("./loan_details/loanStage.model")(sequelize,Sequelize) // unified stage table (merge)
 db.codeDetail  = require("./codeDetail.model")(sequelize,Sequelize)
 db.runningPolicyMediclaim  = require("./runningPolicyMediclaim.model")(sequelize,Sequelize)
 db.documents  = require("./documents.model")(sequelize,Sequelize)
@@ -233,6 +234,17 @@ db.partPaymentLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
 
 db.user.hasMany(db.partPaymentLoan, { foreignKey: 'updated_by' });
 db.partPaymentLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
+
+// Unified loan-stage table (merge of the 10 per-stage tables into one). Loan
+// stages are cumulative (a disbursed loan keeps its login+sanction+disbursement
+// data), so this is one row per stage-type per loan (part-payments = many rows),
+// read via the `stages` association and grouped by `stage` in the controller.
+db.loanUser.hasMany(db.loanStage, { foreignKey: 'laon_id', as: 'stages' });
+db.loanStage.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
+db.user.hasMany(db.loanStage, { foreignKey: 'updated_by' });
+db.loanStage.belongsTo(db.user, { foreignKey: 'updated_by' });
+db.codeDetail.hasMany(db.loanStage, { foreignKey: 'code_id' });
+db.loanStage.belongsTo(db.codeDetail, { foreignKey: 'code_id' });
 
 
 

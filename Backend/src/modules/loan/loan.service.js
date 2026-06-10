@@ -6,6 +6,50 @@
 const db = require("../../../app/models");
 
 const LoanUser = db.loanUser;
+const LoanStage = db.loanStage;
+
+// ── Unified loan-stage helpers (merge of the 10 per-stage tables) ─────────────
+/** Upsert a single-instance stage row (one per stage-type per loan). */
+async function upsertLoanStage(laonId, stage, data, opts = {}) {
+  const { transaction, actorId } = opts;
+  const clean = {};
+  for (const [k, v] of Object.entries(data || {})) if (v !== undefined) clean[k] = v;
+  const existing = await LoanStage.findOne({ where: { laon_id: laonId, stage }, transaction });
+  if (existing) {
+    await LoanStage.update({ ...clean, updated_by: actorId || null }, { where: { stage_id: existing.stage_id }, transaction });
+    return existing.stage_id;
+  }
+  const created = await LoanStage.create({ ...clean, laon_id: laonId, stage, created_by: actorId || null, updated_by: actorId || null }, { transaction });
+  return created.stage_id;
+}
+
+/** Replace all part-payment rows for a loan. */
+async function setPartPayments(laonId, parts, opts = {}) {
+  const { transaction, actorId } = opts;
+  await LoanStage.destroy({ where: { laon_id: laonId, stage: "partPayment" }, transaction });
+  if (Array.isArray(parts) && parts.length) {
+    await LoanStage.bulkCreate(
+      parts.map((p, i) => ({
+        laon_id: laonId, stage: "partPayment",
+        part_number: p.part_number != null ? p.part_number : i + 1,
+        part_amount: p.part_amount, part_date: p.part_date,
+        created_by: actorId || null, updated_by: actorId || null,
+      })),
+      { transaction }
+    );
+  }
+}
+
+/** Group a loan's `stages` array into named single stages + a partPayments[] list. */
+function groupStages(stages = []) {
+  const g = { partPayments: [] };
+  for (const s of stages) {
+    const plain = s.get ? s.get({ plain: true }) : s;
+    if (plain.stage === "partPayment") g.partPayments.push(plain);
+    else g[plain.stage] = plain;
+  }
+  return g;
+}
 
 /**
  * Update a consumer's loan status.
@@ -27,4 +71,4 @@ async function updateLoanStatus({ userConsumerId, laonId, status, remarks, actor
   return LoanUser.findOne({ where });
 }
 
-module.exports = { updateLoanStatus };
+module.exports = { updateLoanStatus, upsertLoanStage, setPartPayments, groupStages };
