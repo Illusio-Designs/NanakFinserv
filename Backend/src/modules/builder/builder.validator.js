@@ -20,8 +20,13 @@ const validateAddBuilder = (req, res, next) => {
 };
 
 const validateAddBuilderUnit = (req, res, next) => {
-  if (!isPresent((req.body || {}).unit_id)) {
-    return res.status(400).send({ message: "Unit ID is required", status: false });
+  const b = req.body || {};
+  // addBuilderUnit CREATES the unit, so it needs builder_id + unit_name (not unit_id).
+  if (!isPresent(b.builder_id)) {
+    return res.status(400).send({ message: "Builder id is required", status: false });
+  }
+  if (!isPresent(b.unit_name)) {
+    return res.status(400).send({ message: "Unit name is required", status: false });
   }
   return next();
 };
