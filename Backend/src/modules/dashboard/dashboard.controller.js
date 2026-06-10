@@ -271,13 +271,14 @@ exports.getUserCounts = async (req, res) => {
                         }
                     }
                 }),
-                DisbursementLoan.sum('disbursementAmount', { where: totalDisbursedFilter }),
-                LoginLoan.sum('loanAmount', { where: totalLoanedFilter }),
-                PartPaymentLoan.sum('part_amount', { where: totalPartPaymentFilter }),
+                // Loan amounts now live in the unified loan_stage table (stage-tagged).
+                db.loanStage.sum('disbursementAmount', { where: { ...totalDisbursedFilter, stage: 'disbursement' } }),
+                db.loanStage.sum('loanAmount', { where: { ...totalLoanedFilter, stage: 'login' } }),
+                db.loanStage.sum('part_amount', { where: { ...totalPartPaymentFilter, stage: 'partPayment' } }),
                 // All-time amounts as fallback
-                DisbursementLoan.sum('disbursementAmount', { where: allTimeDisbursedFilter }),
-                LoginLoan.sum('loanAmount', { where: allTimeLoanedFilter }),
-                PartPaymentLoan.sum('part_amount', { where: allTimePartPaymentFilter }),
+                db.loanStage.sum('disbursementAmount', { where: { ...allTimeDisbursedFilter, stage: 'disbursement' } }),
+                db.loanStage.sum('loanAmount', { where: { ...allTimeLoanedFilter, stage: 'login' } }),
+                db.loanStage.sum('part_amount', { where: { ...allTimePartPaymentFilter, stage: 'partPayment' } }),
                 consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.VEHICLE, ...mgrScope } }), // vehicle users (scoped to manager's assigned)
                 consumerRoleMapping.count({ where: { category_id: CATEGORY_IDS.LIFE_INSURANCE, ...mgrScope } }) // life insurance count (scoped)
             ]);

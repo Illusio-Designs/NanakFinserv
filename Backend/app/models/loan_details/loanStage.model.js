@@ -63,6 +63,9 @@ module.exports = (sequelize, Sequelize) => {
     // query / cancel
     remarks: { type: DataTypes.TEXT },
     remarks_cancel: { type: DataTypes.TEXT },
+
+    // generic extras for table-less stages (pickup / completed): JSON string
+    details: { type: DataTypes.TEXT },
   }, {
     tableName: "loan_stage",
     indexes: [{ fields: ["laon_id"] }, { fields: ["laon_id", "stage"] }],

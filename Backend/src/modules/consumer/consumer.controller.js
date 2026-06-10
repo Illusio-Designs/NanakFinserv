@@ -74,6 +74,7 @@ const {
   saveUpload
 } = require("../shared/context");
 const consumerService = require("./consumer.service");
+const loanService = require("../loan/loan.service");
 const logger = require("../../config/logger");
 
 exports.addConsumerData = async (req, res) => {
@@ -1045,295 +1046,55 @@ exports.updateLoanConsumerData = async (req, res) => {
 
         if (!loanUserData) {
             return res.status(400).send({ response: "loan user not found", status: false });
-        } else {
-            // Update loan status
-            await loanUser.update({ status: req.body.status }, { where: { laon_id: req.body.laon_id } });
-            logger.debug('🔍 Loan status updated to:', req.body.status);
-
-            // Handle sanction details - store in remarks field as JSON
-            if (req.body.status === "sanction") {
-                try {
-                    const sanctionDetails = {
-                        amount: req.body.sanction_details?.amount || req.body.amount,
-                        rate: req.body.sanction_details?.rate || req.body.rate,
-                        tenure: req.body.sanction_details?.tenure || req.body.tenure,
-                        sanctionDate: req.body.sanction_details?.sanctionDate || req.body.sanctionDate,
-                        updated_at: new Date().toISOString()
-                    };
-                    
-                    logger.debug('🔍 Processing sanction details:', sanctionDetails);
-                    
-                    // Store sanction details in remarks field as JSON string
-                    const remarksData = {
-                        sanction_details: sanctionDetails
-                    };
-                    
-                    logger.debug('🔍 About to update loanUser with remarks:', JSON.stringify(remarksData));
-                    logger.debug('🔍 loanUser model type:', typeof loanUser);
-                    logger.debug('🔍 loanUser model:', loanUser);
-                    logger.debug('🔍 Where clause:', { laon_id: req.body.laon_id });
-                    
-                    // Check if the loanUser record exists before updating
-                    const existingLoanUser = await loanUser.findOne({ 
-                        where: { laon_id: req.body.laon_id },
-                        raw: true 
-                    });
-                    
-                    if (!existingLoanUser) {
-                        logger.error('❌ LoanUser record not found for laon_id:', req.body.laon_id);
-                        return res.status(400).send({ 
-                            response: "Loan user record not found", 
-                            status: false,
-                            error: `No loan user found with laon_id: ${req.body.laon_id}`
-                        });
-                    }
-                    
-                    logger.debug('🔍 Found existing loanUser record:', existingLoanUser);
-                    
-                    const updateResult = await loanUser.update({
-                        remarks: JSON.stringify(remarksData)
-                    }, { where: { laon_id: req.body.laon_id } });
-                    
-                    logger.debug('🔍 Sanction update result:', updateResult);
-                    logger.debug('🔍 Sanction details stored in remarks field successfully');
-                } catch (sanctionError) {
-                    logger.error('❌ Error updating sanction details:', sanctionError);
-                    throw sanctionError; // Re-throw to be caught by outer try-catch
-                }
-            } 
-            // Handle login details - store in remarks field as JSON and save to loginloan table
-            else if (req.body.status === "login") {
-                const loginDetails = {
-                    loanAmount: req.body.login_details?.loanAmount,
-                    loanDate: req.body.login_details?.loanDate,
-                    loanAccountNumber: req.body.login_details?.loanAccountNumber,
-                    bankName: req.body.login_details?.bankName,
-                    product: req.body.login_details?.product,
-                    smName: req.body.login_details?.smName,
-                    amName: req.body.login_details?.amName,
-                    remarks_loan: req.body.login_details?.remarks_loan,
-                    bankCode: req.body.login_details?.bankCode,
-                    dateOfBirth: req.body.login_details?.dateOfBirth,
-                    code_id: req.body.login_details?.code_id,
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing login details:', loginDetails);
-                
-                // Store login details in remarks field as JSON string
-                const remarksData = {
-                    login_details: loginDetails
-                };
-                
-                // Also include property details if they exist
-                if (req.body.property_details) {
-                    remarksData.property_details = {
-                        address: req.body.property_details.address,
-                        sqFeet: req.body.property_details.sqFeet,
-                        deedAmount: req.body.property_details.deedAmount,
-                        updated_at: new Date().toISOString()
-                    };
-                }
-                
-                logger.debug('🔍 Remarks data to be stored:', remarksData);
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Login details stored in remarks field successfully');
-                
-                // Save to loginloan table
-                try {
-                    // Check if login record already exists for this loan
-                    const existingLogin = await LoginLoan.findOne({
-                        where: { laon_id: req.body.laon_id }
-                    });
-                    
-                    const loginLoanData = {
-                        laon_id: req.body.laon_id,
-                        loanAmount: req.body.login_details?.loanAmount || null,
-                        loanDate: req.body.login_details?.loanDate || null,
-                        loanAccountNumber: req.body.login_details?.loanAccountNumber || null,
-                        bankName: req.body.login_details?.bankName || null,
-                        product: req.body.login_details?.product || null,
-                        smName: req.body.login_details?.smName || null,
-                        amName: req.body.login_details?.amName || null,
-                        remarks_loan: req.body.login_details?.remarks_loan || null,
-                        bankCode: req.body.login_details?.bankCode || null,
-                        dateOfBirth: req.body.login_details?.dateOfBirth || null,
-                        code_id: req.body.login_details?.code_id || null,
-                        updated_by: req.user.id
-                    };
-                    
-                    if (existingLogin) {
-                        // Update existing record
-                        await LoginLoan.update(loginLoanData, {
-                            where: { laon_id: req.body.laon_id }
-                        });
-                        logger.debug('🔍 Login details updated in loginloan table successfully');
-                    } else {
-                        // Create new record
-                        await LoginLoan.create(loginLoanData);
-                        logger.debug('🔍 Login details saved to loginloan table successfully');
-                    }
-                } catch (error) {
-                    logger.error('🔍 Error saving to loginloan table:', error);
-                    // Don't throw error, just log it so the main update can continue
-                }
-            }
-            // Handle pickup details - store in remarks field as JSON
-            else if (req.body.status === "pickup") {
-                logger.debug('🔍 [PICKUP] Status matched! Starting pickup processing...');
-                try {
-                    const pickupDetails = {
-                        pickupDate: req.body.pickup_details?.pickupDate,
-                        pickupRemarks: req.body.pickup_details?.pickupRemarks,
-                        updated_at: new Date().toISOString()
-                    };
-                    
-                    logger.debug('🔍 Processing pickup details:', pickupDetails);
-                    
-                    const remarksData = {
-                        pickup_details: pickupDetails
-                    };
-                    
-                    logger.debug('🔍 About to update loanUser with remarks:', JSON.stringify(remarksData));
-                    
-                    const updateResult = await loanUser.update({
-                        remarks: JSON.stringify(remarksData)
-                    }, { where: { laon_id: req.body.laon_id } });
-                    
-                    logger.debug('🔍 Pickup update result:', updateResult);
-                    logger.debug('🔍 Pickup details stored in remarks field successfully');
-                } catch (pickupError) {
-                    logger.error('❌ Error updating pickup details:', pickupError);
-                    throw pickupError; // Re-throw to be caught by outer try-catch
-                }
-            }
-            // Handle query details - store in remarks field as JSON
-            else if (req.body.status === "query") {
-                const queryDetails = {
-                    remarks: req.body.query_details?.remarks,
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing query details:', queryDetails);
-                
-                const remarksData = {
-                    query_details: queryDetails
-                };
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Query details stored in remarks field successfully');
-            }
-            // Handle cancel details - store in remarks field as JSON
-            else if (req.body.status === "cancel") {
-                const cancelDetails = {
-                    remarks_cancel: req.body.cancel_details?.remarks_cancel,
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing cancel details:', cancelDetails);
-                
-                const remarksData = {
-                    cancel_details: cancelDetails
-                };
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Cancel details stored in remarks field successfully');
-            }
-            // Handle disbursement details - store in remarks field as JSON
-            else if (req.body.status === "disbursement") {
-                const disbursementDetails = {
-                    disbursementAmount: req.body.disbursement_details?.disbursementAmount,
-                    disbursementRate: req.body.disbursement_details?.disbursementRate,
-                    insurance: req.body.disbursement_details?.insurance,
-                    fileNumber: req.body.disbursement_details?.fileNumber,
-                    disbursementDate: req.body.disbursement_details?.disbursementDate,
-                    remark_dis: req.body.disbursement_details?.remark_dis,
-                    insuranceAmount: req.body.disbursement_details?.insuranceAmount,
-                    insuranceBankName: req.body.disbursement_details?.insuranceBankName,
-                    insuranceType: req.body.disbursement_details?.insuranceType,
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing disbursement details:', disbursementDetails);
-                
-                const remarksData = {
-                    disbursement_details: disbursementDetails
-                };
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Disbursement details stored in remarks field successfully');
-            }
-            // Handle part payment details - store in remarks field as JSON
-            else if (req.body.status === "partPayment") {
-                const partPaymentDetails = {
-                    parts: req.body.part_details?.parts || [],
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing part payment details:', partPaymentDetails);
-                
-                const remarksData = {
-                    part_details: partPaymentDetails
-                };
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Part payment details stored in remarks field successfully');
-            }
-            // Handle completed details - store in remarks field as JSON
-            else if (req.body.status === "completed") {
-                const completedDetails = {
-                    completionDate: req.body.completed_details?.completionDate,
-                    completionRemarks: req.body.completed_details?.completionRemarks,
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing completed details:', completedDetails);
-                
-                const remarksData = {
-                    completed_details: completedDetails
-                };
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Completed details stored in remarks field successfully');
-            }
-            // Handle document selected details - store in remarks field as JSON
-            else if (req.body.status === "documentselected") {
-                const documentDetails = {
-                    loan_type: req.body.document_details?.loan_type,
-                    loan_type_name: req.body.document_details?.loan_type_name,
-                    remarks_docs: req.body.document_details?.remarks_docs,
-                    updated_at: new Date().toISOString()
-                };
-                
-                logger.debug('🔍 Processing document details:', documentDetails);
-                
-                const remarksData = {
-                    document_details: documentDetails
-                };
-                
-                await loanUser.update({
-                    remarks: JSON.stringify(remarksData)
-                }, { where: { laon_id: req.body.laon_id } });
-                logger.debug('🔍 Document details stored in remarks field successfully');
-            }
-            else {
-                logger.debug('🔍 No specific details to process for status:', req.body.status);
-            }
         }
-        return res.status(200).send({ response: "User successfully updated!", status: true });
+
+        // ── Unified loan-stage write path (replaces the remarks-JSON blob + the
+        //    scattered per-stage tables). Each stage's data → its own loan_stage
+        //    row; all stages coexist. Atomic via a transaction. ──────────────────
+        {
+            const laonId = req.body.laon_id;
+            const actorId = req.user.id;
+            const b = req.body;
+            const t = await loanUser.sequelize.transaction();
+            try {
+                await loanUser.update({ status: b.status }, { where: { laon_id: laonId }, transaction: t });
+
+                if (b.status === "sanction") {
+                    const d = b.sanction_details || {};
+                    await loanService.upsertLoanStage(laonId, "sanction", { amount: d.amount ?? b.amount, rate: d.rate ?? b.rate, tenure: d.tenure ?? b.tenure, sanctionDate: d.sanctionDate ?? b.sanctionDate }, { transaction: t, actorId });
+                } else if (b.status === "login") {
+                    const d = b.login_details || {};
+                    await loanService.upsertLoanStage(laonId, "login", { loanAmount: d.loanAmount, loanDate: d.loanDate, loanAccountNumber: d.loanAccountNumber, bankName: d.bankName, product: d.product, smName: d.smName, amName: d.amName, remarks_loan: d.remarks_loan, bankCode: d.bankCode, dateOfBirth: d.dateOfBirth, code_id: d.code_id || null }, { transaction: t, actorId });
+                    if (b.property_details) {
+                        const p = b.property_details;
+                        await loanService.upsertLoanStage(laonId, "property", { address: p.address, sqFeet: p.sqFeet, deedAmount: p.deedAmount }, { transaction: t, actorId });
+                    }
+                } else if (b.status === "query") {
+                    await loanService.upsertLoanStage(laonId, "query", { remarks: b.query_details?.remarks ?? b.query }, { transaction: t, actorId });
+                } else if (b.status === "cancel") {
+                    await loanService.upsertLoanStage(laonId, "cancel", { remarks_cancel: b.cancel_details?.remarks_cancel }, { transaction: t, actorId });
+                } else if (b.status === "disbursement") {
+                    const d = b.disbursement_details || {};
+                    await loanService.upsertLoanStage(laonId, "disbursement", { disbursementAmount: d.disbursementAmount, disbursementRate: d.disbursementRate, insurance: d.insurance, fileNumber: d.fileNumber, disbursementDate: d.disbursementDate, remark_dis: d.remark_dis, insuranceAmount: d.insuranceAmount, insuranceBankName: d.insuranceBankName, insuranceType: d.insuranceType }, { transaction: t, actorId });
+                } else if (b.status === "partPayment") {
+                    await loanService.setPartPayments(laonId, b.part_details?.parts || [], { transaction: t, actorId });
+                } else if (b.status === "documentselected") {
+                    const d = b.document_details || {};
+                    await loanService.upsertLoanStage(laonId, "documentSelected", { loan_type: d.loan_type, loan_type_name: d.loan_type_name, remarks_docs: d.remarks_docs }, { transaction: t, actorId });
+                } else if (b.status === "pickup") {
+                    await loanService.upsertLoanStage(laonId, "pickup", { details: JSON.stringify(b.pickup_details || {}) }, { transaction: t, actorId });
+                } else if (b.status === "completed") {
+                    await loanService.upsertLoanStage(laonId, "completed", { details: JSON.stringify(b.completed_details || {}) }, { transaction: t, actorId });
+                }
+
+                await t.commit();
+            } catch (stageErr) {
+                try { if (!t.finished) await t.rollback(); } catch (rb) { /* ignore */ }
+                logger.error('❌ loan stage write failed:', stageErr);
+                return res.status(500).send({ response: "An error occurred", status: false });
+            }
+            return res.status(200).send({ response: "User successfully updated!", status: true });
+        }
     } catch (e) {
         logger.error('❌ Error in updateLoanConsumerData:', e);
         return res.status(500).send({ response: "An error occurred", status: false });
