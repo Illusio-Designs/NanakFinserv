@@ -38,6 +38,35 @@ async function updateCompany(id, name) {
   return { result };
 }
 
+// ── Date integrity ───────────────────────────────────────────────────────────
+// Normalise policy dates to ISO (YYYY-MM-DD) on write + validate From < To.
+const POLICY_DATE_FIELDS = ["PolicyFrom", "PolicyTo", "PolicyIssuedDate", "ExpiryDate", "RenewDate", "NomineeDob"];
+function toISODate(v) {
+  if (v == null || typeof v !== "string") return v;
+  const s = v.trim();
+  if (!s) return v;
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);            // already ISO
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);   // dd-mm-yyyy / dd/mm/yyyy
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const dt = new Date(s);
+  return isNaN(dt.getTime()) ? v : dt.toISOString().slice(0, 10);
+}
+function normalizePolicyDates(obj) {
+  if (!obj || typeof obj !== "object") return obj;
+  for (const f of POLICY_DATE_FIELDS) if (obj[f] != null) obj[f] = toISODate(obj[f]);
+  return obj;
+}
+/** @returns {string|null} an error message if the period is invalid, else null. */
+function validatePolicyDates(obj) {
+  if (!obj || typeof obj !== "object") return null;
+  const f = obj.PolicyFrom, t = obj.PolicyTo || obj.ExpiryDate;
+  if (f && t && String(f).slice(0, 10) > String(t).slice(0, 10)) {
+    return "Policy 'from' date must be before the 'to' / expiry date";
+  }
+  return null;
+}
+
 /**
  * Keep a mediclaim's policy timeline consistent in the unified table: the policy
  * with the latest end date is the current one (is_current=true, status running);
@@ -60,4 +89,4 @@ async function reconcileMediclaimPolicies(mediclaimId, opts = {}) {
   ));
 }
 
-module.exports = { getCompanies, addCompany, updateCompany, reconcileMediclaimPolicies };
+module.exports = { getCompanies, addCompany, updateCompany, reconcileMediclaimPolicies, normalizePolicyDates, validatePolicyDates };

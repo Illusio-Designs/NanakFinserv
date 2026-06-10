@@ -40,14 +40,16 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
   const [companies, setCompanies] = useState([]);
   const [companyId, setCompanyId] = useState("");
   const [products, setProducts] = useState([]);
-  const [policyFile, setPolicyFile] = useState(null);
+  // Policy + claim/portability PDFs (CurrentPolicyFile, PdfFile, ClaimStatementPDFfile)
+  const [files, setFiles] = useState({});
+  const setFile = (k) => (f) => setFiles((s) => ({ ...s, [k]: f }));
   const [submitting, setSubmitting] = useState(false);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
   const setPrev = (k) => (v) => setForm((f) => ({ ...f, prev: { ...f.prev, [k]: v } }));
 
   useEffect(() => {
     if (!open) return;
-    setProducts([]); setPolicyFile(null);
+    setProducts([]); setFiles({});
     api.get("/user/mediclaim/company")
       .then((r) => {
         const list = (r.data?.data || []).map((c) => ({ value: c.mediclaim_company_id, label: c.mediclaim_company_name }));
@@ -132,12 +134,14 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
         previousPolicy: form.hasPrevious ? form.prev : {},
       };
       if (editRow && (isEdit || renewMode)) { data.id = editRow.id; data.user_id = editRow.user_id; }
-      // Multipart when a policy PDF is attached; plain JSON otherwise.
+      // Multipart when any PDF is attached (policy / previous-policy / claim);
+      // plain JSON otherwise.
+      const fileEntries = Object.entries(files).filter(([, f]) => f);
       let payload;
-      if (policyFile) {
+      if (fileEntries.length) {
         const fd = new FormData();
         fd.append("data", JSON.stringify(data));
-        fd.append("CurrentPolicyFile", policyFile);
+        fileEntries.forEach(([k, f]) => fd.append(k, f));
         payload = fd;
       } else {
         payload = { data };
@@ -287,6 +291,10 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
               <Input label="Previous Agent Name" value={form.prev.PreviousAgentName} onChange={(e) => setPrev("PreviousAgentName")(e.target.value)} />
               <Input label="Previous Agent Code" value={form.prev.PreviousAgentCode} onChange={(e) => setPrev("PreviousAgentCode")(e.target.value)} />
               <Input label="Previous Agent Contact" value={form.prev.PreviousAgentContactNumber} onChange={(e) => setPrev("PreviousAgentContactNumber")(e.target.value)} />
+              <div className="sm:col-span-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FileUpload label="Previous Policy PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setFile("PdfFile")} />
+                <FileUpload label="Claim Statement PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setFile("ClaimStatementPDFfile")} />
+              </div>
             </div>
           )}
         </div>
@@ -296,9 +304,9 @@ export default function MediclaimPolicyModal({ open, onClose, onSaved, editRow, 
       title: "Documents",
       render: () => (
         <div className="space-y-4">
-          <FileUpload label="Policy PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setPolicyFile} />
+          <FileUpload label="Policy PDF" accept=".pdf,.jpg,.jpeg,.png" onChange={setFile("CurrentPolicyFile")} />
           {renewMode && <p className="text-[12px] text-muted">On renewal the previous policy + its PDF move to history automatically.</p>}
-          {(isEdit && (editRow?.rp?.CurrentPolicyFile || editRow?.rp?.PdfFile)) && !policyFile && (
+          {(isEdit && (editRow?.rp?.CurrentPolicyFile || editRow?.rp?.PdfFile)) && !files.CurrentPolicyFile && (
             <p className="text-[12px] text-muted">A policy PDF is already on file — upload a new one only to replace it.</p>
           )}
         </div>

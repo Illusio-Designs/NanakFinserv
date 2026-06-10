@@ -88,6 +88,11 @@ module.exports = (sequelize, Sequelize) => {
         PdfFileName: { type: DataTypes.STRING },
     }, {
         tableName: 'running_policies',
+        indexes: [
+            // No two policies for the same mediclaim may share a policy number.
+            // (MySQL treats NULLs as distinct, so policies without a number are fine.)
+            { unique: true, fields: ['mediclaim_id', 'PolicyNumber'], name: 'uniq_mediclaim_policyno' },
+        ],
     })
     return runningpolicies;
 };

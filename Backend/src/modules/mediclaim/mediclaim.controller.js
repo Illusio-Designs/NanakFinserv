@@ -444,6 +444,14 @@ exports.addMediclaimUserData = async (req, res) => {
     logger.debug('🔍 [ADD MEDICLAIM] Received runningPolicy:', runningPolicy);
     logger.debug('🔍 [ADD MEDICLAIM] Received previousPolicy:', previousPolicy);
 
+    // Normalise dates to ISO + validate the policy period before writing.
+    mediclaimService.normalizePolicyDates(runningPolicy);
+    mediclaimService.normalizePolicyDates(previousPolicy);
+    const addDateErr = mediclaimService.validatePolicyDates(runningPolicy) || mediclaimService.validatePolicyDates(previousPolicy);
+    if (addDateErr) {
+        return res.status(400).json({ message: addDateErr, status: false });
+    }
+
     let createdMediclaimId = null; // for compensation cleanup if a later step fails
     try {
         // Check if user with this mobile number already exists
@@ -569,7 +577,16 @@ exports.addMediclaimUserData = async (req, res) => {
             runningPolicy.CurrentPolicyFile = await saveUpload(req.files.CurrentPolicyFile, "mediclaim");
             logger.debug(`📁 [ADD MEDICLAIM] Policy PDF saved: ${runningPolicy.CurrentPolicyFile}`);
         }
-        
+        // Previous-policy + claim PDFs on add (portability) → uploads/mediclaim/.
+        if (req.files && req.files.PdfFile && previousPolicy && typeof previousPolicy === "object") {
+            previousPolicy.PdfFile = await saveUpload(req.files.PdfFile, "mediclaim");
+            previousPolicy.PdfFileName = req.files.PdfFile.name;
+        }
+        if (req.files && req.files.ClaimStatementPDFfile && previousPolicy && typeof previousPolicy === "object") {
+            previousPolicy.ClaimStatementPDFfile = await saveUpload(req.files.ClaimStatementPDFfile, "mediclaim");
+            previousPolicy.ClaimStatementPDFfileName = req.files.ClaimStatementPDFfile.name;
+        }
+
         // Update mediclaim with document filenames
         await Mediclaim.update(documentFiles, { where: { id: mediclaimId } });
         
@@ -737,6 +754,9 @@ exports.addMediclaimUserData = async (req, res) => {
                 logger.warn({ mediclaimId: createdMediclaimId }, "Rolled back partial mediclaim add");
             } catch (cleanupErr) { logger.error({ err: cleanupErr }, "mediclaim add rollback failed"); }
         }
+        if (error.name === "SequelizeUniqueConstraintError") {
+            return res.status(409).json({ status: false, message: "A policy with this number already exists for this consumer." });
+        }
         res.status(500).json({
             message: 'Error saving mediclaim data',
             error: error.message
@@ -800,6 +820,14 @@ exports.updateMediclaimUserData = async (req, res) => {
         "insuredPersonDateOfJoining": InsuredPersonDateOfJoining || null,
         "insuredPersonPreExistingIllness": InsuredPersonPreExistingIllness || null
     };
+
+    // Normalise dates to ISO + validate the policy period before writing.
+    mediclaimService.normalizePolicyDates(runningPolicy);
+    mediclaimService.normalizePolicyDates(previousPolicy);
+    const updDateErr = mediclaimService.validatePolicyDates(runningPolicy) || mediclaimService.validatePolicyDates(previousPolicy);
+    if (updDateErr) {
+        return res.status(400).json({ message: updDateErr, status: false });
+    }
 
     let t = null;
     try {
@@ -1089,29 +1117,13 @@ exports.updateMediclaimUserData = async (req, res) => {
                 logger.debug('🔍 [UPDATE MEDICLAIM] ClaimStatementPDFfile exists:', !!(req.files && req.files.ClaimStatementPDFfile));
                 
                 if (req.files && req.files.PdfFile) {
-                    let PdfFile = req.files.PdfFile;
-                    const uniqueName = `${uuidv4()}-${path.basename(PdfFile.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
-                    
-                    // Delete old file if it exists
                     if (existingPreviousPolicy?.PdfFile) {
                         const oldFilePath = path.join(uploadsDir, existingPreviousPolicy.PdfFile);
-                        if (fsSync.existsSync(oldFilePath)) {
-                            fsSync.unlinkSync(oldFilePath);
-                            logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old PdfFile: ${existingPreviousPolicy.PdfFile}`);
-                        }
+                        try { if (fsSync.existsSync(oldFilePath)) fsSync.unlinkSync(oldFilePath); } catch (e) { /* ignore */ }
                     }
-                    
-                    // Handle file movement
-                    if (PdfFile.mv) {
-                        await PdfFile.mv(uploadPath);
-                    } else if (PdfFile.data) {
-                        await fs.writeFile(uploadPath, PdfFile.data);
-                    }
-                    
-                    previousPolicy.PdfFile = uniqueName;
-                    previousPolicy.PdfFileName = PdfFile.name;
-                    logger.debug(`📁 [UPDATE MEDICLAIM] PdfFile saved: ${uniqueName}`);
+                    previousPolicy.PdfFile = await saveUpload(req.files.PdfFile, "mediclaim");
+                    previousPolicy.PdfFileName = req.files.PdfFile.name;
+                    logger.debug(`📁 [UPDATE MEDICLAIM] PdfFile saved: ${previousPolicy.PdfFile}`);
                 } else if (existingPreviousPolicy && !previousPolicy.PdfFile) {
                     // Keep existing file if no new file uploaded
                     previousPolicy.PdfFile = existingPreviousPolicy.PdfFile;
@@ -1119,29 +1131,13 @@ exports.updateMediclaimUserData = async (req, res) => {
                 }
 
                 if (req.files && req.files.ClaimStatementPDFfile) {
-                    let ClaimStatementPDFfile = req.files.ClaimStatementPDFfile;
-                    const uniqueName = `${uuidv4()}-${path.basename(ClaimStatementPDFfile.name)}`;
-                    const uploadPath = path.join(uploadsDir, uniqueName);
-                    
-                    // Delete old file if it exists
                     if (existingPreviousPolicy?.ClaimStatementPDFfile) {
                         const oldFilePath = path.join(uploadsDir, existingPreviousPolicy.ClaimStatementPDFfile);
-                        if (fsSync.existsSync(oldFilePath)) {
-                            fsSync.unlinkSync(oldFilePath);
-                            logger.debug(`📁 [UPDATE MEDICLAIM] Deleted old ClaimStatementPDFfile: ${existingPreviousPolicy.ClaimStatementPDFfile}`);
-                        }
+                        try { if (fsSync.existsSync(oldFilePath)) fsSync.unlinkSync(oldFilePath); } catch (e) { /* ignore */ }
                     }
-                    
-                    // Handle file movement
-                    if (ClaimStatementPDFfile.mv) {
-                        await ClaimStatementPDFfile.mv(uploadPath);
-                    } else if (ClaimStatementPDFfile.data) {
-                        await fs.writeFile(uploadPath, ClaimStatementPDFfile.data);
-                    }
-                    
-                    previousPolicy.ClaimStatementPDFfile = uniqueName;
-                    previousPolicy.ClaimStatementPDFfileName = ClaimStatementPDFfile.name;
-                    logger.debug(`📁 [UPDATE MEDICLAIM] ClaimStatementPDFfile saved: ${uniqueName}`);
+                    previousPolicy.ClaimStatementPDFfile = await saveUpload(req.files.ClaimStatementPDFfile, "mediclaim");
+                    previousPolicy.ClaimStatementPDFfileName = req.files.ClaimStatementPDFfile.name;
+                    logger.debug(`📁 [UPDATE MEDICLAIM] ClaimStatementPDFfile saved: ${previousPolicy.ClaimStatementPDFfile}`);
                 } else if (existingPreviousPolicy && !previousPolicy.ClaimStatementPDFfile) {
                     // Keep existing file if no new file uploaded
                     previousPolicy.ClaimStatementPDFfile = existingPreviousPolicy.ClaimStatementPDFfile;
@@ -1229,6 +1225,9 @@ exports.updateMediclaimUserData = async (req, res) => {
     } catch (error) {
         logger.error('Error in updateMediclaimUserData:', error);
         try { if (t && !t.finished) await t.rollback(); } catch (rbErr) { logger.error({ err: rbErr }, "mediclaim update rollback failed"); }
+        if (error.name === "SequelizeUniqueConstraintError") {
+            return res.status(409).json({ status: false, message: "A policy with this number already exists for this consumer." });
+        }
         res.status(500).json({
             message: 'Error updating mediclaim data',
             error: error.message
