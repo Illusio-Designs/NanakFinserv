@@ -21,6 +21,7 @@ const norm = (r) => ({
   mobile: r.proposer_mobile_numbers || r.mobileNumber || "—",
   policy: r.policy_number || r.policy_numbers || "—",
   status: r.status || "—",
+  due: r.due_date_of_premium || r.date_of_maturity || "",
 });
 
 export default function LifePage() {
@@ -30,8 +31,6 @@ export default function LifePage() {
   const [editRow, setEditRow] = useState(null);
   const [viewRow, setViewRow] = useState(null);
   const [tab, setTab] = useState("policies");
-  const [renewals, setRenewals] = useState([]);
-  const [renLoading, setRenLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -42,21 +41,12 @@ export default function LifePage() {
     } catch (e) { showError(e, "Could not load life policies"); setRows([]); }
     finally { setLoading(false); }
   };
-  const loadRenewals = async () => {
-    setRenLoading(true);
-    try {
-      const res = await api.get("/user/life-insurance/renewal/data");
-      const d = res.data?.data || res.data || [];
-      setRenewals((Array.isArray(d) ? d : (d.rows || [])).map((r) => ({
-        ...norm(r),
-        due: r.due_date_of_premium || r.date_of_maturity || "—",
-      })));
-    } catch (e) { showError(e, "Could not load renewals"); setRenewals([]); }
-    finally { setRenLoading(false); }
-  };
 
   useEffect(() => { load(); }, []);
-  useEffect(() => { if (tab === "renewals" || tab === "pending") loadRenewals(); }, [tab]);
+
+  // Renewals/Pending derived from the list (premium-due date) — like the other verticals.
+  const renewals = useMemo(() => rows.filter((r) => r.due && daysUntil(r.due) !== null && daysUntil(r.due) >= 0).sort((a, b) => String(a.due).localeCompare(String(b.due))), [rows]);
+  const renLoading = loading;
 
   const columns = useMemo(() => [
     { key: "name", title: "Proposer", render: (r) => <span className="font-medium">{r.name}</span> },
