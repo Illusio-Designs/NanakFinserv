@@ -137,14 +137,14 @@ exports.createBuildingManager = async (req, res) => {
             pincode: pincode,
             city: city,
             state: state,
-            created_by: created_by || 1
+            created_by: req.user.id
         });
 
         // Assign manager to building
         const buildingManagerAssignment = await BuildingManager.create({
             user_id: buildingManagerUser.user_id,
             unit_id: unit_id,
-            assigned_by: created_by || 1,
+            assigned_by: req.user.id,
             status: 'active',
             assigned_date: new Date()
         });
