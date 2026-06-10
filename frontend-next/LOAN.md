@@ -76,8 +76,8 @@ sums on `loan_stage`; manager scoping; `created_by`/`updated_by` on stages.
 ✅ Also done: **CSV export** + **Loan-date range filter** on the list; **Document
 templates** (loan config: categories + PDFs).
 
-Still to do (optional): per-loan **document uploads**, per-loan **PDF report**,
-status-transition validation.
+Still to do (optional): per-loan **PDF report** export, status-transition
+validation. *(Per-loan document uploads intentionally not wanted.)*
 
 ## Backend reference
 - List: `GET /user/loan/list` · Detail: `GET /user/loan/:laon_id`
