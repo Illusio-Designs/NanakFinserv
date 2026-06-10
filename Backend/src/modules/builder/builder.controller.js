@@ -1121,10 +1121,10 @@ exports.updateBuilderUnit = async (req, res) => {
             }
         };
 
-        await processWingsAndFloors("Showroom", req.body?.Showroom, 1);
-        await processWingsAndFloors("Office", req.body?.Office, 2);
-        await processWingsAndFloors("Flat", req.body?.Flat, 3);
-        await processWingsAndFloors("House", req.body?.House, 4);
+        await processWingsAndFloors("Showroom", req.body?.Showroom, UNIT_CATEGORY_IDS.SHOWROOM);
+        await processWingsAndFloors("Office", req.body?.Office, UNIT_CATEGORY_IDS.OFFICE);
+        await processWingsAndFloors("Flat", req.body?.Flat, UNIT_CATEGORY_IDS.FLAT);
+        await processWingsAndFloors("House", req.body?.House, UNIT_CATEGORY_IDS.HOUSE);
 
         res.status(200).send({
             message: "Unit details updated successfully!",
