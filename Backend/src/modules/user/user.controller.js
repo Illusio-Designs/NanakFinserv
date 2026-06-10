@@ -267,9 +267,9 @@ exports.getAllUsers = async (req, res) => {
 exports.getAllBuilderUsers = async (req, res) => {
     wherObj = {};
     if (req?.user.Role == ROLE_IDS.SUPER_ADMIN) {
-        wherObj.role_id = 2;
+        wherObj.role_id = ROLE_IDS.BUILDER;
     } else {
-        wherObj.role_id = 2;
+        wherObj.role_id = ROLE_IDS.BUILDER;
         wherObj.user_id = req.user.id;
     }
 
@@ -297,7 +297,7 @@ exports.getAllBuilderUsers = async (req, res) => {
 exports.getAllBuilderListUsers = async (req, res) => {
     logger.debug(req.user, 'req.user')
     wherObj = {};
-    wherObj.role_id = 2;
+    wherObj.role_id = ROLE_IDS.BUILDER;
 
     User.findAll({
         order: [["username", "asc"]],
