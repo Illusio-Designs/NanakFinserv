@@ -26,4 +26,8 @@ router.post("/user/loan/disburse/add", vEnabled, verifyToken, staff, v.validateA
 router.post("/user/loan/configuration/add", vEnabled, verifyToken, staff, controller.addLoanCobfiguration);
 router.put("/user/loan/disburse/update", vEnabled, verifyToken, staff, controller.updateDisburse);
 
+// Clean list/detail reading the unified loan_stage table (used by the new UI).
+router.get("/user/loan/list", vEnabled, verifyToken, staff, controller.getLoanList);
+router.get("/user/loan/:laon_id", vEnabled, verifyToken, staff, controller.getLoanById);
+
 module.exports = router;

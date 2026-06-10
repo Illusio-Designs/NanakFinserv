@@ -1,4 +1,4 @@
-const { ROLE_IDS, CATEGORY_IDS } = require("../../config/ids");
+const { ROLE_IDS, CATEGORY_IDS, MANAGER_ROLE_IDS } = require("../../config/ids");
 /**
  * loan controller — extracted from the legacy user.controller monolith.
  * Logic is preserved verbatim; shared dependencies come from shared/context.
@@ -1566,3 +1566,95 @@ exports.updateDisburse = async (req, res) => {
     //   }
 };
 
+
+// ── Clean loan list/detail (reads the unified loan_stage table) ───────────────
+// Builds the row shape the new loan UI needs: consumer + current status + grouped
+// stages + builder/property. One query for loans (+ stages include), one for
+// builder links — no N+1.
+async function buildLoanRows(req, extraLoanWhere = {}) {
+  const bms = await User.findAll({ where: { role_id: ROLE_IDS.BUILDING_MANAGER }, attributes: ["user_id"], raw: true });
+  const bmIds = bms.map((b) => b.user_id);
+
+  const mapWhere = { category_id: CATEGORY_IDS.LOAN };
+  if (MANAGER_ROLE_IDS.includes(req.user.Role)) mapWhere.user_role_id = req.user.id; // managers see only their assigned
+  const maps = await consumerRoleMapping.findAll({
+    where: mapWhere,
+    attributes: ["user_role_id", "user_consumer_id"],
+    include: [
+      { model: User, as: "userRoles", required: false, attributes: ["username"] },
+      { model: User, as: "userConsumers", required: false, attributes: ["username", "email", "mobileNumber", "referenceName", "role_id"] },
+    ],
+    raw: true,
+  });
+  const mapByConsumer = {};
+  maps.forEach((m) => { if (!mapByConsumer[m.user_consumer_id]) mapByConsumer[m.user_consumer_id] = m; });
+  const consumerIds = [...new Set(maps.map((m) => m.user_consumer_id).filter((id) => id && !bmIds.includes(id)))];
+  if (!consumerIds.length) return [];
+
+  const loans = await loanUser.findAll({
+    where: { user_id: { [require("sequelize").Op.in]: consumerIds }, ...extraLoanWhere },
+    include: [{ model: db.loanStage, as: "stages" }],
+  });
+
+  // Builder links (batched).
+  let bcByUser = {};
+  try {
+    const bcs = await builderConsumer.findAll({
+      where: { user_id: { [require("sequelize").Op.in]: consumerIds } },
+      include: [
+        { model: BuilderUser, attributes: ["company_name"], include: [{ model: Unit, attributes: ["unit_name", "address"] }] },
+        { model: floor, attributes: ["floorNumber"] },
+        { model: Wing, attributes: ["wing_name"] },
+      ],
+    });
+    bcs.forEach((b) => { bcByUser[b.user_id] = b.get ? b.get({ plain: true }) : b; });
+  } catch (e) { logger.error({ err: e }, "loan builder-link lookup failed"); }
+
+  return loans.map((l) => {
+    const lp = l.get ? l.get({ plain: true }) : l;
+    const g = loanService.groupStages(lp.stages || []);
+    const m = mapByConsumer[lp.user_id] || {};
+    const login = g.login || {};
+    return {
+      laon_id: lp.laon_id,
+      user_id: lp.user_id,
+      status: lp.status,
+      name: m["userConsumers.username"] || null,
+      mobile: m["userConsumers.mobileNumber"] || null,
+      email: m["userConsumers.email"] || null,
+      referenceName: m["userConsumers.referenceName"] || null,
+      assignedTo: m["userRoles.username"] || null,
+      product: login.product || null,
+      bankName: login.bankName || null,
+      loanAmount: login.loanAmount || null,
+      loanDate: login.loanDate || null,
+      loanAccountNumber: login.loanAccountNumber || null,
+      stages: g,
+      builder: bcByUser[lp.user_id] || null,
+      property: g.property || { address: lp.address, sqFeet: lp.sq_ft, deedAmount: lp.deed_amount, non_builder_name: lp.non_builder_name },
+    };
+  });
+}
+
+/** GET /user/loan/list — all loan consumers (assigned + pipeline) with grouped stages. */
+exports.getLoanList = async (req, res) => {
+  try {
+    const data = await buildLoanRows(req);
+    res.status(200).send({ status: true, data });
+  } catch (e) {
+    logger.error({ err: e }, "getLoanList failed");
+    res.status(500).send({ status: false, message: e.message });
+  }
+};
+
+/** GET /user/loan/:laon_id — one loan with grouped stages + builder/property. */
+exports.getLoanById = async (req, res) => {
+  try {
+    const rows = await buildLoanRows(req, { laon_id: req.params.laon_id });
+    if (!rows.length) return res.status(404).send({ status: false, message: "Loan not found" });
+    res.status(200).send({ status: true, data: rows[0] });
+  } catch (e) {
+    logger.error({ err: e }, "getLoanById failed");
+    res.status(500).send({ status: false, message: e.message });
+  }
+};
