@@ -5,8 +5,9 @@
 > (occupied/vacant); add a consumer to a specific unit with the old form (status +
 > Name/Mobile/Email/Sq.Ft./Deed); **Replace / Vacate** for occupied units; and the
 > loan-status surfaced per unit. Replace auto-cancels the prior occupant's loan.
-> Pending (optional): edit a building's categories/wings after creation, bulk
-> import. Requires the backend deployed.
+> **Edit building** (categories/wings/floors), **Delete building** (blocked if
+> occupied), and a **Building Managers** page (assign managers to buildings) are
+> included. Pending (optional): bulk import. Requires the backend deployed.
 
 
 How builders, their buildings/units, and the consumers in each unit are managed.

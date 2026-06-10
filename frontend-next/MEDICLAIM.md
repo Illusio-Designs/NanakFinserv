@@ -138,8 +138,7 @@ activity log + reminders; product brochure PDFs; renewals exclude overdue;
 **data integrity** — ISO date normalisation + From<To validation on write, and a
 **unique (mediclaim_id, PolicyNumber)** index (duplicate → friendly 409).
 
-Still to do:
-1. **Audit trail / PDF versioning** for full history.
+Still to do: none — feature-complete (audit-trail/PDF-versioning intentionally not wanted).
 
 > KYC (Aadhar/PAN/GST) is **managed from the Consumer module** and reused across
 > policies — it is intentionally **not** a step in the mediclaim modal.

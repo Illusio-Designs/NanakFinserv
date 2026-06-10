@@ -73,8 +73,11 @@ Loan totals (disbursed / loaned / part-payment) are summed from `loan_stage`
 writes; clean list/detail (no N+1); pipeline UI + stage forms + journey; dashboard
 sums on `loan_stage`; manager scoping; `created_by`/`updated_by` on stages.
 
-Still to do (optional): Excel/PDF export, date-range + status filters, loan
-configuration document PDFs in the new UI, status-transition validation.
+✅ Also done: **CSV export** + **Loan-date range filter** on the list; **Document
+templates** (loan config: categories + PDFs).
+
+Still to do (optional): per-loan **document uploads**, per-loan **PDF report**,
+status-transition validation.
 
 ## Backend reference
 - List: `GET /user/loan/list` · Detail: `GET /user/loan/:laon_id`
