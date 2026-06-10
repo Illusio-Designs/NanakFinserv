@@ -195,6 +195,14 @@ const initializeDatabase = async () => {
       await db.sequelize.getQueryInterface().dropTable("previous_policies");
       logger.info("Dropped legacy table previous_policies");
     } catch (e) { /* already gone — ignore */ }
+
+    // One-time: drop the legacy per-stage loan tables — merged into loan_stage.
+    for (const tbl of ["loginloan", "sanctionloan", "disburseloan", "documentselectedloan", "queryloan", "cancelloan", "part_paymentsloan", "propertydetail"]) {
+      try {
+        await db.sequelize.getQueryInterface().dropTable(tbl);
+        logger.info(`Dropped legacy loan table ${tbl}`);
+      } catch (e) { /* already gone — ignore */ }
+    }
   }
 
   // Seed default data (lookup tables + default admin user). Best-effort.

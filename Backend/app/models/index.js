@@ -36,14 +36,7 @@ db.employeeMediclaim = require("./employeeMediclaim.model")(sequelize,Sequelize)
 db.mediclaimproductpdf  = require("./mediclaimProductPdf.model")(sequelize,Sequelize)
 db.floor  = require("./floor.model")(sequelize,Sequelize)
 db.wing  = require("./wing.model")(sequelize,Sequelize)
-db.disbursementLoan  = require("./loan_details/disbursementloan.model")(sequelize,Sequelize)
-db.documentSelectedLoan  = require("./loan_details/documentSelected.model")(sequelize,Sequelize)
-db.loginLoan  = require("./loan_details/login.model")(sequelize,Sequelize)
-db.property  = require("./loan_details/property.model")(sequelize,Sequelize)
-db.queryLoan  = require("./loan_details/query.model")(sequelize,Sequelize)
-db.cancelLoan  = require("./loan_details/cancel.model")(sequelize,Sequelize)
-db.sanctionLoan  = require("./loan_details/sanction.model")(sequelize,Sequelize)
-db.partPaymentLoan  = require("./loan_details/partPayment.model")(sequelize,Sequelize)
+// Loan per-stage models merged into the unified loan_stage table (below).
 db.loanStage  = require("./loan_details/loanStage.model")(sequelize,Sequelize) // unified stage table (merge)
 db.codeDetail  = require("./codeDetail.model")(sequelize,Sequelize)
 db.runningPolicyMediclaim  = require("./runningPolicyMediclaim.model")(sequelize,Sequelize)
@@ -184,56 +177,9 @@ db.familyMember.belongsTo(db.medicliamuser, { foreignKey: 'mediclaim_id' });
 db.medicliamuser.hasMany(db.employeeMediclaim, { foreignKey: 'mediclaim_id', as: 'employees' });
 db.employeeMediclaim.belongsTo(db.medicliamuser, { foreignKey: 'mediclaim_id' });
 
-db.loanUser.hasOne(db.documentSelectedLoan, { foreignKey: 'laon_id' });
-db.documentSelectedLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.documentSelectedLoan, {foreignKey:'updated_by' });
-db.documentSelectedLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.loanUser.hasOne(db.sanctionLoan, { foreignKey: 'laon_id' });
-db.sanctionLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.sanctionLoan, {foreignKey:'updated_by' });
-db.sanctionLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.loanUser.hasOne(db.queryLoan, { foreignKey: 'laon_id' });
-db.queryLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.queryLoan, {foreignKey:'updated_by' });
-db.queryLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.loanUser.hasOne(db.cancelLoan, { foreignKey: 'laon_id' });
-db.cancelLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.cancelLoan, {foreignKey:'updated_by' });
-db.cancelLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.loanUser.hasOne(db.loginLoan, { foreignKey: 'laon_id' });
-db.loginLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.loginLoan, {foreignKey:'updated_by' });
-db.loginLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.loanUser.hasOne(db.property, { foreignKey: 'laon_id' });
-db.property.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.property, {foreignKey:'updated_by' });
-db.property.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.codeDetail.hasMany(db.loginLoan, {foreignKey:'code_id' });
-db.loginLoan.belongsTo(db.codeDetail, { foreignKey: 'code_id' });
-
-db.loanUser.hasOne(db.disbursementLoan, { foreignKey: 'laon_id' });
-db.disbursementLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.disbursementLoan, {foreignKey:'updated_by' });
-db.disbursementLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
-
-db.loanUser.hasMany(db.partPaymentLoan, { foreignKey: 'laon_id' });
-db.partPaymentLoan.belongsTo(db.loanUser, { foreignKey: 'laon_id' });
-
-db.user.hasMany(db.partPaymentLoan, { foreignKey: 'updated_by' });
-db.partPaymentLoan.belongsTo(db.user, { foreignKey: 'updated_by' });
+// Loan per-stage tables (login/sanction/disbursement/document/query/cancel/
+// property/partPayment) were merged into the unified loan_stage table — their
+// models + associations were removed. See db.loanStage above.
 
 // Unified loan-stage table (merge of the 10 per-stage tables into one). Loan
 // stages are cumulative (a disbursed loan keeps its login+sanction+disbursement
