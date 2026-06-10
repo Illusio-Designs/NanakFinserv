@@ -38,6 +38,7 @@ const norm = (r) => ({
   product: r.product || "—",
   bank: r.bankName || "—",
   amount: r.loanAmount || "",
+  loanDate: r.loanDate || "",
   laon_id: r.laon_id,
   user_consumer_id: r.user_id,
   stages: r.stages || {},
@@ -79,6 +80,7 @@ export default function LoanPage() {
     { key: "product", title: "Product" },
     { key: "bank", title: "Bank" },
     { key: "amount", title: "Loan amount", render: (r) => inr(r.amount) },
+    { key: "loanDate", title: "Loan date", render: (r) => r.loanDate ? fmtDate(r.loanDate) : "—" },
     { key: "status", title: "Status", render: (r) => <Badge tone={STATUS_TONE[r.status] || "muted"}>{lbl(r.status)}</Badge> },
   ], []);
 
@@ -93,7 +95,8 @@ export default function LoanPage() {
         loading={loading}
         rowKey="laon_id"
         searchKeys={["name", "mobile", "product", "bank"]}
-        filters={[{ key: "status", label: "Status" }]}
+        filters={[{ key: "status", label: "Status" }, { key: "loanDate", label: "Loan date", type: "dateRange" }]}
+        exportName="loans"
         onView={(r) => setViewRow(r)}
         rowActions={[{ icon: PencilLine, title: "Update stage", onClick: (r) => setStageRow(r) }]}
       />

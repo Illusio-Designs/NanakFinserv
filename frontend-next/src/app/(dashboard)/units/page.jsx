@@ -65,6 +65,15 @@ export default function UnitsPage() {
   };
   const openDetail = (u) => { setDetailUnit(u); setDetail(null); fetchDetail(u); };
 
+  const deleteBuilding = async (u) => {
+    if (!confirm(`Delete building "${u.name}"? (Blocked if consumers are placed in it.)`)) return;
+    try {
+      await api.delete(`/user/data/builder/unit/${u.unit_id}`);
+      toast.success("Building deleted");
+      load();
+    } catch (e) { showError(e, "Could not delete building"); }
+  };
+
   // Edit a building: prefill the rich form from its existing categories/wings/floors.
   const openEditBuilding = async (u) => {
     try {
@@ -136,6 +145,7 @@ export default function UnitsPage() {
         rowActions={[
           { icon: Building2, title: "View units & consumers", onClick: openDetail },
           { icon: PencilLine, title: "Edit building (categories/wings)", onClick: openEditBuilding },
+          { icon: Trash2, title: "Delete building", onClick: deleteBuilding },
         ]} />
 
       <Modal open={open} onClose={() => { setOpen(false); setEditUnit(null); }} title={editUnit ? "Edit Building" : "Add Building"} size="lg"

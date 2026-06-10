@@ -20,6 +20,7 @@ router.get("/user/data/builder/unit", vEnabled, verifyToken, builderOps, control
 router.get("/user/data/builder/unitCategory/:unitId", vEnabled, verifyToken, builderOps, controller.getUnitsByBuilderCategory);
 router.post("/user/data/add/builderUnit", vEnabled, verifyToken, builderOps, v.validateAddBuilderUnit, controller.addBuilderUnit);
 router.put("/user/data/update/builderUnit", vEnabled, verifyToken, builderOps, controller.updateBuilderUnit);
+router.delete("/user/data/builder/unit/:id", vEnabled, verifyToken, builderOps, controller.deleteBuilderUnit);
 router.post("/user/data/builder/getunitwithconsumer", vEnabled, verifyToken, builderOps, controller.getUintByConsumer);
 router.post("/user/data/add/builderUnitCategory", vEnabled, verifyToken, builderOps, v.validateAddUnitCategory, controller.addBuilderUnitCategory);
 router.put("/user/data/update/builderUnitCategory", vEnabled, verifyToken, builderOps, controller.updateBuilderUnitCategory);

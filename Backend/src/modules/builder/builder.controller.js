@@ -1200,3 +1200,27 @@ exports.updateBuilderUnitCategory = async (req, res) => {
         });
 };
 
+
+/**
+ * DELETE /user/data/builder/unit/:id — delete a building (and its wings/floors/
+ * categories). Blocked if any consumer is still placed in it (vacate them first).
+ */
+exports.deleteBuilderUnit = async (req, res) => {
+  try {
+    const unit_id = req.params.id;
+    const unit = await Unit.findOne({ where: { unit_id } });
+    if (!unit) return res.status(404).json({ status: false, message: "Building not found" });
+    const placed = await builderConsumer.count({ where: { unit_id } });
+    if (placed > 0) {
+      return res.status(400).json({ status: false, message: `Cannot delete — ${placed} consumer(s) are placed in this building. Vacate them first.` });
+    }
+    await floor.destroy({ where: { unit_id } });
+    await Wing.destroy({ where: { unit_id } });
+    await UnitCategoryDetail.destroy({ where: { unit_id } });
+    await Unit.destroy({ where: { unit_id } });
+    return res.status(200).json({ status: true, message: "Building deleted" });
+  } catch (e) {
+    logger.error({ err: e }, "deleteBuilderUnit failed");
+    return res.status(500).json({ status: false, message: e.message });
+  }
+};
