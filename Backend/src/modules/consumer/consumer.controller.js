@@ -1285,10 +1285,16 @@ exports.uploadConsumerDocument = async (req, res) => {
 exports.vacateUnitConsumer = async (req, res) => {
   try {
     const id = req.params.id;
+    const cancelLoan = req.query.cancelLoan === "true" || req.body?.cancelLoan === true;
     const bc = await db.builderConsumer.findOne({ where: { builderConsumerId: id } });
     if (!bc) return res.status(404).json({ status: false, message: "Unit consumer not found" });
+    const userId = bc.user_id;
     await db.builderConsumer.destroy({ where: { builderConsumerId: id } });
-    return res.status(200).json({ status: true, message: "Unit vacated" });
+    // On Replace: the prior occupant's deal fell through — mark their loan Cancelled.
+    if (cancelLoan && userId) {
+      await db.loanUser.update({ status: "cancel" }, { where: { user_id: userId } });
+    }
+    return res.status(200).json({ status: true, message: cancelLoan ? "Unit vacated; prior loan cancelled" : "Unit vacated" });
   } catch (e) {
     logger.error({ err: e }, "vacateUnitConsumer failed");
     return res.status(500).json({ status: false, message: e.message });

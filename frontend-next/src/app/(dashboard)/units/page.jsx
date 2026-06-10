@@ -278,8 +278,9 @@ function UnitConsumerForm({ d, unit, picked, wing, onSaved }) {
     if (!thenReplace && !confirm("Vacate this unit? The current consumer will be removed from it.")) return;
     setSaving(true);
     try {
-      await api.delete(`/user/data/consumer/vacate/${bcId}`);
-      if (thenReplace) { setExisting(null); setStatus("interested"); setF(fromC(null)); toast.success("Unit vacated — enter the new consumer"); }
+      // Replace cancels the prior occupant's (incomplete) loan; plain Vacate keeps it.
+      await api.delete(`/user/data/consumer/vacate/${bcId}?cancelLoan=${thenReplace ? "true" : "false"}`);
+      if (thenReplace) { setExisting(null); setStatus("interested"); setF(fromC(null)); toast.success("Replaced — prior loan cancelled. Enter the new consumer."); }
       else { toast.success("Unit vacated"); onSaved(); }
     } catch (e) { showError(e, "Could not vacate unit"); }
     finally { setSaving(false); }
