@@ -115,7 +115,16 @@ async function run() {
 
   // ── Building manager create (regression: created_by/assigned_by = 1 numeric FK) ──
   console.log("Building Managers");
-  const units2 = (await get("/user/data/builder/unit")).d.data || [];
+  let units2 = (await get("/user/data/builder/unit")).d.data || [];
+  let tempUnitId = null;
+  if (!units2[0] && builderId) {
+    // No building left (we deleted ours) — make a throwaway one for the BM test.
+    const tname = "IT BM Tower " + tag;
+    await post("/user/data/add/builderUnit", { builder_id: builderId, unit_name: tname, address: "Rd", unit_categories: [FLAT], Flat: { summary: { totalCount: 2, floorCount: 1, wingCount: 1 }, wings: [{ wingName: "A", floors: [{ floorNumber: "1", startRange: 101, endRange: 102 }] }] } });
+    const u = ((await get("/user/data/builder/unit")).d.data || []).find((x) => x.unit_name === tname);
+    tempUnitId = u?.unit_id;
+    units2 = u ? [u] : [];
+  }
   if (units2[0]) {
     const bm = await post("/user/building-manager/create", { username: "IT Mgr " + tag, email: `mgr${tag}@test.com`, mobileNumber: mob("94"), unit_id: units2[0].unit_id });
     ok("create building manager (FK uses req.user.id)", bm.s === 201, bm.d.message || bm.d.error);
@@ -124,8 +133,9 @@ async function run() {
     ok("building manager appears in list", !!made);
     if (made) await put(`/user/building-manager/remove/${made.id || made.building_manager_id}`, {}); // cleanup
   } else {
-    console.log("  (skipped — no building available)");
+    ok("building available for BM test", false, "could not create a test building");
   }
+  if (tempUnitId) await del(`/user/data/builder/unit/${tempUnitId}`); // cleanup throwaway building
 
   // ── Life insurance create + list (regression: validator undefined + 43 NOT NULL) ──
   console.log("Life Insurance");
