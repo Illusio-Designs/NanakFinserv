@@ -38,21 +38,6 @@
   --header-h: 60px;
 }
 
-/* Dark theme — flips the core tokens (Tailwind maps bg-surface/text-ink/… to these,
-   so the whole app follows). Toggled by adding `.dark` on <html>. */
-html.dark {
-  --brand-50: 30 58 80;     /* dark blue tint for brand-50 backgrounds */
-  --brand-100: 30 64 95;
-
-  --ink: 226 232 240;        /* slate-200 — primary text */
-  --muted: 148 163 184;      /* slate-400 */
-  --line: 51 65 85;          /* slate-700 — borders */
-  --surface: 30 41 59;       /* slate-800 — cards/inputs */
-  --subtle: 15 23 42;        /* slate-900 — page background */
-}
-html.dark body { background: rgb(var(--subtle)); }
-html.dark .skeleton { background: #1e293b; }
-
 @layer base {
   html,
   body {
@@ -87,6 +72,44 @@ html.dark .skeleton { background: #1e293b; }
   }
   /* Animated press feedback used on buttons */
   .press { @apply active:scale-[.97] transition-transform duration-100; }
+  /* Card lift on hover — taste: gentle elevation, emil: transform+shadow, fast ease-out */
+  .card-hover {
+    @apply transition-[transform,box-shadow] duration-200;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px -2px rgba(16, 24, 40, 0.08), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
+  }
+  /* Brand gradient text for hero headings (taste: one accent, used sparingly) */
+  .text-gradient {
+    background: linear-gradient(120deg, rgb(var(--brand-600)), rgb(var(--brand-500)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Subtle dot grid — depth behind hero / immersive sections */
+  .bg-dots {
+    background-image: radial-gradient(rgb(var(--brand-600) / 0.10) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  /* Glass surface for floating 3D cards */
+  .glass {
+    background: rgb(var(--surface) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+/* Honour reduced-motion globally (emil-kowalski: non-negotiable) — neutralise
+   transitions/animations for users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Skeleton shimmer */

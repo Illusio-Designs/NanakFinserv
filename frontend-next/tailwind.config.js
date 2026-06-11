@@ -32,8 +32,11 @@ export default {
         lg: "14px",
       },
       boxShadow: {
-        card: "0 1px 2px rgba(16,24,40,.06)",
-        pop: "0 12px 32px rgba(16,24,40,.14)",
+        // Layered, soft elevation (taste: subtle depth, not harsh drop shadows).
+        card: "0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)",
+        lift: "0 4px 12px -2px rgba(16,24,40,.08), 0 2px 6px -2px rgba(16,24,40,.06)",
+        pop: "0 12px 32px -4px rgba(16,24,40,.16), 0 4px 12px -4px rgba(16,24,40,.08)",
+        glow: "0 0 0 1px rgb(var(--brand-600) / .15), 0 8px 24px -6px rgb(var(--brand-600) / .25)",
       },
       keyframes: {
         "fade-in": { from: { opacity: 0 }, to: { opacity: 1 } },
@@ -41,13 +44,16 @@ export default {
           from: { opacity: 0, transform: "translateY(8px) scale(.98)" },
           to: { opacity: 1, transform: "translateY(0) scale(1)" },
         },
-        shimmer: {
-          "100%": { transform: "translateX(100%)" },
+        "fade-up": {
+          from: { opacity: 0, transform: "translateY(12px)" },
+          to: { opacity: 1, transform: "translateY(0)" },
         },
+        shimmer: { "100%": { transform: "translateX(100%)" } },
       },
       animation: {
         "fade-in": "fade-in .18s ease-out",
         "scale-in": "scale-in .2s cubic-bezier(.16,1,.3,1)",
+        "fade-up": "fade-up .4s cubic-bezier(.16,1,.3,1) both",
       },
     },
   },

@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
-import { Menu, Search, LogOut, ChevronDown, Moon, Sun, SunMoon } from "lucide-react";
+import { Menu, Search, LogOut, ChevronDown } from "lucide-react";
 import { useSearch } from "@/lib/search";
 import NotificationCenter from "./NotificationCenter";
 
@@ -12,33 +12,6 @@ export default function Header({ onMenu }) {
   const { query, setQuery } = useSearch();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  // Theme: "auto" (dark 6 PM–6 AM, default) | "light" | "dark".
-  const [mode, setMode] = useState("auto");
-  const applyTheme = (m) => {
-    const h = new Date().getHours();
-    const night = h >= 18 || h < 6;
-    const dark = m === "dark" || (m === "auto" && night);
-    document.documentElement.classList.toggle("dark", dark);
-  };
-  useEffect(() => {
-    let m = "auto";
-    try { m = localStorage.getItem("theme") || "auto"; } catch {}
-    setMode(m);
-    applyTheme(m);
-    // Re-check every minute so "auto" flips at 6 PM / 6 AM while the app is open.
-    const id = setInterval(() => {
-      let cur = "auto";
-      try { cur = localStorage.getItem("theme") || "auto"; } catch {}
-      if (cur === "auto") applyTheme("auto");
-    }, 60000);
-    return () => clearInterval(id);
-  }, []);
-  const cycleTheme = () => {
-    const next = mode === "auto" ? "light" : mode === "light" ? "dark" : "auto";
-    try { localStorage.setItem("theme", next); } catch {}
-    setMode(next);
-    applyTheme(next);
-  };
 
   // Close the user menu on outside click / Escape.
   useEffect(() => {
@@ -88,9 +61,6 @@ export default function Header({ onMenu }) {
       </div>
 
       <div className="ml-auto flex items-center gap-1">
-        <button onClick={cycleTheme} title={`Theme: ${mode}${mode === "auto" ? " (dark after 6 PM)" : ""} — click to change`} className="press rounded-md p-2 text-muted hover:bg-subtle hover:text-ink">
-          {mode === "auto" ? <SunMoon size={18} /> : mode === "dark" ? <Moon size={18} /> : <Sun size={18} />}
-        </button>
         <NotificationCenter />
 
         <div className="relative">

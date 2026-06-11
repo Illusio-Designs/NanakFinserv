@@ -6,6 +6,7 @@ import { Users, HandCoins, Car, HeartPulse, ShieldCheck, Building2, IndianRupee,
 import PageHeader from "@/components/ui/PageHeader";
 import { StatCard, Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import { Stagger, StaggerItem, Reveal, CountUp } from "@/components/ui/Motion";
 import api, { showError } from "@/lib/api";
 import { ROLE_IDS } from "@/config/ids";
 
@@ -47,9 +48,9 @@ function BuildingManagerDashboard() {
   return (
     <div>
       <PageHeader title="Dashboard" subtitle="Your assigned buildings" />
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {stats.map((s) => <StatCard key={s.title} title={s.title} value={loading ? "…" : (s.value ?? 0)} icon={s.icon} tone={s.tone} />)}
-      </div>
+      <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {stats.map((s) => <StaggerItem key={s.title}><StatCard title={s.title} value={loading ? "…" : (s.value ?? 0)} icon={s.icon} tone={s.tone} /></StaggerItem>)}
+      </Stagger>
     </div>
   );
 }
@@ -138,11 +139,15 @@ function AdminDashboard({ role }) {
       <PageHeader title="Dashboard" subtitle="Live overview of your CRM" />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {loading
-          ? [...Array(6)].map((_, i) => <div key={i} className="skeleton h-[78px] rounded-lg" />)
-          : stats.map((s) => <StatCard key={s.title} {...s} value={s.value ?? 0} />)}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[...Array(6)].map((_, i) => <div key={i} className="skeleton h-[78px] rounded-lg" />)}
+        </div>
+      ) : (
+        <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {stats.map(({ key, ...s }) => <StaggerItem key={key}><StatCard {...s} value={s.value ?? 0} /></StaggerItem>)}
+        </Stagger>
+      )}
 
       {/* Pending tasks */}
       <Card className="mt-6">
@@ -168,14 +173,14 @@ function AdminDashboard({ role }) {
           {loading ? (
             <div className="space-y-2">{[...Array(6)].map((_, i) => <div key={i} className="skeleton h-9 rounded" />)}</div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Stagger className="grid grid-cols-2 gap-2 sm:grid-cols-4" gap={0.04}>
               {loanPipeline.map(([label, val]) => (
-                <div key={label} className="rounded-lg border border-line p-3">
-                  <div className="text-[20px] font-semibold text-ink">{val ?? 0}</div>
+                <StaggerItem key={label} className="card-hover rounded-lg border border-line p-3">
+                  <div className="text-[20px] font-semibold text-ink tabular-nums"><CountUp value={val ?? 0} /></div>
                   <div className="mt-0.5 text-[12px] text-muted">{label}</div>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           )}
         </Card>
 
@@ -194,7 +199,7 @@ function AdminDashboard({ role }) {
                   <span className="flex items-center gap-2 text-[14px] text-muted">
                     <TrendingUp size={15} /> {label}
                   </span>
-                  <span className="text-[16px] font-semibold">{inr(val)}</span>
+                  <span className="text-[16px] font-semibold tabular-nums"><CountUp value={val} format={inr} /></span>
                 </div>
               ))}
             </div>
@@ -238,11 +243,15 @@ function ConsumerDashboard() {
   return (
     <div>
       <PageHeader title="My Dashboard" subtitle="Your policies at a glance" />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {loading
-          ? [...Array(4)].map((_, i) => <div key={i} className="skeleton h-[78px] rounded-lg" />)
-          : stats.map((s) => <StatCard key={s.title} {...s} value={s.value ?? 0} />)}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="skeleton h-[78px] rounded-lg" />)}
+        </div>
+      ) : (
+        <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((s) => <StaggerItem key={s.title}><StatCard {...s} value={s.value ?? 0} /></StaggerItem>)}
+        </Stagger>
+      )}
       <Card className="mt-6">
         <h3 className="mb-3 text-[15px] font-semibold">My vehicles</h3>
         {loading ? (
@@ -266,17 +275,17 @@ function ConsumerDashboard() {
 
 function TaskTile({ href, icon: Icon, label, value, tone = "brand" }) {
   return (
-    <Link href={href} className="press flex items-center justify-between rounded-lg border border-line p-4 transition-shadow hover:shadow-pop">
+    <Link href={href} className="press card-hover group flex items-center justify-between rounded-lg border border-line p-4">
       <div className="flex items-center gap-3">
-        <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${TILE_TONES[tone]}`}>
+        <span className={`flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 ease-[cubic-bezier(.16,1,.3,1)] group-hover:scale-110 ${TILE_TONES[tone]}`}>
           <Icon size={18} />
         </span>
         <div>
-          <div className="text-[20px] font-semibold leading-none text-ink">{value ?? 0}</div>
+          <div className="text-[20px] font-semibold leading-none text-ink tabular-nums"><CountUp value={value ?? 0} /></div>
           <div className="mt-1 text-[12px] text-muted">{label}</div>
         </div>
       </div>
-      <ChevronRight size={16} className="text-muted" />
+      <ChevronRight size={16} className="text-muted transition-transform duration-200 group-hover:translate-x-0.5" />
     </Link>
   );
 }

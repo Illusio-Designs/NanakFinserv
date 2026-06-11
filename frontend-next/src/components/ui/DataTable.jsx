@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Eye, Trash2, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import Dropdown from "./Dropdown";
 import DateRange from "./DateRange";
 import EmptyState from "./EmptyState";
@@ -31,6 +31,7 @@ export default function DataTable({
   serial = true,
 }) {
   const { query: q } = useSearch(); // global header search drives all pages
+  const reduce = useReducedMotion();
   const [activeFilters, setActiveFilters] = useState({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
@@ -179,9 +180,9 @@ export default function DataTable({
               pageRows.map((row, idx) => (
                 <motion.tr
                   key={row[rowKey] ?? idx}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: idx * 0.015 }}
+                  initial={reduce ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1], delay: Math.min(idx * 0.02, 0.3) }}
                   className="border-b border-line transition-colors even:bg-subtle/20 hover:bg-brand-50/50"
                 >
                   {serial && <td className="px-3 py-3 text-muted">{(safePage - 1) * pageSize + idx + 1}</td>}

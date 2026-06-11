@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import Footer from "./Footer";
 import api from "@/lib/api";
 import { SearchProvider } from "@/lib/search";
+import { PageTransition } from "@/components/ui/Motion";
 
 export default function AppShell({ children }) {
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [verticals, setVerticals] = useState(null); // null = unknown (show all)
@@ -49,7 +52,9 @@ export default function AppShell({ children }) {
       <SearchProvider>
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <Header onMenu={() => setSidebarOpen(true)} />
-          <main className="flex-1 p-4 sm:p-6">{children}</main>
+          <main className="flex-1 p-4 sm:p-6">
+            <PageTransition routeKey={pathname}>{children}</PageTransition>
+          </main>
           <Footer />
         </div>
       </SearchProvider>

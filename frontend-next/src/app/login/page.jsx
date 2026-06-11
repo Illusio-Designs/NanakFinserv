@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Script from "next/script";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { ShieldCheck, Car, HeartPulse, HandCoins } from "lucide-react";
@@ -21,30 +20,71 @@ export default function LoginPage() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [widgetReady, setWidgetReady] = useState(false);
   const sending = useRef(false);
 
-  // Initialise the MSG91 widget exactly ONCE (a second init re-registers the
-  // sender and causes a duplicate OTP). Poll until the script is ready.
+  // Load the MSG91 widget imperatively (more reliable than next/script onLoad in
+  // the App Router), init it once, then poll for the exposed window.sendOtp.
+  // exposeMethods:true attaches window.sendOtp / verifyOtp / retryOtp after init.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    let n = 0;
-    const id = setInterval(() => {
-      if (window.__msg91Inited) { clearInterval(id); return; }
-      if (window.initSendOTP) {
+    const SRC = "https://verify.msg91.com/otp-provider.js";
+    let poll;
+
+    const init = () => {
+      if (!window.initSendOTP) return;
+      if (!window.__msg91Inited) {
         try {
-          window.initSendOTP({ widgetId: WIDGET_ID, tokenAuth: TOKEN_AUTH, exposeMethods: true });
+          // initSendOTP REQUIRES success + failure callbacks (else it throws
+          // "success callback function missing"). In exposeMethods mode the real
+          // per-call callbacks are passed to window.sendOtp / verifyOtp; these
+          // top-level ones just satisfy the widget and log.
+          window.initSendOTP({
+            widgetId: WIDGET_ID,
+            tokenAuth: TOKEN_AUTH,
+            exposeMethods: true,
+            success: (data) => console.info("[MSG91] widget success:", data),
+            failure: (err) => console.error("[MSG91] widget failure:", err),
+          });
           window.__msg91Inited = true;
-        } catch {}
-        clearInterval(id);
+          console.info("[MSG91] initSendOTP called (widgetId:", WIDGET_ID, ")");
+        } catch (e) { console.error("[MSG91] initSendOTP threw:", e); }
       }
-      if (++n > 60) clearInterval(id);
-    }, 200);
-    return () => clearInterval(id);
+      // exposeMethods may attach window.sendOtp a tick later — poll for it.
+      let n = 0;
+      poll = setInterval(() => {
+        if (typeof window.sendOtp === "function") {
+          setWidgetReady(true);
+          console.info("[MSG91] ✓ ready — window.sendOtp is available");
+          clearInterval(poll);
+        } else if (++n > 50) {
+          clearInterval(poll);
+          console.error("[MSG91] ✗ window.sendOtp never appeared. The script loaded but the widget did not expose its methods — this is almost always the widget's ALLOWED-DOMAINS list. Add this exact origin (" + window.location.origin + ") in MSG91 → OTP widget → settings.");
+        }
+      }, 150);
+    };
+
+    const onErr = () => console.error("[MSG91] ✗ otp-provider.js failed to load (network / CSP / adblocker).");
+
+    if (window.initSendOTP) { init(); return () => clearInterval(poll); }
+    let s = document.querySelector("script[data-msg91]");
+    if (s) {
+      s.addEventListener("load", init);
+      s.addEventListener("error", onErr);
+    } else {
+      s = document.createElement("script");
+      s.src = SRC; s.async = true; s.setAttribute("data-msg91", "1");
+      s.onload = () => { console.info("[MSG91] otp-provider.js loaded"); init(); };
+      s.onerror = onErr;
+      document.body.appendChild(s);
+    }
+    return () => clearInterval(poll);
   }, []);
 
   const sendOtp = () => {
+    console.info("[login] Send OTP clicked — mobile:", JSON.stringify(mobile), "| widget ready (window.sendOtp):", typeof window.sendOtp);
     const err = firstError([field("mobile", { label: "Mobile number", required: true, checks: [checks.mobile10] })], { mobile });
-    if (err) return toast.error(err);
+    if (err) { console.warn("[login] client validation blocked:", err); return toast.error(err); }
     if (sending.current) return; // guard against double-send (one OTP per request)
     sending.current = true;
     setTimeout(() => { sending.current = false; }, 4000);
@@ -52,10 +92,15 @@ export default function LoginPage() {
     // Open the OTP field immediately so it's always usable (the MSG91 widget can
     // be domain-restricted on localhost and its success callback may not fire).
     setOtpSent(true);
-    const success = () => toast.success("OTP sent");
-    const failure = (e) => { sending.current = false; toast.error(`Could not send OTP: ${e?.message || "check MSG91 widget / domain"}`); };
-    if (window.sendOtp) window.sendOtp(identifier, success, failure);
-    else toast("Enter the OTP you received.", { icon: "✉️" });
+    const success = (res) => { console.info("[MSG91] sendOtp success:", res); toast.success("OTP sent"); };
+    const failure = (e) => { sending.current = false; console.error("[MSG91] sendOtp failure:", e); toast.error(`Could not send OTP: ${e?.message || "widget blocked — is this domain whitelisted in MSG91?"}`); };
+    if (window.sendOtp) {
+      window.sendOtp(identifier, success, failure);
+    } else {
+      sending.current = false;
+      console.error("[MSG91] window.sendOtp is undefined — widget not initialised (script blocked or domain not allowed).");
+      toast.error("OTP widget not ready. On localhost, add this origin to the MSG91 widget's allowed domains.");
+    }
   };
 
   const verifyAndLogin = () => {
@@ -90,8 +135,6 @@ export default function LoginPage() {
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <Script src="https://control.msg91.com/app/assets/otp-provider/otp-provider.js" strategy="afterInteractive" />
-
       {/* Left — dark indigo brand panel */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex">
         {/* glow accents */}

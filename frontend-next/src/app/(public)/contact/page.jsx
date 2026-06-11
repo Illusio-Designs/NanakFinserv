@@ -5,6 +5,7 @@ import { Phone, Mail, MapPin } from "lucide-react";
 import Input from "@/components/ui/Input";
 import PhoneInput from "@/components/ui/PhoneInput";
 import Button from "@/components/ui/Button";
+import { TiltCard, ScrollReveal, StaggerReveal, RevealItem, FloatingOrbs } from "@/components/public/Motion3D";
 import { API_URL } from "@/lib/api";
 import { firstError, field, checks } from "@/utils/validators";
 
@@ -57,57 +58,69 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
-      <div className="mb-10 text-center">
-        <h1 className="text-[32px] font-bold tracking-tight text-ink">Contact us</h1>
-        <p className="mt-2 text-[15px] text-muted">Get in touch with us through any of these channels.</p>
-      </div>
+    <div className="relative overflow-hidden">
+      <FloatingOrbs className="opacity-70" />
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <ScrollReveal>
+          <div className="mb-12 text-center">
+            <h1 className="text-[34px] font-bold tracking-tight text-ink">Let's <span className="text-gradient">talk</span></h1>
+            <p className="mt-2 text-[15px] text-muted">Get in touch through any of these channels — we reply within 24 hours.</p>
+          </div>
+        </ScrollReveal>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Info */}
-        <div className="space-y-4">
-          {INFO.map((c) => {
-            const Icon = c.icon;
-            return (
-              <a
-                key={c.label}
-                href={c.href}
-                target={c.label === "Office Location" ? "_blank" : undefined}
-                rel="noopener noreferrer"
-                className="ui-card flex items-start gap-4 p-5 transition-shadow hover:shadow-pop"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                  <Icon size={20} />
-                </div>
-                <div>
-                  <div className="text-[12px] uppercase tracking-wide text-muted">{c.label}</div>
-                  <div className="text-[14px] font-medium text-ink">{c.value}</div>
-                </div>
-              </a>
-            );
-          })}
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Info */}
+          <StaggerReveal className="space-y-4">
+            {INFO.map((c) => {
+              const Icon = c.icon;
+              return (
+                <RevealItem key={c.label}>
+                  <a
+                    href={c.href}
+                    target={c.label === "Office Location" ? "_blank" : undefined}
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <TiltCard className="ui-card flex items-start gap-4 p-5" max={6}>
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                        <Icon size={20} />
+                      </div>
+                      <div>
+                        <div className="text-[12px] uppercase tracking-wide text-muted">{c.label}</div>
+                        <div className="text-[14px] font-medium text-ink">{c.value}</div>
+                      </div>
+                    </TiltCard>
+                  </a>
+                </RevealItem>
+              );
+            })}
+          </StaggerReveal>
+
+          {/* Form */}
+          <ScrollReveal delay={0.1}>
+            <form onSubmit={submit} className="ui-card space-y-4 p-6 shadow-lift">
+              <h2 className="text-[18px] font-semibold text-ink">Send us a message</h2>
+              <p className="-mt-2 text-[13px] text-muted">Fill out the form and we'll get back to you within 24 hours.</p>
+              <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input label="Email Address" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <PhoneInput label="Phone Number" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+              <Button type="submit" className="w-full" loading={busy}>Send message</Button>
+            </form>
+          </ScrollReveal>
         </div>
 
-        {/* Form */}
-        <form onSubmit={submit} className="ui-card space-y-4 p-6">
-          <h2 className="text-[18px] font-semibold text-ink">Send us a Message</h2>
-          <p className="-mt-2 text-[13px] text-muted">Fill out the form and we'll get back to you within 24 hours.</p>
-          <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input label="Email Address" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <PhoneInput label="Phone Number" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-          <Button type="submit" className="w-full" loading={busy}>Send message</Button>
-        </form>
-      </div>
-
-      {/* Map */}
-      <div className="mt-10 overflow-hidden rounded-2xl border border-line shadow-card">
-        <iframe
-          title="Nanak Finserv location"
-          src="https://www.google.com/maps?q=NANAK%20FINSERV%20RK%20PRIME%20Nana%20Mava%20Circle%20Rajkot&output=embed"
-          className="h-[360px] w-full"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
+        {/* Map */}
+        <ScrollReveal delay={0.05}>
+          <div className="mt-10 overflow-hidden rounded-3xl border border-line shadow-lift">
+            <iframe
+              title="Nanak Finserv location"
+              src="https://www.google.com/maps?q=NANAK%20FINSERV%20RK%20PRIME%20Nana%20Mava%20Circle%20Rajkot&output=embed"
+              className="h-[360px] w-full"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
+        </ScrollReveal>
       </div>
     </div>
   );

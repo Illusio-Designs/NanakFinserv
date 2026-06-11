@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Users, Building2, Car, ShieldCheck, HandCoins, HeartPulse,
   UserCog, Settings, X, ChevronLeft, ChevronRight, ChevronDown, MessageSquare, LifeBuoy, FileText, History,
 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import Tooltip from "@/components/ui/Tooltip";
 import { cn } from "@/lib/cn";
 import { ROLE_IDS } from "@/config/ids";
@@ -72,6 +73,7 @@ function allowedForRole(item, section, role) {
 
 export default function Sidebar({ open, onClose, collapsed, onToggleCollapse, verticals }) {
   const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
   const [role, setRole] = useState(undefined);          // undefined = not read yet
   const [openSections, setOpenSections] = useState(null); // collapsible group state
 
@@ -105,13 +107,20 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse, ve
         href={item.href}
         onClick={onClose}
         className={cn(
-          "group flex items-center rounded-lg text-[14px] font-medium transition-all",
+          "group relative flex items-center rounded-lg text-[14px] font-medium transition-colors",
           collapsed ? "h-10 w-10 justify-center" : "gap-3 px-3 py-2.5",
-          active ? "bg-brand-600 text-white shadow-lg shadow-brand-600/25" : "text-sidebar-text hover:bg-sidebar-hover hover:text-white"
+          active ? "text-white" : "text-sidebar-text hover:bg-sidebar-hover hover:text-white"
         )}
       >
-        <Icon size={18} className={cn(active ? "text-white" : "text-sidebar-text/80 group-hover:text-white")} />
-        {!collapsed && item.label}
+        {active && (
+          <motion.span
+            layoutId="nav-active"
+            transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
+            className="absolute inset-0 rounded-lg bg-brand-600 shadow-lg shadow-brand-600/25"
+          />
+        )}
+        <Icon size={18} className={cn("relative z-10 shrink-0", active ? "text-white" : "text-sidebar-text/80 group-hover:text-white")} />
+        {!collapsed && <span className="relative z-10">{item.label}</span>}
       </Link>
     );
     return (
