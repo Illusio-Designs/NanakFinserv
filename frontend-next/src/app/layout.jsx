@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Poppins } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import Providers from "./providers";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -18,7 +19,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={poppins.variable}>
       <body>
-        {children}
+        <Providers>{children}</Providers>
         <Toaster
           position="top-right"
           toastOptions={{
