@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
+import { motion, useReducedMotion } from "framer-motion";
 import { ShieldCheck, Car, HeartPulse, HandCoins } from "lucide-react";
 import Input from "@/components/ui/Input";
 import PhoneInput from "@/components/ui/PhoneInput";
@@ -21,6 +22,7 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [widgetReady, setWidgetReady] = useState(false);
+  const reduce = useReducedMotion();
   const sending = useRef(false);
 
   // Load the MSG91 widget imperatively (more reliable than next/script onLoad in
@@ -137,9 +139,17 @@ export default function LoginPage() {
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Left — dark indigo brand panel */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-10 text-white lg:flex">
-        {/* glow accents */}
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-600/30 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl" />
+        {/* drifting glow accents */}
+        <motion.div
+          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand-600/30 blur-3xl"
+          animate={reduce ? {} : { x: [0, 30, 0], y: [0, 20, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="pointer-events-none absolute -bottom-24 right-0 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl"
+          animate={reduce ? {} : { x: [0, -26, 0], y: [0, -18, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+        />
 
         <div className="relative flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-lg">
@@ -159,19 +169,29 @@ export default function LoginPage() {
           <p className="mt-3 text-[14px] text-sidebar-text/70">
             Onboard consumers, manage households and policies, and track renewals — fast.
           </p>
-          <div className="mt-8 grid grid-cols-2 gap-3">
+          <motion.div
+            className="mt-8 grid grid-cols-2 gap-3"
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: 0.08, delayChildren: 0.2 } } }}
+          >
             {[
               [HandCoins, "Loans"],
               [HeartPulse, "Mediclaim"],
               [Car, "Vehicle"],
               [ShieldCheck, "Life"],
             ].map(([Icon, label], i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
+              <motion.div
+                key={i}
+                variants={{ hidden: reduce ? { opacity: 0 } : { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } }}
+                whileHover={reduce ? {} : { scale: 1.04 }}
+                className="flex items-center gap-3 rounded-xl bg-white/5 p-3 ring-1 ring-white/10 transition-colors hover:bg-white/10"
+              >
                 <Icon size={18} className="text-brand-100" />
                 <span className="text-[13px] font-medium">{label}</span>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
 
         <div className="relative text-[12px] text-sidebar-text/50">© {new Date().getFullYear()} NanakFinserv</div>
