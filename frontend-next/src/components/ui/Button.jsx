@@ -28,7 +28,9 @@ export default function Button({
   return (
     <motion.button
       type={type}
+      whileHover={disabled || loading ? undefined : { scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       disabled={disabled || loading}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors duration-150 disabled:opacity-60 disabled:cursor-not-allowed",

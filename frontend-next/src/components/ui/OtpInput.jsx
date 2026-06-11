@@ -1,5 +1,6 @@
 "use client";
 import { useRef } from "react";
+import { cn } from "@/lib/cn";
 
 /** 6-box OTP input with auto-advance, backspace and paste. value/onChange = string. */
 export default function OtpInput({ value = "", onChange, length = 6 }) {
@@ -43,7 +44,10 @@ export default function OtpInput({ value = "", onChange, length = 6 }) {
           onChange={(e) => handle(i, e)}
           onKeyDown={(e) => onKey(i, e)}
           onPaste={onPaste}
-          className="h-12 w-full rounded-md border border-line bg-surface text-center text-[18px] font-semibold text-ink outline-none transition-all focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+          className={cn(
+            "h-12 w-full rounded-md border bg-surface text-center text-[18px] font-semibold text-ink outline-none transition-all duration-150 focus:border-brand-600 focus:ring-2 focus:ring-brand-100 focus:scale-105",
+            value[i] ? "border-brand-300 bg-brand-50/40" : "border-line"
+          )}
         />
       ))}
     </div>

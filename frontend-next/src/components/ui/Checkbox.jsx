@@ -1,4 +1,6 @@
+"use client";
 import { Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/cn";
 
 export default function Checkbox({ checked, onChange, label, className }) {
@@ -11,7 +13,18 @@ export default function Checkbox({ checked, onChange, label, className }) {
           checked ? "border-brand-600 bg-brand-600 text-white" : "border-line bg-surface"
         )}
       >
-        {checked && <Check size={13} strokeWidth={3} />}
+        <AnimatePresence>
+          {checked && (
+            <motion.span
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 25 }}
+            >
+              <Check size={13} strokeWidth={3} />
+            </motion.span>
+          )}
+        </AnimatePresence>
       </span>
       {label && <span className="text-[14px] text-ink">{label}</span>}
     </label>
