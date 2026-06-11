@@ -107,8 +107,8 @@ exports.getAllLifeInsUser = async (req, res) => {
     } else {
         logger.debug('🔍 [LIFE INS API] User has life insurance category access - showing all life insurance consumers');
     }
-    whereObj.category_id = 5;
-    
+    whereObj.category_id = CATEGORY_IDS.LIFE_INSURANCE;
+
     logger.debug('🔍 [LIFE INS API] Final whereObj:', whereObj);
     await consumerRoleMapping
         .findAll({
