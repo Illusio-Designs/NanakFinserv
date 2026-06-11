@@ -128,7 +128,8 @@ exports.createBuildingManager = async (req, res) => {
             username: username.trim(),
             email: email.trim(),
             mobileNumber: mobileNumber.trim(),
-            password: 'BuildingManager@123', // Default password
+            // No password: building managers sign in via OTP, like all other users
+            // (a shared default password is a security risk).
             role_id: ROLE_IDS.BUILDING_MANAGER, // Building Manager role
             referenceName: 'Building Manager',
             referenceMobileNumber: '',

@@ -302,7 +302,6 @@ exports.getUnitsByBuilder = async (req, res) => {
                 attributes: ["company_name"],
             },
         ],
-        // logging: console.log,
         group: ["unit_id"],
     })
         .then(async (articles) => {

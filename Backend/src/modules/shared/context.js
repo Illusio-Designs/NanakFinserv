@@ -81,7 +81,6 @@ const createNotification = async (notificationData) => {
             is_important: notificationData.is_important || false,
             metadata: notificationData.metadata || null
         });
-        console.log('🔔 [NOTIFICATION] Created:', notification.title);
         return notification;
     } catch (error) {
         console.error('❌ [NOTIFICATION] Error creating notification:', error);
