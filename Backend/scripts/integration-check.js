@@ -25,6 +25,7 @@ if (!JWT) {
 const H = { Authorization: `Bearer ${JWT}`, "Content-Type": "application/json" };
 const FLAT = UNIT_CATEGORY_IDS.FLAT;
 const tag = String(Date.now()).slice(-5);
+const mob = (prefix) => (prefix + tag + "0000").slice(0, 10); // unique 10-digit test mobile
 
 let passed = 0, failed = 0;
 const ok = (name, cond, detail = "") => {
@@ -40,17 +41,22 @@ const del = (p) => fetch(`${API}${p}`, { method: "DELETE", headers: H }).then(j)
 async function run() {
   console.log(`\nIntegration check → ${API}\n`);
 
+  // Self-contained: enable the verticals under test (admin only).
+  const vert = await put("/admin/settings/verticals", { builder: true, life: true, loan: true });
+  ok("enable builder/life/loan verticals", vert.s === 200, vert.d.message || JSON.stringify(vert.d).slice(0, 60));
+
   // ── Builder list (regression: role_id was filtered as number 2, not UUID) ──
   console.log("Builder / Units");
   const builders = (await get("/user/list/builder")).d.data || [];
-  ok("builder list returns an array (role_id UUID filter)", Array.isArray(builders) && builders.length >= 0);
-  let builder = builders[0];
+  ok("builder list returns an array (role_id UUID filter)", Array.isArray(builders));
+  const hasId = (b) => b && (b["builderuser.builder_id"] || b.builder_id);
+  let builder = builders.find(hasId);
   if (!builder) {
-    const r = await post("/user/data/add/builder", { username: "IT Builder", company_name: "IntegrationTest Builders " + tag, phone_number: "9" + tag + "00000".slice(0, 9 - tag.length), email: `b${tag}@test.com` });
-    ok("create builder", r.s === 200, JSON.stringify(r.d).slice(0, 80));
-    builder = ((await get("/user/list/builder")).d.data || [])[0];
+    const r = await post("/user/data/add/builder", { username: "IT Builder", company_name: "IT Builders " + tag, phone_number: mob("99"), email: `b${tag}@test.com` });
+    ok("create builder", r.s === 200, JSON.stringify(r.d).slice(0, 100));
+    builder = ((await get("/user/list/builder")).d.data || []).find(hasId);
   }
-  const builderId = builder?.["builderuser.builder_id"] || builder?.builder_id;
+  const builderId = builder && (builder["builderuser.builder_id"] || builder.builder_id);
   ok("resolved a builder_id", !!builderId);
 
   // ── Add building with wings/floors (regression: validator required unit_id) ──
@@ -64,6 +70,9 @@ async function run() {
   const unit = ((await get("/user/data/builder/unit")).d.data || []).find((u) => u.unit_name === tower);
   ok("created building appears in list", !!unit);
 
+  if (!unit) {
+    console.log("  (building not created — skipping unit-dependent checks)");
+  } else {
   // ── Grid renders wings (regression: getunitwithconsumer Number(uuid) → NaN) ──
   let det = (await post("/user/data/builder/getunitwithconsumer", { unit_id: unit.unit_id })).d.data?.[0];
   const wing = (det?.Flat || [])[0];
@@ -76,7 +85,7 @@ async function run() {
     username: name, mobileNumber: mob, email: mob + "@t.com", status: "interested", role_id: ROLE_IDS.BUILDER_CONSUMER,
     unit_id: unit.unit_id, builder_id: builderId, office_no: String(office), floor_id: floor?.floor_id, wing_id: wing?.wingId, category_id: FLAT, builder_user_id: det?.["builderuser.user_id"],
   });
-  const c1 = await addCons("IT Buyer One", "93" + tag + "0001".slice(0, 8 - tag.length), 101);
+  const c1 = await addCons("IT Buyer One", mob("93"), 101);
   ok("add consumer to unit 101", c1.s === 201, c1.d.message);
   const bcId = c1.d.builderConsumerData?.builderConsumerId;
 
@@ -102,12 +111,13 @@ async function run() {
   // ── Delete building (regression: deleteBuilderUnit + occupied guard) ──
   const delU = await del(`/user/data/builder/unit/${unit.unit_id}`);
   ok("delete building (cleanup)", delU.s === 200, delU.d.message);
+  } // end if (unit)
 
   // ── Building manager create (regression: created_by/assigned_by = 1 numeric FK) ──
   console.log("Building Managers");
   const units2 = (await get("/user/data/builder/unit")).d.data || [];
   if (units2[0]) {
-    const bm = await post("/user/building-manager/create", { username: "IT Mgr " + tag, email: `mgr${tag}@test.com`, mobileNumber: "94" + tag + "0002".slice(0, 8 - tag.length), unit_id: units2[0].unit_id });
+    const bm = await post("/user/building-manager/create", { username: "IT Mgr " + tag, email: `mgr${tag}@test.com`, mobileNumber: mob("94"), unit_id: units2[0].unit_id });
     ok("create building manager (FK uses req.user.id)", bm.s === 201, bm.d.message || bm.d.error);
     const list = (await get("/user/building-manager/list")).d.data || [];
     const made = list.find((b) => (b.user?.email || b["user.email"]) === `mgr${tag}@test.com`);
@@ -119,7 +129,7 @@ async function run() {
 
   // ── Life insurance create + list (regression: validator undefined + 43 NOT NULL) ──
   console.log("Life Insurance");
-  const lifeMob = "95" + tag + "0003".slice(0, 8 - tag.length);
+  const lifeMob = mob("95");
   const life = await post("/user/life-insurance/create", {
     proposer_name: "IT Life " + tag, proposer_mobile_numbers: lifeMob, proposer_email: lifeMob + "@t.com",
     product_name: "Jeevan Anand", policy_number: "IT-LIC-" + tag, sum_assured: "1000000", premium_amount: "25000",
