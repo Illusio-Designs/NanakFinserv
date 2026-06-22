@@ -51,6 +51,22 @@ async function seedDefaults(logger) {
   }
   log.info("Lookup tables seeded (roles, categories, unit categories, documents)");
 
+  // 1b) Vehicle master lists (idempotent by name; UUIDs auto-generate). These power
+  // the Policy Type / Plan / Vendor dropdowns — empty on a fresh/wiped DB otherwise.
+  const VEHICLE_POLICY_TYPES = ["Two Wheeler", "Private Car", "Commercial Vehicle", "Goods Carrying", "Passenger Carrying"];
+  const VEHICLE_PLANS = ["Third Party (TP)", "Comprehensive", "Own Damage (OD)", "Bundled"];
+  const VEHICLE_INSURERS = ["ICICI Lombard", "Bajaj Allianz", "HDFC ERGO", "TATA AIG", "New India Assurance", "Reliance General", "SBI General", "Go Digit"];
+  for (const name of VEHICLE_POLICY_TYPES) {
+    await db.policyType.findOrCreate({ where: { policy_type_name: name }, defaults: { policy_type_name: name } });
+  }
+  for (const name of VEHICLE_PLANS) {
+    await db.policyPlan.findOrCreate({ where: { policy_name: name }, defaults: { policy_name: name } });
+  }
+  for (const name of VEHICLE_INSURERS) {
+    await db.companyType.findOrCreate({ where: { company_name: name }, defaults: { company_name: name } });
+  }
+  log.info("Vehicle masters seeded (policy types, plans, insurers)");
+
   // 2) Default admin user (looked up by mobile, the login key).
   const [user, created] = await db.user.findOrCreate({
     where: { mobileNumber: ADMIN_MOBILE },
