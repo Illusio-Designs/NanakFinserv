@@ -1,28 +1,46 @@
 import { NextResponse } from "next/server";
 
-// Public (no auth): marketing site + login. Everything else (the dashboard app)
-// requires the `token` cookie.
-const PUBLIC_PREFIXES = ["/login", "/services", "/about", "/contact", "/blog", "/widgets", "/Assets"];
+// Only the dashboard app requires auth. Guarding an explicit list (rather than
+// "deny everything not public") means unknown/wrong URLs are NOT bounced to
+// /login — they fall through to Next.js and render the 404 (not-found.jsx).
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/blog-admin",
+  "/builder",
+  "/building-managers",
+  "/consumers",
+  "/inquiries",
+  "/life",
+  "/loan",
+  "/logs",
+  "/mediclaim",
+  "/settings",
+  "/support",
+  "/units",
+  "/users",
+  "/vehicle",
+];
 
-function isPublic(pathname) {
-  if (pathname === "/") return true;
-  return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith(p));
+function isProtected(pathname) {
+  return PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
 export function middleware(req) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get("token")?.value;
 
-  if (isPublic(pathname)) {
-    if (token && pathname === "/login") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-    return NextResponse.next();
+  // Already signed in? Skip the login screen.
+  if (pathname === "/login" && token) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  if (!token) {
+  // Gate the dashboard: send unauthenticated users to /login.
+  if (isProtected(pathname) && !token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
+
+  // Everything else (marketing pages, /login, and unknown routes) passes
+  // through — unknown routes then render the 404 page.
   return NextResponse.next();
 }
 
