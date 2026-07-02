@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import Modal from "./Modal";
@@ -14,7 +14,14 @@ import { cn } from "@/lib/cn";
 export default function StepperModal({ open, onClose, title, steps = [], onSubmit, submitting = false }) {
   const [current, setCurrent] = useState(0);
   const [dir, setDir] = useState(1);
-  const last = current === steps.length - 1;
+  // Always start a fresh open at step 0. The parent may close us WITHOUT going
+  // through close() (e.g. after a successful submit it calls onClose directly),
+  // which would otherwise leave `current` pinned on the last step — so reopening
+  // showed the Review step + Submit on an empty form and failed validation.
+  useEffect(() => { if (open) { setCurrent(0); setDir(1); } }, [open]);
+  // Clamp in case the steps array shrank (conditional steps) while mounted.
+  const clampedCurrent = Math.min(current, steps.length - 1);
+  const last = clampedCurrent === steps.length - 1;
 
   const reset = () => setCurrent(0);
   const close = () => {
@@ -23,14 +30,14 @@ export default function StepperModal({ open, onClose, title, steps = [], onSubmi
   };
 
   const next = () => {
-    const v = steps[current]?.validate?.();
+    const v = steps[clampedCurrent]?.validate?.();
     if (v && v !== true) return; // step handles its own error display/toast
     setDir(1);
-    setCurrent((c) => Math.min(c + 1, steps.length - 1));
+    setCurrent(() => Math.min(clampedCurrent + 1, steps.length - 1));
   };
   const back = () => {
     setDir(-1);
-    setCurrent((c) => Math.max(c - 1, 0));
+    setCurrent(() => Math.max(clampedCurrent - 1, 0));
   };
 
   return (
@@ -38,8 +45,8 @@ export default function StepperModal({ open, onClose, title, steps = [], onSubmi
       {/* Stepper header */}
       <div className="mb-5 flex items-center">
         {steps.map((s, i) => {
-          const done = i < current;
-          const active = i === current;
+          const done = i < clampedCurrent;
+          const active = i === clampedCurrent;
           return (
             <div key={i} className="flex flex-1 items-center last:flex-none">
               <div className="flex items-center gap-2">
@@ -69,14 +76,14 @@ export default function StepperModal({ open, onClose, title, steps = [], onSubmi
       <div className="min-h-[180px]">
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div
-            key={current}
+            key={clampedCurrent}
             custom={dir}
             initial={{ opacity: 0, x: dir * 24 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: dir * -24 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            {steps[current]?.render?.()}
+            {steps[clampedCurrent]?.render?.()}
           </motion.div>
         </AnimatePresence>
       </div>
