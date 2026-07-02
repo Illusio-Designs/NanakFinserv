@@ -76,7 +76,6 @@ export default function VehiclePage() {
   const [renewRow, setRenewRow] = useState(null);
   const [viewId, setViewId] = useState(null);
   const [viewData, setViewData] = useState(null);
-  const [renewingId, setRenewingId] = useState(null);
   const [closingId, setClosingId] = useState(null);
 
   // Load policies once; every tab + its count derives from this.
@@ -114,16 +113,6 @@ export default function VehiclePage() {
       const res = await api.get(`/user/vehicle/user/${r.vehicle_user_id}`);
       setViewData(res.data?.data || {});
     } catch (e) { showError(e, "Could not load policy"); setViewData({}); }
-  };
-
-  const renew = async (row) => {
-    setRenewingId(row.vehicle_user_id);
-    try {
-      await api.post("/user/renewVehiclePolicy", { vehicle_user_id: row.vehicle_user_id });
-      toast.success("Policy renewed");
-      loadAll();
-    } catch (e) { showError(e, "Could not renew policy"); }
-    finally { setRenewingId(null); }
   };
 
   // Mark an overdue policy as Closed (consumer won't renew).
@@ -173,10 +162,10 @@ export default function VehiclePage() {
     {
       key: "renew", title: "",
       render: (r) => (
-        <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
+        <Button size="sm" variant="secondary" icon={RefreshCw} onClick={() => setRenewRow(r)}>Renew</Button>
       ),
     },
-  ], [renewingId]);
+  ], []);
 
   const overdueColumns = useMemo(() => [
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
@@ -197,12 +186,12 @@ export default function VehiclePage() {
       key: "act", title: "",
       render: (r) => (
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
+          <Button size="sm" variant="secondary" icon={RefreshCw} onClick={() => setRenewRow(r)}>Renew</Button>
           <Button size="sm" variant="ghost" icon={XCircle} loading={closingId === r.vehicle_user_id} onClick={() => closePolicy(r)}>Close</Button>
         </div>
       ),
     },
-  ], [renewingId, closingId]);
+  ], [closingId]);
 
   return (
     <div>
