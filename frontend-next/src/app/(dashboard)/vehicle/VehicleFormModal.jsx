@@ -29,6 +29,18 @@ const emptyPolicy = () => ({
   tp_tenure: "", od_tenure: "", NCB: "", IDV: "", Vendor: "", NomineeName: "",
 });
 
+// The list returns policy IDs in snake_case (company_id / policy_type_id /
+// policy_plan_id); the form's dropdowns bind camelCase (CompanyId / PolicyTypeId
+// / PolicyPlanTypeId). Map them so Edit shows the current selections and can
+// change them (the backend also now prefers these camelCase keys).
+const mapPolicyForEdit = (p = {}) => ({
+  ...emptyPolicy(),
+  ...(p || {}),
+  CompanyId: p?.CompanyId || p?.company_id || "",
+  PolicyTypeId: p?.PolicyTypeId || p?.policy_type_id || "",
+  PolicyPlanTypeId: p?.PolicyPlanTypeId || p?.policy_plan_id || "",
+});
+
 const empty = {
   Name: "", MobileNumber: "", Email: "",
   VehicleNumber: "", Make: "", Model: "", ManufacturingYear: "", EngineNumber: "", ChassisNumber: "", vehicle_type: "",
@@ -127,8 +139,8 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
         // Renew/add-next: keep consumer + vehicle, start a blank new policy
         // (the backend archives the current running policy automatically).
         policyRadio: renewMode ? "Renewal" : (r.vehicle_policy_type || "Fresh"),
-        rp: renewMode ? emptyPolicy() : { ...emptyPolicy(), ...(r.runningPolicy || {}) },
-        pp: renewMode ? emptyPolicy() : { ...emptyPolicy(), ...(r.previousPolicy || {}) },
+        rp: renewMode ? emptyPolicy() : mapPolicyForEdit(r.runningPolicy),
+        pp: renewMode ? emptyPolicy() : mapPolicyForEdit(r.previousPolicy),
       });
       setFound(true);
       setHeadUserId(r.user_id || r.head_user_id || null);

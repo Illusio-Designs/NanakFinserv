@@ -1233,8 +1233,10 @@ exports.updateVehicleUserData = async (req, res) => {
                 transaction: t
             });
             
-            // Resolve company name to company_id if CompanyName is provided
-            let resolvedCompanyId = runningPolicy.company_id || runningPolicy.CompanyId || Data.company_id || null;
+            // Resolve company name to company_id if CompanyName is provided.
+            // Prefer the explicit CompanyId the form sends (the user's selection)
+            // over the stale snake_case company_id still present in the payload.
+            let resolvedCompanyId = runningPolicy.CompanyId || runningPolicy.company_id || Data.company_id || null;
             if (!resolvedCompanyId && (runningPolicy.CompanyName || company_name)) {
                 const companyNameToLookup = runningPolicy.CompanyName || company_name;
                 logger.debug('🔍 [RENEWAL] Resolving company name to ID:', companyNameToLookup);
@@ -1263,9 +1265,10 @@ exports.updateVehicleUserData = async (req, res) => {
                 logger.debug(`📁 [UPDATE] CurrentPolicyFile saved: ${runningPolicy.CurrentPolicyFile}`);
             }
             const runningPolicyData = {
-                policy_type_id: runningPolicy.policy_type_id || runningPolicy.PolicyTypeId || Data.policy_type_id || null,
+                // Prefer the form's camelCase selection over the stale snake_case value.
+                policy_type_id: runningPolicy.PolicyTypeId || runningPolicy.policy_type_id || Data.policy_type_id || null,
                 company_id: resolvedCompanyId,
-                policy_plan_id: runningPolicy.policy_plan_id || runningPolicy.PolicyPlanTypeId || Data.policy_plan_id || null,
+                policy_plan_id: runningPolicy.PolicyPlanTypeId || runningPolicy.policy_plan_id || Data.policy_plan_id || null,
                 CurrentPolicyFile: runningPolicy.CurrentPolicyFile || (findPolicy ? findPolicy.CurrentPolicyFile : null),
                 isNomineeFlag: runningPolicy.isNomineeFlag || Data.isNomineeFlag || null,
                 // Handle PremiumAmount specifically to avoid empty string database errors
@@ -1277,10 +1280,14 @@ exports.updateVehicleUserData = async (req, res) => {
                 agentName: agent_name || '',
                 agentCode: agent_code || '',
                 agentContactNumber: agent_contact_number || '',
-                // Spread the rest of runningPolicy but exclude the fields we've handled above
+                // Spread the rest of runningPolicy but exclude the fields we've handled
+                // above — including the id fields, so the stale snake_case values in the
+                // payload don't clobber the resolved company/type/plan selections.
                 ...Object.fromEntries(
-                    Object.entries(runningPolicy).filter(([key]) => 
-                        !['PremiumAmount', 'PolicyTenure', 'NomineeAge', 'agentName', 'agentCode', 'agentContactNumber'].includes(key)
+                    Object.entries(runningPolicy).filter(([key]) =>
+                        !['PremiumAmount', 'PolicyTenure', 'NomineeAge', 'agentName', 'agentCode', 'agentContactNumber',
+                          'company_id', 'policy_type_id', 'policy_plan_id',
+                          'CompanyId', 'PolicyTypeId', 'PolicyPlanTypeId'].includes(key)
                     )
                 ),
             };
