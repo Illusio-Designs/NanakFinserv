@@ -14,15 +14,20 @@ import api, { showError, fileUrl } from "@/lib/api";
 import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
 import VehicleFormModal from "./VehicleFormModal";
 
-// Status is driven by the BACKEND status (running / overdue / completed / closed),
-// which the server + daily scheduler keep in sync with the expiry date. For legacy
-// rows that have no backend status yet, fall back to deriving it from the expiry.
+// Status of a vehicle's CURRENT policy. Only a manual "closed" counts as Closed;
+// everything else is derived from the expiry so a not-yet-reconciled or legacy
+// "completed" still reads as Overdue (lapsed) or Running — never wrongly Closed.
+// (A vehicle is Closed only when the user explicitly closes it.)
 const STATUS_TONE = { Running: "success", Overdue: "danger", Closed: "neutral" };
 const currentStatus = (r) => {
-  let label = statusLabel(r.rawStatus);
-  if (label === "—") {
+  const raw = String(r.rawStatus || "").toLowerCase();
+  let label;
+  if (raw === "closed") label = "Closed";              // manual close (sticky)
+  else if (raw === "running" || raw === "active") label = "Running";
+  else if (raw === "overdue") label = "Overdue";
+  else {                                                // completed / empty / legacy → derive
     const n = daysUntil(r.expiry_date);
-    label = n === null ? "—" : n < 0 ? "Overdue" : "Running";
+    label = n !== null && n < 0 ? "Overdue" : "Running";
   }
   return { label, tone: STATUS_TONE[label] || "neutral" };
 };
@@ -56,7 +61,8 @@ const norm = (r) => {
     policy_number: rp.PolicyNumber || "—",
     plan: (rp.policyPlan && rp.policyPlan.PolicyPlanType) || r.policy_plan_type || "—",
     rawStatus: rp.status || r.status || "", // raw backend status: running/overdue/completed/closed
-    status: statusLabel(rp.status || r.status), // friendly: Running / Overdue / Closed (drives the filter)
+    // Friendly label (drives the Status filter) — same rule as the badge so they agree.
+    status: currentStatus({ rawStatus: rp.status || r.status || "", expiry_date: rp.od_expiry_date || rp.ExpiryDate || r.expiry_date || "" }).label,
     expiry_date: rp.od_expiry_date || rp.ExpiryDate || r.expiry_date || "",
   };
 };
@@ -91,9 +97,16 @@ export default function VehiclePage() {
   const overdueRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Overdue"), [rows]);
   // Closed = renewed/expired history or manually-closed policies.
   const closedRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Closed"), [rows]);
-  // Renewals = real policies, soonest expiry first.
+  // Renewals = UPCOMING renewals only: still Running and expiring within 30 days.
+  // Overdue policies live in the Overdue tab; closed ones are excluded entirely.
   const renewals = useMemo(
-    () => [...rows].filter((r) => r.vehicle_number && r.vehicle_number !== "—").sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999"))),
+    () => rows
+      .filter((r) => {
+        if (currentStatus(r).label !== "Running") return false;
+        const n = daysUntil(r.expiry_date);
+        return n !== null && n >= 0 && n <= 30;
+      })
+      .sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999"))),
     [rows]
   );
   // Load full detail (running + previous policies) for the view modal.
