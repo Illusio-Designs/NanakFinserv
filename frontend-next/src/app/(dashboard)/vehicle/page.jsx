@@ -97,15 +97,12 @@ export default function VehiclePage() {
   const overdueRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Overdue"), [rows]);
   // Closed = renewed/expired history or manually-closed policies.
   const closedRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Closed"), [rows]);
-  // Renewals = UPCOMING renewals only: still Running and expiring within 30 days.
+  // Renewals = UPCOMING renewals only: still-Running policies, soonest expiry first.
   // Overdue policies live in the Overdue tab; closed ones are excluded entirely.
+  // (Use the Expiry date-range filter on this tab to narrow to a specific window.)
   const renewals = useMemo(
     () => rows
-      .filter((r) => {
-        if (currentStatus(r).label !== "Running") return false;
-        const n = daysUntil(r.expiry_date);
-        return n !== null && n >= 0 && n <= 30;
-      })
+      .filter((r) => currentStatus(r).label === "Running" && daysUntil(r.expiry_date) !== null)
       .sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999"))),
     [rows]
   );
