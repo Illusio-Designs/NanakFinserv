@@ -1183,10 +1183,29 @@ exports.updateVehicleUserData = async (req, res) => {
                 };
                 
                 logger.debug('🔄 [RENEWAL] Transferring policy with company_id:', currentRunningPolicy.company_id);
-                
-                const createdPreviousPolicy = await vehcileRunningPolicy.create({ ...transferredPolicy, is_current: false }, { transaction: t });
-                logger.debug('✅ [RENEWAL] Successfully transferred running policy to previous policy');
-                logger.debug('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
+
+                // Guard against duplicate history rows. Re-saving a "Renewal" record
+                // must NOT keep re-archiving the same policy. A genuine year-over-year
+                // renewal differs by period, so only an EXACT match (same number +
+                // same From/To) is treated as an already-archived duplicate.
+                const existingHistory = await vehcileRunningPolicy.findOne({
+                    where: {
+                        vehicle_user_id: req.params.vehicle_user_id,
+                        is_current: false,
+                        PolicyNumber: transferredPolicy.PolicyNumber || null,
+                        PolicyFrom: transferredPolicy.PolicyFrom || null,
+                        PolicyTo: transferredPolicy.PolicyTo || null,
+                    },
+                    transaction: t,
+                });
+
+                if (existingHistory) {
+                    logger.debug('⚠️ [RENEWAL] Skipping transfer — identical previous policy already archived:', existingHistory.id);
+                } else {
+                    const createdPreviousPolicy = await vehcileRunningPolicy.create({ ...transferredPolicy, is_current: false }, { transaction: t });
+                    logger.debug('✅ [RENEWAL] Successfully transferred running policy to previous policy');
+                    logger.debug('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
+                }
             } else {
                 logger.debug('⚠️ [RENEWAL] No existing running policy found to transfer');
             }
