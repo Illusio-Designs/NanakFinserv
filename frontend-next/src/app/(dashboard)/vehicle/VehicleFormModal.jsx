@@ -210,6 +210,10 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
         policyRadio: form.policyRadio, policy_type: form.policyRadio,
         AgentName: form.AgentName, AgentCode: form.AgentCode, AgentContactNumber: form.AgentContactNumber,
         isNomineeFlag: form.isNomineeFlag ? "1" : "0",
+        // "Add next policy" / Renew: insert this policy into the timeline and let
+        // the backend reconcile decide its level (older -> history, newer ->
+        // current) instead of always archiving the current one.
+        add_to_timeline: renewMode ? "1" : "0",
         runningPolicy, previousPolicy, documentsData: [],
       };
       const hasFiles = files.rcbook || files.CurrentPolicyFile || files.PreviousCurrentPolicyFile;

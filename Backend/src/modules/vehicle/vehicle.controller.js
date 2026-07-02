@@ -911,6 +911,69 @@ exports.updateVehicleUserData = async (req, res) => {
             logger.warn('[VehicleUserUpdate] Vehicle not found with ID:', req.params.vehicle_user_id);
             return res.status(404).json({ error: "Vehicle not found" });
         }
+
+        // ── "Add next policy" (add_to_timeline): insert THIS one policy as a row and
+        // let reconcile decide its level by date (older -> history, newer -> current).
+        // Reuses this route; it does NOT archive/overwrite the current policy, so you
+        // can add prior-year records one by one and the timeline self-maintains.
+        if (String(Data.add_to_timeline) === "1" || Data.add_to_timeline === true) {
+            const rp = (Data.runningPolicy && typeof Data.runningPolicy === "object") ? Data.runningPolicy : {};
+            let tlCompanyId = rp.CompanyId || rp.company_id || null;
+            if (!tlCompanyId && rp.CompanyName) {
+                const c = await companyType.findOne({ where: { company_name: rp.CompanyName } });
+                if (c) tlCompanyId = c.company_id;
+            }
+            let tlFile = rp.CurrentPolicyFile || null;
+            if (req.files && req.files.CurrentPolicyFile) {
+                tlFile = await saveUpload(req.files.CurrentPolicyFile, "vehicle");
+            }
+            const timelineRow = {
+                vehicle_user_id: req.params.vehicle_user_id,
+                PolicyNumber: rp.PolicyNumber || null,
+                policy_type_id: rp.PolicyTypeId || rp.policy_type_id || null,
+                policy_plan_id: rp.PolicyPlanTypeId || rp.policy_plan_id || null,
+                company_id: tlCompanyId,
+                PolicyFrom: rp.PolicyFrom || null,
+                PolicyTo: rp.PolicyTo || null,
+                PolicyIssuedDate: rp.PolicyIssuedDate || null,
+                ExpiryDate: rp.ExpiryDate || rp.PolicyTo || null,
+                od_expiry_date: rp.od_expiry_date || null,
+                tp_expiry_date: rp.tp_expiry_date || null,
+                od_tenure: rp.od_tenure || null,
+                tp_tenure: rp.tp_tenure || null,
+                PremiumAmount: (rp.PremiumAmount !== undefined && rp.PremiumAmount !== "") ? parseFloat(rp.PremiumAmount) : null,
+                IDV: rp.IDV || null,
+                NCB: rp.NCB || null,
+                Vendor: rp.Vendor || null,
+                NomineeName: rp.NomineeName || null,
+                NomineeRelation: rp.NomineeRelation || null,
+                NomineeAge: rp.NomineeAge || null,
+                NomineeDob: rp.NomineeDob || null,
+                CurrentPolicyFile: tlFile,
+                agentName: rp.agentName || Data.AgentName || Data.agentName || null,
+                agentCode: rp.agentCode || Data.AgentCode || Data.agentCode || null,
+                agentContactNumber: rp.agentContactNumber || Data.AgentContactNumber || Data.agentContactNumber || null,
+                isNomineeFlag: Data.isNomineeFlag || null,
+                is_current: false, // reconcile re-levels by end-date
+            };
+            // Skip exact duplicates (same number + period already on this vehicle).
+            const tlDup = await vehcileRunningPolicy.findOne({
+                where: {
+                    vehicle_user_id: req.params.vehicle_user_id,
+                    PolicyNumber: timelineRow.PolicyNumber || null,
+                    PolicyFrom: timelineRow.PolicyFrom || null,
+                    PolicyTo: timelineRow.PolicyTo || null,
+                },
+            });
+            if (tlDup) {
+                return res.status(409).json({ status: false, message: "A policy with this number and period already exists for this vehicle." });
+            }
+            await vehcileRunningPolicy.create(timelineRow);
+            try { await vehicleService.reconcileVehiclePolicies(req.params.vehicle_user_id); } catch (e) { logger.error({ err: e }, "reconcile after add-to-timeline failed"); }
+            writeAudit(req, { action: "created", entity: "vehicle_policy", entity_id: req.params.vehicle_user_id, summary: `Added policy ${timelineRow.PolicyNumber || ""} to timeline`.trim() });
+            return res.status(200).json({ status: true, message: "Policy added to the timeline" });
+        }
+
         // Now construct the update object
         const vehicleUserUpdateObj = {
             vehicle_policy_type: Data.policy_type || Data.policyRadio || vehicleUserRecord.vehicle_policy_type, // Fresh/Renewal/Portability (radio)
