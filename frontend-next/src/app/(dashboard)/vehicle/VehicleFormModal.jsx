@@ -272,7 +272,7 @@ export default function VehicleFormModal({ open, onClose, onSaved, editRow, rene
           {!isEdit && (
             <div className="flex items-end gap-2">
               <PhoneInput label="Consumer Mobile" value={form.MobileNumber} onChange={(v) => { set("MobileNumber")(v); setFound(null); setKyc(null); }} />
-              <Button icon={searching ? undefined : Search} onClick={findConsumer} disabled={searching}>{searching ? <Spinner size={16} /> : "Find"}</Button>
+              <Button icon={searching ? undefined : Search} onClick={findConsumer} disabled={searching || !/^\d{10}$/.test(form.MobileNumber)}>{searching ? <Spinner size={16} /> : "Find"}</Button>
             </div>
           )}
           {!isEdit && found === true && <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-[13px] text-green-700"><UserCheck size={15} /> Existing consumer — details prefilled.</div>}
