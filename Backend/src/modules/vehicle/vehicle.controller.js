@@ -1164,7 +1164,9 @@ exports.updateVehicleUserData = async (req, res) => {
                 await vehcileRunningPolicy.update({
                     status: "notActive",
                 }, {
-                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false },
+                    // Spare manually-closed history rows so a renewal/portability
+                    // never silently un-closes a policy the user closed on purpose.
+                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false, status: { [Op.ne]: "closed" } },
                     transaction: t
                 });
 
@@ -1316,7 +1318,9 @@ exports.updateVehicleUserData = async (req, res) => {
                 await vehcileRunningPolicy.update({
                     status: "notActive",
                 }, {
-                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false },
+                    // Spare manually-closed history rows so a renewal/portability
+                    // never silently un-closes a policy the user closed on purpose.
+                    where: { vehicle_user_id: req.params.vehicle_user_id, is_current: false, status: { [Op.ne]: "closed" } },
                     transaction: t
                 });
                 
