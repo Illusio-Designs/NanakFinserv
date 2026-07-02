@@ -1,6 +1,9 @@
 const Sequelize = require("sequelize");
 const dotenvParseVariables = require('dotenv-parse-variables');
-let env = require('dotenv').config();
+// override: true — so values in .env (e.g. USER=root) win over variables the
+// shell already exports. On macOS, the shell sets USER=<login name>, which
+// otherwise shadows .env and makes Sequelize connect as the wrong DB user.
+let env = require('dotenv').config({ override: true });
 env = dotenvParseVariables(env.parsed);
 // console.log(process.env.HOST,process.env.poolMin)
 
