@@ -143,12 +143,13 @@ export default function DataTable({
         </div>
       )}
 
-      {/* Desktop table */}
-      <div className="hidden md:block">
+      {/* Desktop table — the ROWS scroll inside this bounded area (not the page),
+          so the toolbar above and pagination below stay put. Height is capped to
+          the viewport minus the surrounding page chrome. */}
+      <div className="hidden md:block overflow-y-auto max-h-[calc(100vh_-_24rem)]">
         <table className="w-full text-left text-[14px]">
-          {/* Header sticks just below the app top bar so it stays visible while
-              the long list scrolls (the page scrolls at the document level). */}
-          <thead className="sticky top-[var(--header-h)] z-10 bg-subtle">
+          {/* Header sticks to the top of the scroll area so it stays visible. */}
+          <thead className="sticky top-0 z-10 bg-subtle">
             <tr className="border-b border-line bg-subtle text-[11px] uppercase tracking-wider text-muted">
               {serial && <th className="w-12 px-3 py-3.5 font-semibold">#</th>}
               {columns.map((c) => (
