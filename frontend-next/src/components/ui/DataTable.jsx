@@ -99,7 +99,7 @@ export default function DataTable({
   };
 
   return (
-    <div className="ui-card overflow-hidden">
+    <div className="ui-card">
       {/* Toolbar: filters + count + export (search is the global header search) */}
       {(filters.length > 0 || filtered.length > 0) && (
         <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center">
@@ -146,7 +146,9 @@ export default function DataTable({
       {/* Desktop table */}
       <div className="hidden md:block">
         <table className="w-full text-left text-[14px]">
-          <thead>
+          {/* Header sticks just below the app top bar so it stays visible while
+              the long list scrolls (the page scrolls at the document level). */}
+          <thead className="sticky top-[var(--header-h)] z-10 bg-subtle">
             <tr className="border-b border-line bg-subtle text-[11px] uppercase tracking-wider text-muted">
               {serial && <th className="w-12 px-3 py-3.5 font-semibold">#</th>}
               {columns.map((c) => (
