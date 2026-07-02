@@ -20,6 +20,7 @@ router.put("/user/vehicle/user/update/remark/:vehicle_user_id", vEnabled, verify
 router.post("/user/vehicle/user/list", vEnabled, verifyToken, staff, controller.getVehicleUserData);
 router.post("/user/vehicle/user/renewal/list", vEnabled, verifyToken, staff, controller.getVehicleUserRenewalData);
 router.post("/user/renewVehiclePolicy", vEnabled, verifyToken, staff, controller.renewVehiclePolicy);
+router.post("/user/vehicle/policy/close", vEnabled, verifyToken, staff, controller.closeVehiclePolicy);
 router.get("/user/vehicle/renewal/stats", vEnabled, verifyToken, staff, controller.getVehicleRenewalStats);
 router.get("/user/list/vehicleIns", vEnabled, verifyToken, staff, controller.getAllVehicleInsUser);
 // Removed: unauthenticated debug route /user/list/all-vehicle-users-debug

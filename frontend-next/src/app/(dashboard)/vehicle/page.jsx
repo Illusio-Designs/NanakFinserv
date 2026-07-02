@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, RefreshCw, FilePlus } from "lucide-react";
+import { Plus, RefreshCw, FilePlus, XCircle } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
@@ -12,15 +12,19 @@ import Spinner from "@/components/ui/Spinner";
 import FileTypeIcon from "@/components/ui/FileTypeIcon";
 import api, { showError, fileUrl } from "@/lib/api";
 import { fmtDate, daysUntil, expiryCountdown } from "@/lib/format";
-import { CATEGORY_IDS } from "@/config/ids";
 import VehicleFormModal from "./VehicleFormModal";
 
-// A vehicle's CURRENT policy: Running while active, Overdue once its cover lapses.
+// Status is driven by the BACKEND status (running / overdue / completed / closed),
+// which the server + daily scheduler keep in sync with the expiry date. For legacy
+// rows that have no backend status yet, fall back to deriving it from the expiry.
+const STATUS_TONE = { Running: "success", Overdue: "danger", Closed: "neutral" };
 const currentStatus = (r) => {
-  const n = daysUntil(r.expiry_date);
-  if (n !== null && n < 0) return { label: "Overdue", tone: "danger" };
-  if (n !== null) return { label: "Running", tone: "success" };
-  return { label: statusLabel(r.status), tone: statusTone(r.status) };
+  let label = statusLabel(r.rawStatus);
+  if (label === "—") {
+    const n = daysUntil(r.expiry_date);
+    label = n === null ? "—" : n < 0 ? "Overdue" : "Running";
+  }
+  return { label, tone: STATUS_TONE[label] || "neutral" };
 };
 
 const period = (p) => {
@@ -51,61 +55,47 @@ const norm = (r) => {
     company: (rp.CompanyType && rp.CompanyType.company_name) || r.company_name || "—",
     policy_number: rp.PolicyNumber || "—",
     plan: (rp.policyPlan && rp.policyPlan.PolicyPlanType) || r.policy_plan_type || "—",
-    status: statusLabel(rp.status || r.status), // friendly: Running / Closed (also drives the filter)
+    rawStatus: rp.status || r.status || "", // raw backend status: running/overdue/completed/closed
+    status: statusLabel(rp.status || r.status), // friendly: Running / Overdue / Closed (drives the filter)
     expiry_date: rp.od_expiry_date || rp.ExpiryDate || r.expiry_date || "",
   };
 };
 
 export default function VehiclePage() {
-  const [tab, setTab] = useState("policies");
+  const [tab, setTab] = useState("all");
   const [rows, setRows] = useState([]);
-  const [consumers, setConsumers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
   const [renewRow, setRenewRow] = useState(null);
-  const [addPrefill, setAddPrefill] = useState(null); // mobile to prefill a new policy for an assigned consumer
   const [viewId, setViewId] = useState(null);
   const [viewData, setViewData] = useState(null);
   const [renewingId, setRenewingId] = useState(null);
+  const [closingId, setClosingId] = useState(null);
 
-  // Load policies + consumers once; every tab + its count derives from this.
+  // Load policies once; every tab + its count derives from this.
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [pRes, cRes] = await Promise.all([
-        api.post("/user/vehicle/user/list", {}),
-        api.get("/user/list/consumer").catch(() => null),
-      ]);
+      const pRes = await api.post("/user/vehicle/user/list", {});
       const data = pRes.data?.data || pRes.data || [];
       setRows((Array.isArray(data) ? data : []).map(norm));
-      setConsumers(cRes?.data?.data || []);
     } catch (e) { showError(e, "Could not load vehicle policies"); setRows([]); }
     finally { setLoading(false); }
   };
   useEffect(() => { loadAll(); }, []);
 
-  const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
-  // Closed = expired cover.
-  const closedRows = useMemo(() => rows.filter((r) => statusLabel(r.status) === "Closed"), [rows]);
+  // Status-based tab buckets (all driven by the backend status).
+  const runningRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Running"), [rows]);
+  // Overdue = current policy lapsed, not yet renewed/closed (backend status).
+  const overdueRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Overdue"), [rows]);
+  // Closed = renewed/expired history or manually-closed policies.
+  const closedRows = useMemo(() => rows.filter((r) => currentStatus(r).label === "Closed"), [rows]);
   // Renewals = real policies, soonest expiry first.
   const renewals = useMemo(
     () => [...rows].filter((r) => r.vehicle_number && r.vehicle_number !== "—").sort((a, b) => String(a.expiry_date || "9999").localeCompare(String(b.expiry_date || "9999"))),
     [rows]
   );
-  // Pending = assigned-but-no-policy consumers (Add record) + due renewals (Renew).
-  const pending = useMemo(() => {
-    const policyUserIds = new Set(rows.map((r) => r.user_id).filter(Boolean));
-    const assigned = consumers
-      .filter((c) => (c.category || []).some((m) => m.category_id === CATEGORY_IDS.VEHICLE) && !policyUserIds.has(c.user_id))
-      .map((c) => ({ vehicle_user_id: c.user_id, user_id: c.user_id, name: c.username || "—", mobile: c.mobileNumber || "—", vehicle_number: "—", reason: "Assigned — add policy", when: (c.createdAt || "").slice(0, 10) }));
-    const due = rows
-      .filter((r) => r.expiry_date && r.expiry_date.slice(0, 10) <= in30)
-      .map((r) => ({ ...r, reason: "Renewal due", when: r.expiry_date }))
-      .sort((a, b) => String(a.expiry_date).localeCompare(String(b.expiry_date))); // most overdue first
-    return [...due, ...assigned]; // urgent renewals on top
-  }, [rows, consumers, in30]);
-
   // Load full detail (running + previous policies) for the view modal.
   const openView = async (r) => {
     setViewId(r.vehicle_user_id);
@@ -124,6 +114,17 @@ export default function VehiclePage() {
       loadAll();
     } catch (e) { showError(e, "Could not renew policy"); }
     finally { setRenewingId(null); }
+  };
+
+  // Mark an overdue policy as Closed (consumer won't renew).
+  const closePolicy = async (row) => {
+    setClosingId(row.vehicle_user_id);
+    try {
+      await api.post("/user/vehicle/policy/close", { vehicle_user_id: row.vehicle_user_id });
+      toast.success("Policy closed");
+      loadAll();
+    } catch (e) { showError(e, "Could not close policy"); }
+    finally { setClosingId(null); }
   };
 
   const columns = useMemo(() => [
@@ -146,28 +147,6 @@ export default function VehiclePage() {
     { key: "status", title: "Status", render: (r) => { const s = currentStatus(r); return <Badge tone={s.tone}>{s.label}</Badge>; } },
   ], []);
 
-  const pendingColumns = useMemo(() => [
-    { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: "mobile", title: "Mobile" },
-    { key: "vehicle_number", title: "Vehicle No." },
-    { key: "reason", title: "Reason", render: (r) => <Badge tone={String(r.reason).includes("Renewal") ? "warning" : "success"}>{r.reason}</Badge> },
-    {
-      key: "when", title: "When",
-      render: (r) => String(r.reason).includes("Renewal")
-        ? <span className={daysUntil(r.expiry_date) < 0 ? "font-medium text-red-600" : "text-ink"}>{expiryCountdown(r.expiry_date)}</span>
-        : fmtDate(r.when),
-    },
-    {
-      key: "act", title: "",
-      render: (r) =>
-        String(r.reason).includes("Renewal") ? (
-          <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
-        ) : (
-          <Button size="sm" icon={FilePlus} onClick={() => setAddPrefill(r.mobile)}>Add record</Button>
-        ),
-    },
-  ], [renewingId]);
-
   const renewalColumns = useMemo(() => [
     { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
     { key: "mobile", title: "Mobile" },
@@ -189,18 +168,45 @@ export default function VehiclePage() {
     },
   ], [renewingId]);
 
+  const overdueColumns = useMemo(() => [
+    { key: "name", title: "Owner", render: (r) => <span className="font-medium">{r.name}</span> },
+    { key: "mobile", title: "Mobile" },
+    { key: "vehicle_number", title: "Vehicle No." },
+    { key: "company", title: "Company" },
+    {
+      key: "expiry_date", title: "Expiry",
+      render: (r) => r.expiry_date ? (
+        <div>
+          <div>{fmtDate(r.expiry_date)}</div>
+          <div className="text-[11px] font-medium text-red-600">{expiryCountdown(r.expiry_date)}</div>
+        </div>
+      ) : "—",
+    },
+    { key: "status", title: "Status", render: () => <Badge tone="danger">Overdue</Badge> },
+    {
+      key: "act", title: "",
+      render: (r) => (
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="secondary" icon={RefreshCw} loading={renewingId === r.vehicle_user_id} onClick={() => renew(r)}>Renew</Button>
+          <Button size="sm" variant="ghost" icon={XCircle} loading={closingId === r.vehicle_user_id} onClick={() => closePolicy(r)}>Close</Button>
+        </div>
+      ),
+    },
+  ], [renewingId, closingId]);
+
   return (
     <div>
       <PageHeader title="Vehicle Insurance" subtitle="Vehicle policies & renewals" actions={<Button icon={Plus} onClick={() => setAddOpen(true)}>Add Vehicle Policy</Button>} />
 
       <Tabs className="mb-4" value={tab} onChange={setTab} tabs={[
-        { value: "policies", label: "Policies" },
-        { value: "pending", label: `Pending${pending.length ? ` (${pending.length})` : ""}` },
+        { value: "all", label: `All${rows.length ? ` (${rows.length})` : ""}` },
+        { value: "running", label: `Running${runningRows.length ? ` (${runningRows.length})` : ""}` },
+        { value: "overdue", label: `Overdue${overdueRows.length ? ` (${overdueRows.length})` : ""}` },
         { value: "renewals", label: `Renewals${renewals.length ? ` (${renewals.length})` : ""}` },
         { value: "closed", label: `Closed${closedRows.length ? ` (${closedRows.length})` : ""}` },
       ]} />
 
-      {tab === "policies" && (
+      {tab === "all" && (
         <DataTable
           columns={columns}
           data={rows}
@@ -214,14 +220,27 @@ export default function VehiclePage() {
         />
       )}
 
-      {tab === "pending" && (
+      {tab === "running" && (
         <DataTable
-          columns={pendingColumns}
-          data={pending}
+          columns={columns}
+          data={runningRows}
           loading={loading}
           rowKey="vehicle_user_id"
-          searchKeys={["name", "mobile", "vehicle_number", "reason"]}
-          filters={[{ key: "reason", label: "Reason" }]}
+          searchKeys={["name", "mobile", "vehicle_number", "makeModel", "company", "policy_number"]}
+          filters={[{ key: "ptype", label: "Type" }]}
+          onView={openView}
+          onEdit={(r) => setEditRow(r)}
+          rowActions={[{ icon: FilePlus, title: "Add next policy / renew", onClick: (r) => setRenewRow(r) }]}
+        />
+      )}
+
+      {tab === "overdue" && (
+        <DataTable
+          columns={overdueColumns}
+          data={overdueRows}
+          loading={loading}
+          rowKey="vehicle_user_id"
+          searchKeys={["name", "mobile", "vehicle_number", "company"]}
           onView={openView}
         />
       )}
@@ -251,7 +270,6 @@ export default function VehiclePage() {
       )}
 
       <VehicleFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={loadAll} />
-      <VehicleFormModal open={!!addPrefill} prefillMobile={addPrefill} onClose={() => setAddPrefill(null)} onSaved={() => { setAddPrefill(null); loadAll(); }} />
       <VehicleFormModal open={!!editRow} editRow={editRow} onClose={() => setEditRow(null)} onSaved={loadAll} />
       <VehicleFormModal open={!!renewRow} editRow={renewRow} renewMode onClose={() => setRenewRow(null)} onSaved={loadAll} />
 
@@ -286,7 +304,7 @@ function VehicleDetail({ d }) {
         <Row label="Period" value={period(rp)} />
         <Row label="OD / Full expiry" value={(rp.od_expiry_date || rp.ExpiryDate) ? `${fmtDate(rp.od_expiry_date || rp.ExpiryDate)} · ${expiryCountdown(rp.od_expiry_date || rp.ExpiryDate)}` : "—"} />
         <Row label="TP expiry" value={rp.tp_expiry_date ? fmtDate(rp.tp_expiry_date) : "—"} />
-        <Row label="Status" value={(() => { const s = currentStatus({ expiry_date: rp.od_expiry_date || rp.ExpiryDate, status: rp.status }); return <Badge tone={s.tone}>{s.label}</Badge>; })()} />
+        <Row label="Status" value={(() => { const s = currentStatus({ expiry_date: rp.od_expiry_date || rp.ExpiryDate, rawStatus: rp.status }); return <Badge tone={s.tone}>{s.label}</Badge>; })()} />
         {fileUrl(rp.CurrentPolicyFile) && (
           <Row label="Policy PDF" value={
             <span className="flex items-center gap-3">

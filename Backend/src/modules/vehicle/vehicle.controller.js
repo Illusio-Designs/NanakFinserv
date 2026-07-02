@@ -2267,6 +2267,36 @@ const saveDocument = async (lifeInsuranceId, fieldName, file, uploadDir, userId)
 
 // Create Life Insurance Policy
 
+// Manually close a vehicle's current policy (used when the consumer won't renew
+// an overdue policy). Sets status = "closed", which reconcile always preserves.
+exports.closeVehiclePolicy = async (req, res) => {
+  try {
+    const { vehicle_user_id } = req.body;
+    if (!vehicle_user_id) {
+      return res.status(400).json({ status: false, message: "vehicle_user_id is required" });
+    }
+
+    const current = await vehcileRunningPolicy.findOne({ where: { vehicle_user_id, is_current: true } });
+    if (!current) {
+      return res.status(404).json({ status: false, message: "No current policy found for this vehicle" });
+    }
+
+    await current.update({ status: "closed" });
+
+    writeAudit(req, {
+      action: "closed",
+      entity: "vehicle_policy",
+      entity_id: vehicle_user_id,
+      summary: `Closed vehicle policy ${current.PolicyNumber || ""}`.trim(),
+    });
+
+    return res.status(200).json({ status: true, message: "Policy closed" });
+  } catch (error) {
+    logger.error({ err: error }, "closeVehiclePolicy failed");
+    return res.status(500).json({ status: false, message: "Could not close policy", error: error.message });
+  }
+};
+
 exports.renewVehiclePolicy = async (req, res) => {
   try {
     const { vehicle_user_id } = req.body;

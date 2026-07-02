@@ -120,13 +120,23 @@ function parseUpdatePayload(body, contentType) {
 
 const VehcileRunningPolicy = db.vehcileRunningPolicy; // unified policy table (is_current flag)
 
-/** "running" while within the period, "completed" once the expiry has passed. */
-function policyStatus(p) {
+/**
+ * Policy status, driven by the timeline + expiry date:
+ *  - "closed"    → manually closed from the UI (sticky; never auto-recomputed)
+ *  - "completed" → an older policy that a renewal replaced (history)
+ *  - "running"   → the current policy, still within its cover period
+ *  - "overdue"   → the current policy whose cover has lapsed (not yet renewed/closed)
+ * @param {object} p       policy row
+ * @param {boolean} isCurrent whether this is the vehicle's current policy
+ */
+function policyStatus(p, isCurrent = true) {
+  if (p.status === "closed") return "closed"; // manual close wins over any date logic
+  if (!isCurrent) return "completed";         // replaced by a newer (renewed) policy
   const end = p.od_expiry_date || p.ExpiryDate || p.PolicyTo;
   if (!end) return "running";
   const d = new Date(end);
   if (isNaN(d.getTime())) return "running";
-  return d >= new Date() ? "running" : "completed";
+  return d >= new Date() ? "running" : "overdue";
 }
 
 /** End date used to order the timeline (latest policy = the current one). */
@@ -141,8 +151,8 @@ function policyEnd(p) {
  * table, regardless of entry order:
  *  - the policy with the LATEST end date is flagged is_current = true (the
  *    current/running policy); every other policy is is_current = false (history);
- *  - each record's status is recomputed (running while active, completed once
- *    its expiry has passed).
+ *  - each record's status is recomputed (current: running while active, overdue
+ *    once lapsed; history: completed; a manual "closed" is always preserved).
  * Safe to call after any add/update/renew. Pass { transaction } to run inside a tx.
  */
 async function reconcileVehiclePolicies(vehicleUserId, opts = {}) {
@@ -156,7 +166,7 @@ async function reconcileVehiclePolicies(vehicleUserId, opts = {}) {
   for (let i = 0; i < sorted.length; i++) {
     const inst = sorted[i];
     const isCurrent = i === 0;
-    const status = policyStatus(inst.get({ plain: true }));
+    const status = policyStatus(inst.get({ plain: true }), isCurrent);
     if (inst.is_current !== isCurrent || inst.status !== status) {
       await inst.update({ is_current: isCurrent, status }, { transaction });
     }
