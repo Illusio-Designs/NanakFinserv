@@ -1147,6 +1147,19 @@ exports.updateVehicleUserData = async (req, res) => {
                     policyType: currentRunningPolicy.policyType
                 });
                 
+                // Only archive on a GENUINE renewal — the incoming policy must differ
+                // from the current one (new number or new period). A plain edit/re-save
+                // of the same policy must NOT create a Closed copy of the still-current
+                // policy (which caused the same policy to show as both Running & Closed).
+                const _incNo = String(runningPolicy.PolicyNumber || "").trim();
+                const _incTo = String(runningPolicy.PolicyTo || runningPolicy.ExpiryDate || runningPolicy.od_expiry_date || "");
+                const _curNo = String(currentRunningPolicy.PolicyNumber || "").trim();
+                const _curTo = String(currentRunningPolicy.PolicyTo || currentRunningPolicy.ExpiryDate || "");
+                const isGenuineRenewal = (_incNo && _incNo !== _curNo) || (_incTo && _incTo !== _curTo);
+
+                if (!isGenuineRenewal) {
+                  logger.debug('⚠️ [RENEWAL] Incoming policy matches the current one — edit, not a renewal; not archiving.');
+                } else {
                 // Mark all existing history policies as inactive (reconcile recomputes status after)
                 await vehcileRunningPolicy.update({
                     status: "notActive",
@@ -1206,6 +1219,7 @@ exports.updateVehicleUserData = async (req, res) => {
                     logger.debug('✅ [RENEWAL] Successfully transferred running policy to previous policy');
                     logger.debug('🔄 [RENEWAL] Created previous policy with ID:', createdPreviousPolicy.id, 'company_id:', createdPreviousPolicy.company_id);
                 }
+                } // end isGenuineRenewal
             } else {
                 logger.debug('⚠️ [RENEWAL] No existing running policy found to transfer');
             }
