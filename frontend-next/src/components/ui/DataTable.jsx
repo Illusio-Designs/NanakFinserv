@@ -146,7 +146,7 @@ export default function DataTable({
       {/* Desktop table — the ROWS scroll inside this bounded area (not the page),
           so the toolbar above and pagination below stay put. Height is capped to
           the viewport minus the surrounding page chrome. */}
-      <div className="hidden md:block overflow-y-auto max-h-[calc(100vh_-_24rem)]">
+      <div className="hidden md:block overflow-y-auto overflow-x-hidden max-h-[calc(100vh_-_24rem)]">
         <table className="w-full text-left text-[14px]">
           {/* Header sticks to the top of the scroll area so it stays visible. */}
           <thead className="sticky top-0 z-10 bg-subtle">
@@ -190,7 +190,7 @@ export default function DataTable({
                 >
                   {serial && <td className="px-3 py-3 text-muted">{(safePage - 1) * pageSize + idx + 1}</td>}
                   {columns.map((c) => (
-                    <td key={c.key} className={cn("px-3 py-3 text-ink", c.className)}>
+                    <td key={c.key} className={cn("px-3 py-3 text-ink [overflow-wrap:anywhere]", c.className)}>
                       {c.render ? c.render(row) : row[c.key] ?? "—"}
                     </td>
                   ))}
